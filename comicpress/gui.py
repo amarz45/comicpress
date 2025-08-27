@@ -149,12 +149,15 @@ class App(QtWidgets.QMainWindow):
         self.png_compression_level_spin = QtWidgets.QSpinBox()
         self.png_compression_level_spin.setRange(0, 9)
         self.png_compression_level_spin.setValue(9)
-        settings_layout.addRow(self.png_compression_level_label, self.png_compression_level_spin)
+        settings_layout.addRow(
+            self.png_compression_level_label, self.png_compression_level_spin
+        )
 
         # Parallel jobs
         self.jobs_spin = QtWidgets.QSpinBox()
-        self.jobs_spin.setRange(1, os.cpu_count())
-        self.jobs_spin.setValue(os.cpu_count())
+        num_cpus = os.cpu_count() or 1
+        self.jobs_spin.setRange(1, num_cpus)
+        self.jobs_spin.setValue(num_cpus)
         settings_layout.addRow("Number of parallel jobs", self.jobs_spin)
 
         # Todo: add memory limiter widget.
@@ -320,12 +323,22 @@ class App(QtWidgets.QMainWindow):
         self.log_output.append("Starting processing...")
         self.start_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
-        self.thread = ProcessThread(input_paths, output_root, dpi, display, resample, img_format, num_workers, webp_method, png_compression_level)
+
+        self.thread = ProcessThread(
+            input_paths, output_root, dpi, display, resample, img_format,
+            num_workers, webp_method, png_compression_level
+        )
+
         self.thread.log_signal.connect(self.log_output.append)
-        self.thread.done_signal.connect(lambda: self.log_output.append("Processing complete"))
+        self.thread.done_signal.connect(
+            lambda: self.log_output.append("Processing complete")
+        )
         self.thread.progress_signal.connect(self.progress_bar.setValue)
         self.thread.finished.connect(lambda: self.start_button.setEnabled(True))
-        self.thread.finished.connect(lambda: self.cancel_button.setEnabled(False))
+        self.thread.finished.connect(
+            lambda: self.cancel_button.setEnabled(False)
+        )
+
         self.thread.start()
 
     def cancel_conversion(self):

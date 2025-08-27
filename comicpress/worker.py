@@ -12,7 +12,10 @@ class ProcessThread(QtCore.QThread):
     done_signal = QtCore.pyqtSignal()
     progress_signal = QtCore.pyqtSignal(int)
 
-    def __init__(self, input_paths, output_root, dpi, display, resample, img_format, num_workers, webp_method, png_compression_level):
+    def __init__(
+        self, input_paths, output_root, dpi, display, resample, img_format,
+        num_workers, webp_method, png_compression_level
+    ):
         super().__init__()
         self.input_paths = input_paths
         self.output_root = output_root
@@ -26,7 +29,7 @@ class ProcessThread(QtCore.QThread):
 
     def run(self):
         output_root = Path(self.output_root)
-        output_root.mkdir(parents=True, exist_ok=True)
+        output_root.mkdir(parents = True, exist_ok = True)
 
         tasks = []
         output_dirs = {}
@@ -35,7 +38,7 @@ class ProcessThread(QtCore.QThread):
             ext = os.path.splitext(path)[1].lower()
             base_name = os.path.splitext(os.path.basename(path))[0]
             output_dir = output_root / base_name
-            output_dir.mkdir(exist_ok=True)
+            output_dir.mkdir(exist_ok = True)
             output_dirs[path] = output_dir
 
             if ext == ".pdf":
@@ -61,17 +64,12 @@ class ProcessThread(QtCore.QThread):
 
         from concurrent.futures import as_completed
 
-        with ProcessPoolExecutor(max_workers=self.num_workers) as executor:
+        with ProcessPoolExecutor(max_workers = self.num_workers) as executor:
             futures = [
                 executor.submit(
-                    process_task,
-                    task,
-                    dpi = self.dpi,
-                    display = self.display,
-                    resample = self.resample,
-                    img_format = self.img_format,
-                    webp_method = self.webp_method,
-                    png_compression_level = self.png_compression_level,
+                    process_task, task, self.dpi, self.display, self.resample,
+                    self.img_format, self.webp_method,
+                    self.png_compression_level
                 )
                 for task in tasks
             ]
@@ -87,9 +85,12 @@ class ProcessThread(QtCore.QThread):
 
         for _, temp_dir in output_dirs.items():
             cbz_name = output_root / f"{temp_dir.name}.cbz"
-            with zipfile.ZipFile(cbz_name, "w", compression=zipfile.ZIP_STORED) as zipf:
+            with zipfile.ZipFile(
+                cbz_name, "w", compression = zipfile.ZIP_STORED
+            ) \
+            as zipf:
                 for img_file in sorted(temp_dir.iterdir()):
-                    zipf.write(img_file, arcname=img_file.name)
+                    zipf.write(img_file, arcname = img_file.name)
             self.log_signal.emit(f"Created CBZ: {cbz_name}")
 
         self.done_signal.emit()
@@ -106,4 +107,6 @@ class ProcessThread(QtCore.QThread):
                 for i, name in enumerate(img_files):
                     tasks.append((file_ext, path, (i, name), output_dir))
         except Exception as e:
-            self.log_signal.emit(f"Error reading {file_ext.upper()} {path}: {e}.")
+            self.log_signal.emit(
+                f"Error reading {file_ext.upper()} {path}: {e}."
+            )

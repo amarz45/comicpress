@@ -79,13 +79,12 @@ class ProcessThread(QtCore.QThread):
     done_signal = QtCore.pyqtSignal()
     progress_signal = QtCore.pyqtSignal(int)
 
-    def __init__(self, input_paths, output_root, dpi, target_w, target_h, resample, img_format, num_workers):
+    def __init__(self, input_paths, output_root, dpi, display, resample, img_format, num_workers):
         super().__init__()
         self.input_paths = input_paths
         self.output_root = output_root
         self.dpi = dpi
-        self.target_w = target_w
-        self.target_h = target_h
+        self.display = display
         self.resample = resample
         self.img_format = img_format
         self.num_workers = num_workers
@@ -133,8 +132,7 @@ class ProcessThread(QtCore.QThread):
                     process_task,
                     task,
                     dpi = self.dpi,
-                    target_w = self.target_w,
-                    target_h = self.target_h,
+                    display = self.display,
                     resample = self.resample,
                     img_format = self.img_format,
                 )
@@ -173,19 +171,19 @@ class ProcessThread(QtCore.QThread):
         except Exception as e:
             self.log_signal.emit(f"Error reading {file_ext.upper()} {path}: {e}.")
 
-def process_task(task, dpi, target_w, target_h, resample, img_format):
+def process_task(task, dpi, display, resample, img_format):
     kind, source, data, output_dir = task
     if kind == "pdf":
         pdf_path, i = source, data
-        return process_pdf_page(pdf_path, img_format, i, output_dir, dpi, target_w, target_h, resample)
+        return process_pdf_page(pdf_path, img_format, i, output_dir, dpi, display, resample)
     elif kind == "cbz":
         cbz_path, (i, filename) = source, data
-        return process_archive_image(cbz_path, filename, img_format, i, output_dir, target_w, target_h, resample, zipfile.ZipFile)
+        return process_archive_image(cbz_path, filename, img_format, i, output_dir, display, resample, zipfile.ZipFile)
     elif kind == "cbr":
         cbr_path, (i, filename) = source, data
-        return process_archive_image(cbr_path, filename, img_format, i, output_dir, target_w, target_h, resample, rarfile.RarFile)
+        return process_archive_image(cbr_path, filename, img_format, i, output_dir, display, resample, rarfile.RarFile)
 
-def process_pdf_page(pdf_path, img_format, index, output_dir, dpi, target_w, target_h, resample):
+def process_pdf_page(pdf_path, img_format, index, output_dir, dpi, display, resample):
     doc = pymupdf.open(pdf_path)
     page = doc[index]
     zoom = dpi / 72
@@ -194,7 +192,7 @@ def process_pdf_page(pdf_path, img_format, index, output_dir, dpi, target_w, tar
     doc.close()
 
     img = Image.frombytes("L", [pix.width, pix.height], pix.samples)
-    return save_processed_image(img, output_dir, img_format, index, target_w, target_h, resample)
+    return save_processed_image(img, output_dir, img_format, index, display, resample)
 
 def process_archive_image(
     archive_path,
@@ -202,22 +200,21 @@ def process_archive_image(
     img_format,
     index,
     output_dir,
-    target_w,
-    target_h,
+    display,
     resample,
     opener,
 ):
     with opener(archive_path, "r") as archive:
         data = archive.read(filename)
     img = Image.open(io.BytesIO(data)).convert("L")
-    return save_processed_image(img, output_dir, img_format, index, target_w, target_h, resample)
+    return save_processed_image(img, output_dir, img_format, index, display, resample)
 
-def save_processed_image(img, output_dir, img_format, index, target_w, target_h, resample):
+def save_processed_image(img, output_dir, img_format, index, display, resample):
     img = ImageOps.autocontrast(img, preserve_tone=True)
     if resample:
-        img.thumbnail((target_w, target_h), resample)
+        img.thumbnail((display.width, display.height), resample)
     else:
-        img.thumbnail((target_w, target_h))
+        img.thumbnail((display.width, display.height))
 
     img = img.quantize(
         colors=16,
@@ -508,10 +505,9 @@ class App(QtWidgets.QMainWindow):
         output_root = self.output_dir_edit.text()
 
         if self.enable_scaling_check.isChecked():
-            w = self.width_spin.value()
-            h = self.height_spin.value()
+            display = Display(self.width_spin.value(), self.height_spin.value())
         else:
-            w = h = 99999
+            display = None
 
         filter_str = self.filter_combo.currentText()
         if filter_str == "Bicubic":
@@ -534,7 +530,7 @@ class App(QtWidgets.QMainWindow):
         self.log_output.append("Starting processing...")
         self.start_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
-        self.thread = ProcessThread(input_paths, output_root, dpi, w, h, resample, img_format, num_workers)
+        self.thread = ProcessThread(input_paths, output_root, dpi, display, resample, img_format, num_workers)
         self.thread.log_signal.connect(self.log_output.append)
         self.thread.done_signal.connect(lambda: self.log_output.append("Processing complete"))
         self.thread.progress_signal.connect(self.progress_bar.setValue)

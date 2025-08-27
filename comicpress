@@ -79,7 +79,7 @@ class ProcessThread(QtCore.QThread):
     done_signal = QtCore.pyqtSignal()
     progress_signal = QtCore.pyqtSignal(int)
 
-    def __init__(self, input_paths, output_root, dpi, display, resample, img_format, num_workers):
+    def __init__(self, input_paths, output_root, dpi, display, resample, img_format, num_workers, webp_method, png_compression_level):
         super().__init__()
         self.input_paths = input_paths
         self.output_root = output_root
@@ -88,6 +88,8 @@ class ProcessThread(QtCore.QThread):
         self.resample = resample
         self.img_format = img_format
         self.num_workers = num_workers
+        self.webp_method = webp_method
+        self.png_compression_level = png_compression_level
 
     def run(self):
         output_root = Path(self.output_root)
@@ -135,6 +137,8 @@ class ProcessThread(QtCore.QThread):
                     display = self.display,
                     resample = self.resample,
                     img_format = self.img_format,
+                    webp_method = self.webp_method,
+                    png_compression_level = self.png_compression_level,
                 )
                 for task in tasks
             ]
@@ -171,19 +175,19 @@ class ProcessThread(QtCore.QThread):
         except Exception as e:
             self.log_signal.emit(f"Error reading {file_ext.upper()} {path}: {e}.")
 
-def process_task(task, dpi, display, resample, img_format):
+def process_task(task, dpi, display, resample, img_format, webp_method, png_compression_level):
     kind, source, data, output_dir = task
     if kind == "pdf":
         pdf_path, i = source, data
-        return process_pdf_page(pdf_path, img_format, i, output_dir, dpi, display, resample)
+        return process_pdf_page(pdf_path, img_format, i, output_dir, dpi, display, resample, webp_method, png_compression_level)
     elif kind == "cbz":
         cbz_path, (i, filename) = source, data
-        return process_archive_image(cbz_path, filename, img_format, i, output_dir, display, resample, zipfile.ZipFile)
+        return process_archive_image(cbz_path, filename, img_format, i, output_dir, display, resample, zipfile.ZipFile, webp_method, png_compression_level)
     elif kind == "cbr":
         cbr_path, (i, filename) = source, data
-        return process_archive_image(cbr_path, filename, img_format, i, output_dir, display, resample, rarfile.RarFile)
+        return process_archive_image(cbr_path, filename, img_format, i, output_dir, display, resample, rarfile.RarFile, webp_method, png_compression_level)
 
-def process_pdf_page(pdf_path, img_format, index, output_dir, dpi, display, resample):
+def process_pdf_page(pdf_path, img_format, index, output_dir, dpi, display, resample, webp_method, png_compression_level):
     doc = pymupdf.open(pdf_path)
     page = doc[index]
     zoom = dpi / 72
@@ -192,7 +196,7 @@ def process_pdf_page(pdf_path, img_format, index, output_dir, dpi, display, resa
     doc.close()
 
     img = Image.frombytes("L", [pix.width, pix.height], pix.samples)
-    return save_processed_image(img, output_dir, img_format, index, display, resample)
+    return save_processed_image(img, output_dir, img_format, index, display, resample, webp_method, png_compression_level)
 
 def process_archive_image(
     archive_path,
@@ -203,13 +207,15 @@ def process_archive_image(
     display,
     resample,
     opener,
+    webp_method,
+    png_compression_level,
 ):
     with opener(archive_path, "r") as archive:
         data = archive.read(filename)
     img = Image.open(io.BytesIO(data)).convert("L")
-    return save_processed_image(img, output_dir, img_format, index, display, resample)
+    return save_processed_image(img, output_dir, img_format, index, display, resample, webp_method, png_compression_level)
 
-def save_processed_image(img, output_dir, img_format, index, display, resample):
+def save_processed_image(img, output_dir, img_format, index, display, resample, webp_method, png_compression_level):
     img = ImageOps.autocontrast(img, preserve_tone=True)
     if display:
         img.thumbnail((display.width, display.height), resample)
@@ -236,10 +242,10 @@ def save_processed_image(img, output_dir, img_format, index, display, resample):
         img.save(output_file)
     elif img_format == "PNG":
         output_file = f"{output_file}.png"
-        img.save(output_file, optimize = True)
+        img.save(output_file, compress_level = png_compression_level)
     elif img_format == "WebP":
         output_file = f"{output_file}.webp"
-        img.save(output_file, lossless = True, method = 4)
+        img.save(output_file, lossless = True, method = webp_method)
 
     return f"Saved {output_file}"
 
@@ -262,6 +268,7 @@ class App(QtWidgets.QMainWindow):
         self.connect_signals()
         self.on_device_changed()
         self.toggle_scaling_inputs(self.enable_scaling_check.checkState())
+        self.on_format_changed()
 
     def setup_ui(self):
         # Input and output
@@ -375,6 +382,20 @@ class App(QtWidgets.QMainWindow):
         self.img_format_combo.setCurrentText("WebP")
         settings_layout.addRow("Image format", self.img_format_combo)
 
+        # WebP-specific options
+        self.webp_method_label = QtWidgets.QLabel("Compression level")
+        self.webp_method_spin = QtWidgets.QSpinBox()
+        self.webp_method_spin.setRange(0, 6)
+        self.webp_method_spin.setValue(4)
+        settings_layout.addRow(self.webp_method_label, self.webp_method_spin)
+
+        # PNG-specific options
+        self.png_compression_level_label = QtWidgets.QLabel("Compression level")
+        self.png_compression_level_spin = QtWidgets.QSpinBox()
+        self.png_compression_level_spin.setRange(0, 9)
+        self.png_compression_level_spin.setValue(9)
+        settings_layout.addRow(self.png_compression_level_label, self.png_compression_level_spin)
+
         # Parallel jobs
         self.jobs_spin = QtWidgets.QSpinBox()
         self.jobs_spin.setRange(1, os.cpu_count())
@@ -420,6 +441,7 @@ class App(QtWidgets.QMainWindow):
         self.clear_files_button.clicked.connect(self.file_list.clear)
         self.browse_output_button.clicked.connect(self.browse_output_dir)
         self.display_combo.currentTextChanged.connect(self.on_device_changed)
+        self.img_format_combo.currentTextChanged.connect(self.on_format_changed)
         self.start_button.clicked.connect(self.start_conversion)
         self.cancel_button.clicked.connect(self.cancel_conversion)
         self.enable_scaling_check.stateChanged.connect(
@@ -448,6 +470,17 @@ class App(QtWidgets.QMainWindow):
             self.height_spin.setValue(specs.height)
             self.enable_scaling_check.setChecked(True)
             self.enable_scaling_check.setEnabled(False)
+
+    def on_format_changed(self):
+        selected_format = self.img_format_combo.currentText()
+
+        is_webp = selected_format == "WebP"
+        self.webp_method_label.setVisible(is_webp)
+        self.webp_method_spin.setVisible(is_webp)
+
+        is_png = selected_format == "PNG"
+        self.png_compression_level_label.setVisible(is_png)
+        self.png_compression_level_spin.setVisible(is_png)
 
     def add_files(self):
         files, _ = QtWidgets.QFileDialog.getOpenFileNames(
@@ -526,11 +559,13 @@ class App(QtWidgets.QMainWindow):
         dpi = self.density_spin.value()
         img_format = self.img_format_combo.currentText()
         num_workers = self.jobs_spin.value()
+        webp_method = self.webp_method_spin.value()
+        png_compression_level = self.png_compression_level_spin.value()
 
         self.log_output.append("Starting processing...")
         self.start_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
-        self.thread = ProcessThread(input_paths, output_root, dpi, display, resample, img_format, num_workers)
+        self.thread = ProcessThread(input_paths, output_root, dpi, display, resample, img_format, num_workers, webp_method, png_compression_level)
         self.thread.log_signal.connect(self.log_output.append)
         self.thread.done_signal.connect(lambda: self.log_output.append("Processing complete"))
         self.thread.progress_signal.connect(self.progress_bar.setValue)

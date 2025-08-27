@@ -1,0 +1,524 @@
+#!/usr/bin/env python3
+
+from concurrent.futures import ProcessPoolExecutor
+from dataclasses import dataclass
+from pathlib import Path
+import io
+import os
+import sys
+import zipfile
+
+from PIL import Image, ImageOps
+from PyQt6 import QtWidgets, QtCore
+import pymupdf
+import rarfile
+
+@dataclass(frozen = True)
+class Display:
+    width: int
+    height: int
+
+DISPLAYS = {
+    "Custom": None,
+
+    # Kindle
+    "Kindle (11th Gen, 2022)": Display(1072, 1448),
+    "Kindle Paperwhite (11th Gen)": Display(1236, 1648),
+    "Kindle Paperwhite Signature Edition": Display(1236, 1648),
+    "Kindle Oasis (3rd Gen)": Display(1264, 1680),
+    "Kindle Scribe": Display(1860, 2480),
+
+    # Kobo
+    "Kobo Clara BW": Display(1072, 1448),
+    "Kobo Clara Colour": Display(1072, 1448),
+    "Kobo Libra Colour": Display(1264, 1680),
+    "Kobo Sage": Display(1440, 1920),
+    "Kobo Elipsa 2E": Display(1404, 1872),
+
+    # PocketBook
+    "PocketBook Verse": Display(758, 1024),
+    "PocketBook Verse Pro": Display(1072, 1448),
+    "PocketBook InkPad 4": Display(1404, 1872),
+    "PocketBook InkPad Color 3": Display(1404, 1872),
+    "PocketBook Era": Display(1264, 1680),
+
+    # Boox
+    "Boox Palma": Display(824, 1648),
+    "Boox Page": Display(1264, 1680),
+    "Boox Note Air3 C": Display(1404, 1872),
+    "Boox Tab Ultra C Pro": Display(1860, 2480),
+    "Boox Tab X": Display(1600, 2560),
+
+    # reMarkable
+    "reMarkable 2": Display(1872, 1404)
+}
+
+def main():
+    app = QtWidgets.QApplication(sys.argv)
+
+    app.setStyleSheet("""
+        QGroupBox::title {
+            subcontrol-origin: margin;
+            subcontrol-position: top left;
+            padding-left: 5px;
+        }
+    """)
+
+    font = app.font()
+    font.setPointSize(14)
+    app.setFont(font)
+
+    window = App()
+    window.show()
+    sys.exit(app.exec())
+
+class ProcessThread(QtCore.QThread):
+    log_signal = QtCore.pyqtSignal(str)
+    done_signal = QtCore.pyqtSignal()
+    progress_signal = QtCore.pyqtSignal(int)
+
+    def __init__(self, input_paths, output_root, dpi, target_w, target_h, resample, num_workers):
+        super().__init__()
+        self.input_paths = input_paths
+        self.output_root = output_root
+        self.dpi = dpi
+        self.target_w = target_w
+        self.target_h = target_h
+        self.resample = resample
+        self.num_workers = num_workers
+
+    def run(self):
+        output_root = Path(self.output_root)
+        output_root.mkdir(parents=True, exist_ok=True)
+
+        tasks = []
+        output_dirs = {}
+
+        for path in self.input_paths:
+            ext = os.path.splitext(path)[1].lower()
+            base_name = os.path.splitext(os.path.basename(path))[0]
+            output_dir = output_root / base_name
+            output_dir.mkdir(exist_ok=True)
+            output_dirs[path] = output_dir
+
+            if ext == ".pdf":
+                try:
+                    doc = pymupdf.open(path)
+                    for i in range(len(doc)):
+                        tasks.append(("pdf", path, i, output_dir))
+                    doc.close()
+                except Exception as e:
+                    self.log_signal.emit(f"Error reading PDF {path}: {e}")
+            elif ext == ".cbz":
+                self.process_archive(
+                    tasks, "cbz", path, output_dir, zipfile.ZipFile
+                )
+            elif ext == ".cbr":
+                self.process_archive(
+                    tasks, "cbr", path, output_dir, rarfile.RarFile
+                )
+
+        total_tasks = len(tasks)
+        self.log_signal.emit(f"Queued {total_tasks} tasks...")
+        completed = 0
+
+        from concurrent.futures import as_completed
+
+        with ProcessPoolExecutor(max_workers=self.num_workers) as executor:
+            futures = [
+                executor.submit(
+                    _process_wrapper,
+                    task,
+                    dpi=self.dpi,
+                    target_w=self.target_w,
+                    target_h=self.target_h,
+                    resample=self.resample
+                )
+                for task in tasks
+            ]
+
+            completed = 0
+            for fut in as_completed(futures):
+                msg = fut.result()
+                if msg:
+                    self.log_signal.emit(msg)
+                completed += 1
+                progress_percent = int((completed / total_tasks) * 100)
+                self.progress_signal.emit(progress_percent)
+
+        for _, temp_dir in output_dirs.items():
+            cbz_name = output_root / f"{temp_dir.name}.cbz"
+            with zipfile.ZipFile(cbz_name, "w", compression=zipfile.ZIP_STORED) as zipf:
+                for img_file in sorted(temp_dir.iterdir()):
+                    zipf.write(img_file, arcname=img_file.name)
+            self.log_signal.emit(f"Created CBZ: {cbz_name}")
+
+        self.done_signal.emit()
+
+    def process_archive(self, tasks, file_ext, path, output_dir, opener):
+        try:
+            with opener(path, "r") as archive:
+                img_files = sorted(
+                    f for f in archive.namelist()
+                    if f.lower().endswith(
+                        ".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff"
+                    )
+                )
+                for i, name in enumerate(img_files):
+                    tasks.append((file_ext, path, (i, name), output_dir))
+        except Exception as e:
+            self.log_signal.emit(f"Error reading {file_ext.upper()} {path}: {e}.")
+
+def _process_wrapper(task, dpi, target_w, target_h, resample):
+    return process_task(task, dpi, target_w, target_h, resample)
+
+def process_task(task, dpi, target_w, target_h, resample):
+    kind, source, data, output_dir = task
+    if kind == "pdf":
+        pdf_path, i = source, data
+        return process_pdf_page(pdf_path, i, output_dir, dpi, target_w, target_h, resample)
+    elif kind == "cbz":
+        cbz_path, (i, filename) = source, data
+        return process_cbz_image(cbz_path, filename, i, output_dir, target_w, target_h, resample)
+    elif kind == "cbr":
+        cbr_path, (i, filename) = source, data
+        return process_cbr_image(cbr_path, filename, i, output_dir, target_w, target_h, resample)
+
+def process_pdf_page(pdf_path, i, output_dir, dpi, target_w, target_h, resample):
+    doc = pymupdf.open(pdf_path)
+    page = doc[i]
+    zoom = dpi / 72
+    matrix = pymupdf.Matrix(zoom, zoom)
+    pix = page.get_pixmap(matrix=matrix, colorspace=pymupdf.csGRAY)
+    doc.close()
+
+    img = Image.frombytes("L", [pix.width, pix.height], pix.samples)
+    return save_processed_image(img, output_dir, i, target_w, target_h, resample)
+
+def process_cbz_image(cbz_path, filename, i, output_dir, target_w, target_h, resample):
+    with zipfile.ZipFile(cbz_path, "r") as z:
+        data = z.read(filename)
+        img = Image.open(io.BytesIO(data)).convert("L")
+    return save_processed_image(img, output_dir, i, target_w, target_h, resample)
+
+def process_cbr_image(cbr_path, filename, i, output_dir, target_w, target_h, resample):
+    with rarfile.RarFile(cbr_path, "r") as r:
+        data = r.read(filename)
+        img = Image.open(io.BytesIO(data)).convert("L")
+    return save_processed_image(img, output_dir, i, target_w, target_h, resample)
+
+def save_processed_image(img, output_dir, index, target_w, target_h, resample):
+    img = ImageOps.autocontrast(img, preserve_tone=True)
+    if resample:
+        img.thumbnail((target_w, target_h), resample)
+    else:
+        img.thumbnail((target_w, target_h))
+
+    img = img.quantize(
+        colors=16,
+        method=Image.Quantize.LIBIMAGEQUANT,
+        dither=Image.Dither.FLOYDSTEINBERG,
+    )
+
+    output_file = output_dir / f"{index + 1:03d}.webp"
+    img.save(output_file, lossless=True, method=4)
+    return f"Saved {output_file}"
+
+class App(QtWidgets.QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.worker = None
+        self.thread = None
+        self.total_pages = 0
+        self.processed_pages = 0
+        self.start_time = None
+        self.setWindowTitle("Comicpress")
+
+        # Central widget
+        self.central_widget = QtWidgets.QWidget()
+        self.setCentralWidget(self.central_widget)
+        self.main_layout = QtWidgets.QVBoxLayout(self.central_widget)
+
+        self.setup_ui()
+        self.connect_signals()
+        self.on_device_changed()
+        self.toggle_scaling_inputs(self.enable_scaling_check.checkState())
+
+    def setup_ui(self):
+        # Input and output
+        io_group = QtWidgets.QGroupBox("Input and output")
+        io_layout = QtWidgets.QVBoxLayout(io_group)
+        self.file_list = QtWidgets.QListWidget()
+        #self.file_list.setAlternatingRowColors(False)
+
+        # Create file buttons
+        file_buttons_layout = QtWidgets.QHBoxLayout()
+        self.add_files_button = QtWidgets.QPushButton("Add files")
+        self.remove_file_button = QtWidgets.QPushButton("Remove selected")
+        self.clear_files_button = QtWidgets.QPushButton("Clear all")
+
+        # Add file buttons
+        file_buttons_layout.addWidget(self.add_files_button)
+        file_buttons_layout.addWidget(self.remove_file_button)
+        file_buttons_layout.addWidget(self.clear_files_button)
+
+        # Add input widgets.
+        io_layout.addWidget(QtWidgets.QLabel("Input files"))
+        io_layout.addWidget(self.file_list)
+        io_layout.addLayout(file_buttons_layout)
+
+        # Create output buttons.
+        output_layout = QtWidgets.QHBoxLayout()
+        self.output_dir_edit = QtWidgets.QLineEdit(os.getcwd())
+        self.browse_output_button = QtWidgets.QPushButton("Browse")
+
+        # Add output buttons.
+        output_layout.addWidget(QtWidgets.QLabel("Output folder"))
+        output_layout.addWidget(self.output_dir_edit)
+        output_layout.addWidget(self.browse_output_button)
+
+        io_layout.addLayout(output_layout)
+        self.main_layout.addWidget(io_group)
+
+        # Settings
+        settings_group = QtWidgets.QGroupBox("Processing settings")
+        settings_layout = QtWidgets.QFormLayout(settings_group)
+
+        # Pixel density
+        self.density_spin = QtWidgets.QSpinBox()
+        self.density_spin.setRange(72, 2400)
+        self.density_spin.setValue(1200)
+        settings_layout.addRow("PDF pixel density (PPI)", self.density_spin)
+
+        # Display presets
+        self.display_combo = QtWidgets.QComboBox()
+        self.display_combo.addItems(DISPLAYS.keys())
+        settings_layout.addRow("Display preset", self.display_combo)
+
+        # Image scaling
+        scaling_widget = QtWidgets.QWidget()
+        scaling_layout = QtWidgets.QHBoxLayout(scaling_widget)
+        scaling_layout.setContentsMargins(0, 0, 0, 0)
+        scaling_layout.setSpacing(20)
+
+        # Enable scaling checkbox
+        self.enable_scaling_check = QtWidgets.QCheckBox("Scale images")
+        scaling_layout.addWidget(self.enable_scaling_check)
+
+        # Width label + spin
+        self.width_spin = QtWidgets.QSpinBox()
+        self.width_spin.setRange(100, 4000)
+        width_container = QtWidgets.QWidget()
+        width_layout = QtWidgets.QHBoxLayout(width_container)
+        width_layout.setContentsMargins(0, 0, 0, 0)
+        width_layout.setSpacing(4)
+        width_layout.addWidget(QtWidgets.QLabel("Width"))
+        width_layout.addWidget(self.width_spin)
+        scaling_layout.addWidget(width_container)
+
+        # Height label + spin
+        self.height_spin = QtWidgets.QSpinBox()
+        self.height_spin.setRange(100, 4000)
+        height_container = QtWidgets.QWidget()
+        height_layout = QtWidgets.QHBoxLayout(height_container)
+        height_layout.setContentsMargins(0, 0, 0, 0)
+        height_layout.setSpacing(4)
+        height_layout.addWidget(QtWidgets.QLabel("Height"))
+        height_layout.addWidget(self.height_spin)
+        scaling_layout.addWidget(height_container)
+
+        # Create resampling filter widgets.
+        filter_widget = QtWidgets.QWidget()
+        filter_layout = QtWidgets.QHBoxLayout(filter_widget)
+        filter_layout.setContentsMargins(0, 0, 0, 0)
+        filter_layout.setSpacing(4)
+        self.filter_combo = QtWidgets.QComboBox()
+        self.filter_combo.addItems([
+            "Bicubic", "Bilinear", "Box", "Hamming", "Lanczos", "Nearest"
+        ])
+        self.filter_combo.setCurrentText("Lanczos")
+
+        # Add resampling filter widgets.
+        filter_layout.addWidget(QtWidgets.QLabel("Resampling filter"))
+        filter_layout.addWidget(self.filter_combo)
+        scaling_layout.addWidget(filter_widget)
+
+        # Stretch at the end to align left neatly.
+        scaling_layout.addStretch()
+
+        # Add to form layout
+        settings_layout.addRow(scaling_widget)
+
+        # Parallel jobs
+        self.jobs_spin = QtWidgets.QSpinBox()
+        self.jobs_spin.setRange(1, os.cpu_count())
+        self.jobs_spin.setValue(os.cpu_count())
+        settings_layout.addRow("Number of parallel jobs", self.jobs_spin)
+
+        # Todo: add memory limiter widget.
+
+        self.main_layout.addWidget(settings_group)
+
+        # Logging
+        log_group = QtWidgets.QGroupBox("Process output")
+        log_layout = QtWidgets.QVBoxLayout(log_group)
+
+        # Progress bar
+        self.progress_bar = QtWidgets.QProgressBar()
+        self.progress_bar.setValue(0)
+        self.progress_bar.setTextVisible(True)
+        log_layout.addWidget(self.progress_bar)
+
+        # Log output
+        self.log_output = QtWidgets.QTextEdit()
+        self.log_output.setReadOnly(True)
+        self.log_output.setFontFamily("monospace")
+        log_layout.addWidget(self.log_output)
+
+        # Create action widgets.
+        action_layout = QtWidgets.QHBoxLayout()
+        self.start_button = QtWidgets.QPushButton("Start conversion")
+        self.cancel_button = QtWidgets.QPushButton("Cancel")
+        self.cancel_button.setEnabled(False)
+
+        # Add action widgets.
+        action_layout.addWidget(self.start_button)
+        action_layout.addWidget(self.cancel_button)
+        log_layout.addLayout(action_layout)
+
+        self.main_layout.addWidget(log_group)
+
+    def connect_signals(self):
+        self.add_files_button.clicked.connect(self.add_files)
+        self.remove_file_button.clicked.connect(self.remove_file)
+        self.clear_files_button.clicked.connect(self.file_list.clear)
+        self.browse_output_button.clicked.connect(self.browse_output_dir)
+        self.display_combo.currentTextChanged.connect(self.on_device_changed)
+        self.start_button.clicked.connect(self.start_conversion)
+        self.cancel_button.clicked.connect(self.cancel_conversion)
+        self.enable_scaling_check.stateChanged.connect(
+            self.toggle_scaling_inputs
+        )
+        #self.enable_mem_limit_check.stateChanged.connect(self.toggle_mem_limit_inputs)
+
+    def toggle_scaling_inputs(self, state):
+        enabled = (state == QtCore.Qt.CheckState.Checked.value)
+        self.width_spin.setEnabled(enabled)
+        self.height_spin.setEnabled(enabled)
+        self.filter_combo.setEnabled(enabled)
+
+    def toggle_filter_inputs(self, state):
+        enabled = (state == QtCore.Qt.CheckState.Checked.value)
+        self.filter_combo.setEnabled(enabled)
+
+    def on_device_changed(self):
+        device_name = self.display_combo.currentText()
+        if device_name == "Custom":
+            self.enable_scaling_check.setEnabled(True)
+            self.enable_scaling_check.setChecked(False)
+        else:
+            specs = DISPLAYS[device_name]
+            self.width_spin.setValue(specs.width)
+            self.height_spin.setValue(specs.height)
+            self.enable_scaling_check.setChecked(True)
+            self.enable_scaling_check.setEnabled(False)
+
+    def add_files(self):
+        files, _ = QtWidgets.QFileDialog.getOpenFileNames(
+            self, "Select Input Files", "",
+            "Supported Files (*.pdf *.cbz *.cbr)"
+        )
+        if not files:
+            return
+
+        existing_paths = [
+            self.file_list.item(i).data(QtCore.Qt.ItemDataRole.UserRole)
+            for i in range(self.file_list.count())
+        ]
+
+        all_paths = existing_paths + files
+        base_names = [os.path.basename(p) for p in all_paths]
+
+        for file in files:
+            if file in existing_paths:
+                continue
+            item = QtWidgets.QListWidgetItem(os.path.basename(file))
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, file)
+            self.file_list.addItem(item)
+
+        for i in range(self.file_list.count()):
+            item = self.file_list.item(i)
+            path = item.data(QtCore.Qt.ItemDataRole.UserRole)
+            base_name = os.path.basename(path)
+            if base_names.count(base_name) > 1:
+                item.setText(path)
+
+    def remove_file(self):
+        for item in self.file_list.selectedItems():
+            self.file_list.takeItem(self.file_list.row(item))
+
+    def browse_output_dir(self):
+        directory = QtWidgets.QFileDialog.getExistingDirectory(
+            self, "Select output folder"
+        )
+        if directory:
+            self.output_dir_edit.setText(directory)
+
+    def start_conversion(self):
+        if self.file_list.count() == 0:
+            QtWidgets.QMessageBox.warning(
+                self, "Input required", "Please add at least one input file."
+            )
+            return
+
+        input_paths = [
+            self.file_list.item(i).data(QtCore.Qt.ItemDataRole.UserRole)
+            for i in range(self.file_list.count())
+        ]
+
+        output_root = self.output_dir_edit.text()
+
+        if self.enable_scaling_check.isChecked():
+            w = self.width_spin.value()
+            h = self.height_spin.value()
+        else:
+            w = h = 99999
+
+        filter_str = self.filter_combo.currentText()
+        if filter_str == "Bicubic":
+            resample = Image.Resampling.BICUBIC
+        elif filter_str == "Bilinear":
+            resample = Image.Resampling.BILINEAR
+        elif filter_str == "Box":
+            resample = Image.Resampling.BOX
+        elif filter_str == "Hamming":
+            resample = Image.Resampling.HAMMING
+        elif filter_str == "Lanczos":
+            resample = Image.Resampling.LANCZOS
+        else:
+            resample = Image.Resampling.NEAREST
+
+        dpi = self.density_spin.value()
+        num_workers = self.jobs_spin.value()
+
+        self.log_output.append("Starting processing...")
+        self.start_button.setEnabled(False)
+        self.cancel_button.setEnabled(True)
+        self.thread = ProcessThread(input_paths, output_root, dpi, w, h, resample, num_workers)
+        self.thread.log_signal.connect(self.log_output.append)
+        self.thread.done_signal.connect(lambda: self.log_output.append("Processing complete"))
+        self.thread.progress_signal.connect(self.progress_bar.setValue)
+        self.thread.finished.connect(lambda: self.start_button.setEnabled(True))
+        self.thread.finished.connect(lambda: self.cancel_button.setEnabled(False))
+        self.thread.start()
+
+    def cancel_conversion(self):
+        if self.thread:
+            self.thread.terminate()
+            self.thread.wait()
+        self.start_button.setEnabled(True)
+        self.cancel_button.setEnabled(False)
+        self.log_output.append("Cancelled")
+
+if __name__ == "__main__":
+    main()

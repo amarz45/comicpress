@@ -10,6 +10,8 @@ import zipfile
 
 from PIL import Image, ImageOps
 from PyQt6 import QtWidgets, QtCore
+import pillow_avif
+import pillow_jxl
 import pymupdf
 import rarfile
 
@@ -77,7 +79,7 @@ class ProcessThread(QtCore.QThread):
     done_signal = QtCore.pyqtSignal()
     progress_signal = QtCore.pyqtSignal(int)
 
-    def __init__(self, input_paths, output_root, dpi, target_w, target_h, resample, num_workers):
+    def __init__(self, input_paths, output_root, dpi, target_w, target_h, resample, img_format, num_workers):
         super().__init__()
         self.input_paths = input_paths
         self.output_root = output_root
@@ -85,6 +87,7 @@ class ProcessThread(QtCore.QThread):
         self.target_w = target_w
         self.target_h = target_h
         self.resample = resample
+        self.img_format = img_format
         self.num_workers = num_workers
 
     def run(self):
@@ -127,12 +130,13 @@ class ProcessThread(QtCore.QThread):
         with ProcessPoolExecutor(max_workers=self.num_workers) as executor:
             futures = [
                 executor.submit(
-                    _process_wrapper,
+                    process_task,
                     task,
-                    dpi=self.dpi,
-                    target_w=self.target_w,
-                    target_h=self.target_h,
-                    resample=self.resample
+                    dpi = self.dpi,
+                    target_w = self.target_w,
+                    target_h = self.target_h,
+                    resample = self.resample,
+                    img_format = self.img_format,
                 )
                 for task in tasks
             ]
@@ -169,45 +173,46 @@ class ProcessThread(QtCore.QThread):
         except Exception as e:
             self.log_signal.emit(f"Error reading {file_ext.upper()} {path}: {e}.")
 
-def _process_wrapper(task, dpi, target_w, target_h, resample):
-    return process_task(task, dpi, target_w, target_h, resample)
-
-def process_task(task, dpi, target_w, target_h, resample):
+def process_task(task, dpi, target_w, target_h, resample, img_format):
     kind, source, data, output_dir = task
     if kind == "pdf":
         pdf_path, i = source, data
-        return process_pdf_page(pdf_path, i, output_dir, dpi, target_w, target_h, resample)
+        return process_pdf_page(pdf_path, img_format, i, output_dir, dpi, target_w, target_h, resample)
     elif kind == "cbz":
         cbz_path, (i, filename) = source, data
-        return process_cbz_image(cbz_path, filename, i, output_dir, target_w, target_h, resample)
+        return process_archive_image(cbz_path, filename, img_format, i, output_dir, target_w, target_h, resample, zipfile.ZipFile)
     elif kind == "cbr":
         cbr_path, (i, filename) = source, data
-        return process_cbr_image(cbr_path, filename, i, output_dir, target_w, target_h, resample)
+        return process_archive_image(cbr_path, filename, img_format, i, output_dir, target_w, target_h, resample, rarfile.RarFile)
 
-def process_pdf_page(pdf_path, i, output_dir, dpi, target_w, target_h, resample):
+def process_pdf_page(pdf_path, img_format, index, output_dir, dpi, target_w, target_h, resample):
     doc = pymupdf.open(pdf_path)
-    page = doc[i]
+    page = doc[index]
     zoom = dpi / 72
     matrix = pymupdf.Matrix(zoom, zoom)
     pix = page.get_pixmap(matrix=matrix, colorspace=pymupdf.csGRAY)
     doc.close()
 
     img = Image.frombytes("L", [pix.width, pix.height], pix.samples)
-    return save_processed_image(img, output_dir, i, target_w, target_h, resample)
+    return save_processed_image(img, output_dir, img_format, index, target_w, target_h, resample)
 
-def process_cbz_image(cbz_path, filename, i, output_dir, target_w, target_h, resample):
-    with zipfile.ZipFile(cbz_path, "r") as z:
-        data = z.read(filename)
-        img = Image.open(io.BytesIO(data)).convert("L")
-    return save_processed_image(img, output_dir, i, target_w, target_h, resample)
+def process_archive_image(
+    archive_path,
+    filename,
+    img_format,
+    index,
+    output_dir,
+    target_w,
+    target_h,
+    resample,
+    opener,
+):
+    with opener(archive_path, "r") as archive:
+        data = archive.read(filename)
+    img = Image.open(io.BytesIO(data)).convert("L")
+    return save_processed_image(img, output_dir, img_format, index, target_w, target_h, resample)
 
-def process_cbr_image(cbr_path, filename, i, output_dir, target_w, target_h, resample):
-    with rarfile.RarFile(cbr_path, "r") as r:
-        data = r.read(filename)
-        img = Image.open(io.BytesIO(data)).convert("L")
-    return save_processed_image(img, output_dir, i, target_w, target_h, resample)
-
-def save_processed_image(img, output_dir, index, target_w, target_h, resample):
+def save_processed_image(img, output_dir, img_format, index, target_w, target_h, resample):
     img = ImageOps.autocontrast(img, preserve_tone=True)
     if resample:
         img.thumbnail((target_w, target_h), resample)
@@ -220,8 +225,25 @@ def save_processed_image(img, output_dir, index, target_w, target_h, resample):
         dither=Image.Dither.FLOYDSTEINBERG,
     )
 
-    output_file = output_dir / f"{index + 1:03d}.webp"
-    img.save(output_file, lossless=True, method=4)
+    output_file = output_dir / f"{index + 1:03d}"
+
+    if img_format == "AVIF":
+        output_file = f"{output_file}.avif"
+        img.save(output_file)
+    elif img_format == "JPEG":
+        output_file = f"{output_file}.jpg"
+        img.save(output_file)
+    elif img_format == "JPEG XL":
+        img = img.convert("L")
+        output_file = f"{output_file}.jxl"
+        img.save(output_file)
+    elif img_format == "PNG":
+        output_file = f"{output_file}.png"
+        img.save(output_file, optimize = True)
+    elif img_format == "WebP":
+        output_file = f"{output_file}.webp"
+        img.save(output_file, lossless = True, method = 4)
+
     return f"Saved {output_file}"
 
 class App(QtWidgets.QMainWindow):
@@ -249,7 +271,6 @@ class App(QtWidgets.QMainWindow):
         io_group = QtWidgets.QGroupBox("Input and output")
         io_layout = QtWidgets.QVBoxLayout(io_group)
         self.file_list = QtWidgets.QListWidget()
-        #self.file_list.setAlternatingRowColors(False)
 
         # Create file buttons
         file_buttons_layout = QtWidgets.QHBoxLayout()
@@ -348,6 +369,14 @@ class App(QtWidgets.QMainWindow):
 
         # Add to form layout
         settings_layout.addRow(scaling_widget)
+
+        # Image format
+        self.img_format_combo = QtWidgets.QComboBox()
+        self.img_format_combo.addItems([
+            "AVIF", "JPEG", "JPEG XL", "PNG", "WebP"
+        ])
+        self.img_format_combo.setCurrentText("WebP")
+        settings_layout.addRow("Image format", self.img_format_combo)
 
         # Parallel jobs
         self.jobs_spin = QtWidgets.QSpinBox()
@@ -499,12 +528,13 @@ class App(QtWidgets.QMainWindow):
             resample = Image.Resampling.NEAREST
 
         dpi = self.density_spin.value()
+        img_format = self.img_format_combo.currentText()
         num_workers = self.jobs_spin.value()
 
         self.log_output.append("Starting processing...")
         self.start_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
-        self.thread = ProcessThread(input_paths, output_root, dpi, w, h, resample, num_workers)
+        self.thread = ProcessThread(input_paths, output_root, dpi, w, h, resample, img_format, num_workers)
         self.thread.log_signal.connect(self.log_output.append)
         self.thread.done_signal.connect(lambda: self.log_output.append("Processing complete"))
         self.thread.progress_signal.connect(self.progress_bar.setValue)

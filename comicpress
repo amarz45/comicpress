@@ -211,7 +211,7 @@ def process_archive_image(
 
 def save_processed_image(img, output_dir, img_format, index, display, resample):
     img = ImageOps.autocontrast(img, preserve_tone=True)
-    if resample:
+    if display:
         img.thumbnail((display.width, display.height), resample)
     else:
         img.thumbnail((display.width, display.height))

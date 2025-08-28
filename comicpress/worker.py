@@ -8,6 +8,7 @@ import pymupdf
 from .processing import process_task
 
 class ProcessThread(QtCore.QThread):
+    total_pages_signal = QtCore.pyqtSignal(int)
     log_signal = QtCore.pyqtSignal(str)
     done_signal = QtCore.pyqtSignal()
     progress_signal = QtCore.pyqtSignal(int)
@@ -59,6 +60,7 @@ class ProcessThread(QtCore.QThread):
                 )
 
         total_tasks = len(tasks)
+        self.total_pages_signal.emit(total_tasks)
         self.log_signal.emit(f"Queued {total_tasks} tasks...")
         completed = 0
 
@@ -80,8 +82,7 @@ class ProcessThread(QtCore.QThread):
                 if msg:
                     self.log_signal.emit(msg)
                 completed += 1
-                progress_percent = int((completed / total_tasks) * 100)
-                self.progress_signal.emit(progress_percent)
+                self.progress_signal.emit(completed)
 
         for _, temp_dir in output_dirs.items():
             cbz_name = output_root / f"{temp_dir.name}.cbz"

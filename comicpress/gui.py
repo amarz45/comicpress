@@ -1,4 +1,6 @@
 import os
+import time
+from collections import deque
 from PyQt6 import QtWidgets, QtCore
 from PIL import Image
 from .displays import Display, DISPLAYS
@@ -14,6 +16,14 @@ class App(QtWidgets.QMainWindow):
         self.start_time = None
         self.setWindowTitle("Comicpress")
 
+        # Timer
+        self.timer = QtCore.QTimer(self)
+        self.timer.timeout.connect(self.update_time_labels)
+        self.last_eta_now_time = None
+        self.images_since_last_eta_now = 0
+        self.last_progress_value = 0
+        self.eta_now_intervals = deque(maxlen = 5)
+
         # Central widget
         self.central_widget = QtWidgets.QWidget()
         self.setCentralWidget(self.central_widget)
@@ -27,7 +37,7 @@ class App(QtWidgets.QMainWindow):
 
     def setup_ui(self):
         # Input and output
-        io_group = QtWidgets.QGroupBox("Input and output")
+        io_group = QtWidgets.QGroupBox()
         io_layout = QtWidgets.QVBoxLayout(io_group)
         self.file_list = QtWidgets.QListWidget()
 
@@ -61,7 +71,7 @@ class App(QtWidgets.QMainWindow):
         self.main_layout.addWidget(io_group)
 
         # Settings
-        settings_group = QtWidgets.QGroupBox("Processing settings")
+        settings_group = QtWidgets.QGroupBox("Processing parameters")
         settings_layout = QtWidgets.QFormLayout(settings_group)
 
         # Pixel density
@@ -138,14 +148,14 @@ class App(QtWidgets.QMainWindow):
         settings_layout.addRow("Image format", self.img_format_combo)
 
         # WebP-specific options
-        self.webp_method_label = QtWidgets.QLabel("Compression level")
+        self.webp_method_label = QtWidgets.QLabel("Compression effort")
         self.webp_method_spin = QtWidgets.QSpinBox()
         self.webp_method_spin.setRange(0, 6)
         self.webp_method_spin.setValue(4)
         settings_layout.addRow(self.webp_method_label, self.webp_method_spin)
 
         # PNG-specific options
-        self.png_compression_level_label = QtWidgets.QLabel("Compression level")
+        self.png_compression_level_label = QtWidgets.QLabel("Compression effort")
         self.png_compression_level_spin = QtWidgets.QSpinBox()
         self.png_compression_level_spin.setRange(0, 9)
         self.png_compression_level_spin.setValue(9)
@@ -158,21 +168,32 @@ class App(QtWidgets.QMainWindow):
         num_cpus = os.cpu_count() or 1
         self.jobs_spin.setRange(1, num_cpus)
         self.jobs_spin.setValue(num_cpus)
-        settings_layout.addRow("Number of parallel jobs", self.jobs_spin)
+        settings_layout.addRow("Parallel jobs", self.jobs_spin)
 
         # Todo: add memory limiter widget.
 
         self.main_layout.addWidget(settings_group)
 
         # Logging
-        log_group = QtWidgets.QGroupBox("Process output")
+        log_group = QtWidgets.QGroupBox()
         log_layout = QtWidgets.QVBoxLayout(log_group)
 
         # Progress bar
         self.progress_bar = QtWidgets.QProgressBar()
         self.progress_bar.setValue(0)
         self.progress_bar.setTextVisible(True)
+        self.progress_bar.setFormat("%p %")
         log_layout.addWidget(self.progress_bar)
+
+        # Time elapsed and ETA
+        time_layout = QtWidgets.QHBoxLayout()
+        self.elapsed_label = QtWidgets.QLabel("Elapsed: –")
+        self.eta_label = QtWidgets.QLabel("ETA (overall): –")
+        self.eta_now_label = QtWidgets.QLabel("ETA (recent): –")
+        time_layout.addWidget(self.elapsed_label)
+        time_layout.addWidget(self.eta_label)
+        time_layout.addWidget(self.eta_now_label)
+        log_layout.addLayout(time_layout)
 
         # Log output
         self.log_output = QtWidgets.QTextEdit()
@@ -206,6 +227,10 @@ class App(QtWidgets.QMainWindow):
             self.toggle_scaling_inputs
         )
         #self.enable_mem_limit_check.stateChanged.connect(self.toggle_mem_limit_inputs)
+
+    def set_progress_max(self, total_pages):
+        self.progress_bar.setMaximum(total_pages)
+        self.progress_bar.setFormat("%p % (%v / %m pages)")
 
     def toggle_scaling_inputs(self, state):
         enabled = (state == QtCore.Qt.CheckState.Checked.value)
@@ -333,13 +358,68 @@ class App(QtWidgets.QMainWindow):
         self.thread.done_signal.connect(
             lambda: self.log_output.append("Processing complete")
         )
-        self.thread.progress_signal.connect(self.progress_bar.setValue)
+        self.thread.progress_signal.connect(self.update_progress)
+        self.thread.total_pages_signal.connect(self.set_progress_max)
         self.thread.finished.connect(lambda: self.start_button.setEnabled(True))
         self.thread.finished.connect(
             lambda: self.cancel_button.setEnabled(False)
         )
+        self.thread.finished.connect(self.timer.stop)
+
+        # Timer
+        self.start_time = self.last_eta_now_time = time.time()
+        self.images_since_last_eta_now = 0
+        self.last_progress_value = 0
+        self.elapsed_label.setText("Elapsed: –")
+        self.eta_label.setText("ETA (overall): –")
+        self.eta_now_label.setText("ETA (recent): –")
+        self.timer.start(1000)
 
         self.thread.start()
+
+    def update_progress(self, value: int):
+        self.progress_bar.setValue(value)
+
+        delta = value - self.last_progress_value
+        if delta > 0:
+            self.images_since_last_eta_now += delta
+        self.last_progress_value = value
+
+    def update_time_labels(self):
+        if not self.start_time:
+            return
+
+        import time
+        elapsed = time.time() - self.start_time
+        self.elapsed_label.setText(f"Elapsed: {time_to_str(elapsed)}")
+
+        # Overall ETA (average since start)
+        value = self.progress_bar.value()
+        if value > 0:
+            total = self.progress_bar.maximum()
+            per_unit = elapsed / value
+            remaining = (total - value) * per_unit
+            self.eta_label.setText(f"ETA (overall): {time_to_str(remaining)}")
+
+        # ETA now (short-term estimate)
+        now = time.time()
+        if now - self.last_eta_now_time >= 1.0 and self.images_since_last_eta_now > 0:
+            interval = now - self.last_eta_now_time
+            speed = self.images_since_last_eta_now / interval  # images/sec
+            total_remaining = self.progress_bar.maximum() - value
+            remaining = total_remaining / speed
+            eta_now_seconds = remaining
+
+            # Add to moving average window.
+            self.eta_now_intervals.append(eta_now_seconds)
+
+            # Reset snapshot.
+            self.last_eta_now_time = now
+            self.images_since_last_eta_now = 0
+
+        if self.eta_now_intervals:
+            avg_eta = sum(self.eta_now_intervals) / len(self.eta_now_intervals)
+            self.eta_now_label.setText(f"ETA (recent): {time_to_str(avg_eta)}")
 
     def cancel_conversion(self):
         if self.thread:
@@ -348,3 +428,14 @@ class App(QtWidgets.QMainWindow):
         self.start_button.setEnabled(True)
         self.cancel_button.setEnabled(False)
         self.log_output.append("Cancelled")
+        self.timer.stop()
+
+def time_to_str(seconds):
+    seconds = int(seconds)
+    h, rem = divmod(seconds, 60 * 60)
+    m, s = divmod(rem, 60)
+    return (
+        f"{s} s" if seconds < 60 else
+        f"{m} min {s:02} s" if seconds < 60 * 60 else
+        f"{h} h {m:02} min {s:02} s"
+    )

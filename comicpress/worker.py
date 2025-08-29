@@ -101,9 +101,9 @@ class ProcessThread(QtCore.QThread):
             with opener(path, "r") as archive:
                 img_files = sorted(
                     f for f in archive.namelist()
-                    if f.lower().endswith(
+                    if f.lower().endswith((
                         ".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff"
-                    )
+                    ))
                 )
                 for i, name in enumerate(img_files):
                     tasks.append((file_ext, path, (i, name), output_dir))

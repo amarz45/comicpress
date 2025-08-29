@@ -63,8 +63,6 @@ def save_processed_image(
     img = ImageOps.autocontrast(img, preserve_tone = True)
     if display:
         img.thumbnail((display.width, display.height), resample)
-    else:
-        img.thumbnail((display.width, display.height))
 
     img = img.quantize(
         colors = 16,

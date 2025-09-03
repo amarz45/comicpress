@@ -77,14 +77,7 @@ def save_processed_image(
 
     output_path = output_dir / f"{index + 1:03d}"
 
-    if img_format == "AVIF":
-        img.heifsave(
-            f"{output_path}.avif",
-            compression = pyvips.enums.ForeignHeifCompression.AV1,
-            lossless = True,
-            bitdepth = 4
-        )
-    elif img_format == "JPEG":
+    if img_format == "JPEG":
         img.jpegsave(f"{output_path}.jpg")
     else:
         png_path = f"{output_path}.png"
@@ -100,7 +93,14 @@ def save_processed_image(
         if img_format != "PNG":
             img = pyvips.Image.new_from_file(png_path)
 
-            if img_format == "JPEG XL":
+            if img_format == "AVIF":
+                img.heifsave(
+                    f"{output_path}.avif",
+                    compression = pyvips.enums.ForeignHeifCompression.AV1,
+                    subsample_mode = pyvips.enums.ForeignSubsample.ON,
+                    Q = 50
+                )
+            elif img_format == "JPEG XL":
                 img.jxlsave(f"{output_path}.jxl", distance = 0)
             else:
                 img.webpsave(

@@ -90,26 +90,33 @@ def save_processed_image(
             effort = 10
         )
 
-        if img_format != "PNG":
+        if img_format == "PNG":
+            output_path = png_path
+        else:
             img = pyvips.Image.new_from_file(png_path)
 
             if img_format == "AVIF":
+                output_path = f"{output_path}.avif"
                 img.heifsave(
-                    f"{output_path}.avif",
+                    output_path,
                     compression = pyvips.enums.ForeignHeifCompression.AV1,
                     subsample_mode = pyvips.enums.ForeignSubsample.ON,
                     Q = 50
                 )
             elif img_format == "JPEG XL":
-                img.jxlsave(f"{output_path}.jxl", distance = 0)
+                output_path = f"{output_path}.jxl"
+                img.jxlsave(output_path, distance = 0)
             else:
+                output_path = f"{output_path}.webp"
                 img.webpsave(
-                    f"{output_path}.webp",
+                    output_path,
                     lossless = True,
                     effort = webp_method
                 )
 
             os.remove(png_path)
+
+        return f"Saved {output_path}."
 
 def is_mostly_greyscale(img_orig, threshold = 10):
     if img_orig.bands < 3:

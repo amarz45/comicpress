@@ -1,8 +1,8 @@
 import os
+import pyvips
 import time
 from collections import deque
 from PyQt6 import QtWidgets, QtCore
-from PIL import Image
 from .displays import Display, DISPLAYS
 from .worker import ProcessThread
 
@@ -124,9 +124,11 @@ class App(QtWidgets.QMainWindow):
         filter_layout.setSpacing(4)
         self.filter_combo = QtWidgets.QComboBox()
         self.filter_combo.addItems([
-            "Bicubic", "Bilinear", "Box", "Hamming", "Lanczos", "Nearest"
+            "Bicubic interpolation", "Bilinear interpolation", "Lanczos 2",
+            "Lanczos 3", "Magic Kernel Sharp 2013", "Magic Kernel Sharp 2021",
+            "Mitchell", "Nearest neighbour"
         ])
-        self.filter_combo.setCurrentText("Lanczos")
+        self.filter_combo.setCurrentText("Magic Kernel Sharp 2021")
 
         # Add resampling filter widgets.
         filter_layout.addWidget(QtWidgets.QLabel("Resampling filter"))
@@ -326,18 +328,22 @@ class App(QtWidgets.QMainWindow):
             display = None
 
         filter_str = self.filter_combo.currentText()
-        if filter_str == "Bicubic":
-            resample = Image.Resampling.BICUBIC
-        elif filter_str == "Bilinear":
-            resample = Image.Resampling.BILINEAR
-        elif filter_str == "Box":
-            resample = Image.Resampling.BOX
-        elif filter_str == "Hamming":
-            resample = Image.Resampling.HAMMING
-        elif filter_str == "Lanczos":
-            resample = Image.Resampling.LANCZOS
+        if filter_str == "Bicubic interpolation":
+            resample = pyvips.enums.Kernel.CUBIC
+        elif filter_str == "Bilinear interpolation":
+            resample = pyvips.enums.Kernel.LINEAR
+        elif filter_str == "Lanczos 2":
+            resample = pyvips.enums.Kernel.LANCZOS2
+        elif filter_str == "Lanczos 3":
+            resample = pyvips.enums.Kernel.LANCZOS3
+        elif filter_str == "Magic resample Sharp 2013":
+            resample = pyvips.enums.Kernel.MKS2013
+        elif filter_str == "Magic resample Sharp 2021":
+            resample = pyvips.enums.Kernel.MKS2021
+        elif filter_str == "Mitchell":
+            resample = pyvips.enums.Kernel.MITCHELL
         else:
-            resample = Image.Resampling.NEAREST
+            resample = pyvips.enums.Kernel.NEAREST
 
         dpi = self.density_spin.value()
         img_format = self.img_format_combo.currentText()

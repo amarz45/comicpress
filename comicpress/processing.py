@@ -1,8 +1,8 @@
-import io
+import os
 import zipfile
 import rarfile
 import pymupdf
-from PIL import Image, ImageOps
+import pyvips
 
 def process_task(
     task, dpi, display, resample, img_format, webp_method, png_compression_level
@@ -38,10 +38,10 @@ def process_pdf_page(
     pix = page.get_pixmap(matrix = matrix, colorspace = pymupdf.csGRAY)
     doc.close()
 
-    img = Image.frombytes("L", [pix.width, pix.height], pix.samples)
+    img = pyvips.Image.new_from_memory(pix.samples, pix.width, pix.height, 1, "uchar")
     return save_processed_image(
-        img, output_dir, img_format, index, display, resample, webp_method,
-        png_compression_level
+        img, output_dir, img_format, index, display, resample,
+        is_mostly_greyscale(img), webp_method, png_compression_level
     )
 
 def process_archive_image(
@@ -50,43 +50,73 @@ def process_archive_image(
 ):
     with opener(archive_path, "r") as archive:
         data = archive.read(filename)
-    img = Image.open(io.BytesIO(data)).convert("L")
+    img = pyvips.Image.new_from_buffer(data, "")
+    is_originally_greyscale = is_mostly_greyscale(img)
+
+    img = img.colourspace(pyvips.enums.Interpretation.B_W)
     return save_processed_image(
-        img, output_dir, img_format, index, display, resample, webp_method,
-        png_compression_level
+        img, output_dir, img_format, index, display, resample,
+        is_originally_greyscale, webp_method, png_compression_level
     )
 
 def save_processed_image(
-    img, output_dir, img_format, index, display, resample, webp_method,
-    png_compression_level
+    img, output_dir, img_format, index, display, resample,
+    is_originally_greyscale, webp_method, png_compression_level
 ):
-    img = ImageOps.autocontrast(img, preserve_tone = True)
+    if is_originally_greyscale:
+        low = img.min()
+        high = img.max()
+        if high != low:
+            scale = 255.0 / (high - low)
+            offset = -low * scale
+            img = img.linear(scale, offset)
+
     if display:
-        img.thumbnail((display.width, display.height), resample)
+        scale = min(1440 / img.width, 1920 / img.height)
+        img = img.resize(scale, kernel = resample)
 
-    img = img.quantize(
-        colors = 16,
-        method = Image.Quantize.LIBIMAGEQUANT,
-        dither = Image.Dither.FLOYDSTEINBERG,
-    )
-
-    output_file = output_dir / f"{index + 1:03d}"
+    output_path = output_dir / f"{index + 1:03d}"
 
     if img_format == "AVIF":
-        output_file = f"{output_file}.avif"
-        img.save(output_file)
+        img.heifsave(
+            f"{output_path}.avif",
+            compression = pyvips.enums.ForeignHeifCompression.AV1,
+            lossless = True,
+            bitdepth = 4
+        )
     elif img_format == "JPEG":
-        output_file = f"{output_file}.jpg"
-        img.save(output_file)
-    elif img_format == "JPEG XL":
-        img = img.convert("L")
-        output_file = f"{output_file}.jxl"
-        img.save(output_file)
-    elif img_format == "PNG":
-        output_file = f"{output_file}.png"
-        img.save(output_file, compress_level = png_compression_level)
-    elif img_format == "WebP":
-        output_file = f"{output_file}.webp"
-        img.save(output_file, lossless = True, method = webp_method)
+        img.jpegsave(f"{output_path}.jpg")
+    else:
+        png_path = f"{output_path}.png"
+        img.pngsave(
+            png_path,
+            compression = png_compression_level if img_format == "PNG" else 0,
+            palette = True,
+            bitdepth = 4,
+            dither = 1.0,
+            effort = 10
+        )
 
-    return f"Saved {output_file}"
+        if img_format != "PNG":
+            img = pyvips.Image.new_from_file(png_path)
+
+            if img_format == "JPEG XL":
+                img.jxlsave(f"{output_path}.jxl", distance = 0)
+            else:
+                img.webpsave(
+                    f"{output_path}.webp",
+                    lossless = True,
+                    effort = webp_method
+                )
+
+            os.remove(png_path)
+
+def is_mostly_greyscale(img_orig, threshold = 10):
+    if img_orig.bands < 3:
+        return True
+
+    # Convert to LCh colorspace. The second band is Chroma.
+    chroma = img_orig.colourspace("lch")[1]
+    max_chroma = chroma.max()
+
+    return max_chroma < threshold

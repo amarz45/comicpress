@@ -146,7 +146,7 @@ class App(QtWidgets.QMainWindow):
         self.img_format_combo.addItems([
             "AVIF", "JPEG", "JPEG XL", "PNG", "WebP"
         ])
-        self.img_format_combo.setCurrentText("WebP")
+        self.img_format_combo.setCurrentText("PNG")
         settings_layout.addRow("Image format", self.img_format_combo)
 
         # WebP-specific options

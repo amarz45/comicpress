@@ -274,8 +274,8 @@ class App(QtWidgets.QMainWindow):
         from os import path
 
         files, _ = QtWidgets.QFileDialog.getOpenFileNames(
-            self, "Select Input Files", "",
-            "Supported Files (*.pdf *.cbz *.cbr)"
+            self, "Select input files", "",
+            "Supported files (*.pdf *.cbz *.cbr)"
         )
         if not files:
             return

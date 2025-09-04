@@ -75,7 +75,7 @@ def save_processed_image(
             img = img.linear(scale, offset)
 
     if display:
-        scale = min(1440 / img.width, 1920 / img.height)
+        scale = min(display.width / img.width, display.height / img.height)
         img = img.resize(scale, kernel = resample)
 
     output_path = output_dir / f"{index + 1:03d}"

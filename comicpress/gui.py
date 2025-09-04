@@ -1,8 +1,4 @@
-import os
-import time
-from collections import deque
-from PyQt6 import QtWidgets, QtCore
-from .displays import Display, DISPLAYS
+from PyQt6 import QtWidgets
 
 class App(QtWidgets.QMainWindow):
     def __init__(self):
@@ -13,6 +9,9 @@ class App(QtWidgets.QMainWindow):
         self.processed_pages = 0
         self.start_time = None
         self.setWindowTitle("Comicpress")
+
+        from PyQt6 import QtCore
+        from collections import deque
 
         # Timer
         self.timer = QtCore.QTimer(self)
@@ -34,6 +33,8 @@ class App(QtWidgets.QMainWindow):
         self.on_format_changed()
 
     def setup_ui(self):
+        from os import getcwd, cpu_count
+
         # Input and output
         io_group = QtWidgets.QGroupBox()
         io_layout = QtWidgets.QVBoxLayout(io_group)
@@ -57,7 +58,7 @@ class App(QtWidgets.QMainWindow):
 
         # Create output buttons.
         output_layout = QtWidgets.QHBoxLayout()
-        self.output_dir_edit = QtWidgets.QLineEdit(os.getcwd())
+        self.output_dir_edit = QtWidgets.QLineEdit(getcwd())
         self.browse_output_button = QtWidgets.QPushButton("Browse")
 
         # Add output buttons.
@@ -80,6 +81,7 @@ class App(QtWidgets.QMainWindow):
 
         # Display presets
         self.display_combo = QtWidgets.QComboBox()
+        from .displays import DISPLAYS
         self.display_combo.addItems(DISPLAYS.keys())
         settings_layout.addRow("Display preset", self.display_combo)
 
@@ -165,7 +167,7 @@ class App(QtWidgets.QMainWindow):
 
         # Parallel jobs
         self.jobs_spin = QtWidgets.QSpinBox()
-        num_cpus = os.cpu_count() or 1
+        num_cpus = cpu_count() or 1
         self.jobs_spin.setRange(1, num_cpus)
         self.jobs_spin.setValue(num_cpus)
         settings_layout.addRow("Parallel jobs", self.jobs_spin)
@@ -233,12 +235,14 @@ class App(QtWidgets.QMainWindow):
         self.progress_bar.setFormat("%p % (%v / %m pages)")
 
     def toggle_scaling_inputs(self, state):
+        from PyQt6 import QtCore
         enabled = (state == QtCore.Qt.CheckState.Checked.value)
         self.width_spin.setEnabled(enabled)
         self.height_spin.setEnabled(enabled)
         self.filter_combo.setEnabled(enabled)
 
     def toggle_filter_inputs(self, state):
+        from PyQt6 import QtCore
         enabled = (state == QtCore.Qt.CheckState.Checked.value)
         self.filter_combo.setEnabled(enabled)
 
@@ -248,6 +252,7 @@ class App(QtWidgets.QMainWindow):
             self.enable_scaling_check.setEnabled(True)
             self.enable_scaling_check.setChecked(False)
         else:
+            from .displays import DISPLAYS
             specs = DISPLAYS[device_name]
             self.width_spin.setValue(specs.width)
             self.height_spin.setValue(specs.height)
@@ -266,6 +271,8 @@ class App(QtWidgets.QMainWindow):
         self.png_compression_level_spin.setVisible(is_png)
 
     def add_files(self):
+        from os import path
+
         files, _ = QtWidgets.QFileDialog.getOpenFileNames(
             self, "Select Input Files", "",
             "Supported Files (*.pdf *.cbz *.cbr)"
@@ -273,25 +280,26 @@ class App(QtWidgets.QMainWindow):
         if not files:
             return
 
+        from PyQt6 import QtCore
         existing_paths = [
             self.file_list.item(i).data(QtCore.Qt.ItemDataRole.UserRole)
             for i in range(self.file_list.count())
         ]
 
         all_paths = existing_paths + files
-        base_names = [os.path.basename(p) for p in all_paths]
+        base_names = [path.basename(p) for p in all_paths]
 
         for file in files:
             if file in existing_paths:
                 continue
-            item = QtWidgets.QListWidgetItem(os.path.basename(file))
+            item = QtWidgets.QListWidgetItem(path.basename(file))
             item.setData(QtCore.Qt.ItemDataRole.UserRole, file)
             self.file_list.addItem(item)
 
         for i in range(self.file_list.count()):
             item = self.file_list.item(i)
             path = item.data(QtCore.Qt.ItemDataRole.UserRole)
-            base_name = os.path.basename(path)
+            base_name = path.basename(path)
             if base_names.count(base_name) > 1:
                 item.setText(path)
 
@@ -313,6 +321,7 @@ class App(QtWidgets.QMainWindow):
             )
             return
 
+        from PyQt6 import QtCore
         input_paths = [
             self.file_list.item(i).data(QtCore.Qt.ItemDataRole.UserRole)
             for i in range(self.file_list.count())
@@ -321,6 +330,7 @@ class App(QtWidgets.QMainWindow):
         output_root = self.output_dir_edit.text()
 
         if self.enable_scaling_check.isChecked():
+            from .displays import Display
             display = Display(self.width_spin.value(), self.height_spin.value())
         else:
             display = None
@@ -375,7 +385,8 @@ class App(QtWidgets.QMainWindow):
         self.thread.finished.connect(self.timer.stop)
 
         # Timer
-        self.start_time = self.last_eta_now_time = time.time()
+        from time import time
+        self.start_time = self.last_eta_now_time = time
         self.images_since_last_eta_now = 0
         self.last_progress_value = 0
         self.elapsed_label.setText("Elapsed: –")
@@ -397,8 +408,8 @@ class App(QtWidgets.QMainWindow):
         if not self.start_time:
             return
 
-        import time
-        elapsed = time.time() - self.start_time
+        from time import time
+        elapsed = time() - self.start_time
         self.elapsed_label.setText(f"Elapsed: {time_to_str(elapsed)}")
 
         # Overall ETA (average since start)
@@ -410,7 +421,7 @@ class App(QtWidgets.QMainWindow):
             self.eta_label.setText(f"ETA (overall): {time_to_str(remaining)}")
 
         # ETA now (short-term estimate)
-        now = time.time()
+        now = time()
         if now - self.last_eta_now_time >= 1.0 and self.images_since_last_eta_now > 0:
             interval = now - self.last_eta_now_time
             speed = self.images_since_last_eta_now / interval  # images/sec

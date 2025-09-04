@@ -1,10 +1,8 @@
 import os
-import pyvips
 import time
 from collections import deque
 from PyQt6 import QtWidgets, QtCore
 from .displays import Display, DISPLAYS
-from .worker import ProcessThread
 
 class App(QtWidgets.QMainWindow):
     def __init__(self):
@@ -328,22 +326,24 @@ class App(QtWidgets.QMainWindow):
             display = None
 
         filter_str = self.filter_combo.currentText()
+        from pyvips.enums import Kernel
+
         if filter_str == "Bicubic interpolation":
-            resample = pyvips.enums.Kernel.CUBIC
+            resample = Kernel.CUBIC
         elif filter_str == "Bilinear interpolation":
-            resample = pyvips.enums.Kernel.LINEAR
+            resample = Kernel.LINEAR
         elif filter_str == "Lanczos 2":
-            resample = pyvips.enums.Kernel.LANCZOS2
+            resample = Kernel.LANCZOS2
         elif filter_str == "Lanczos 3":
-            resample = pyvips.enums.Kernel.LANCZOS3
+            resample = Kernel.LANCZOS3
         elif filter_str == "Magic resample Sharp 2013":
-            resample = pyvips.enums.Kernel.MKS2013
+            resample = Kernel.MKS2013
         elif filter_str == "Magic resample Sharp 2021":
-            resample = pyvips.enums.Kernel.MKS2021
+            resample = Kernel.MKS2021
         elif filter_str == "Mitchell":
-            resample = pyvips.enums.Kernel.MITCHELL
+            resample = Kernel.MITCHELL
         else:
-            resample = pyvips.enums.Kernel.NEAREST
+            resample = Kernel.NEAREST
 
         dpi = self.density_spin.value()
         img_format = self.img_format_combo.currentText()
@@ -354,6 +354,8 @@ class App(QtWidgets.QMainWindow):
         self.log_output.append("Starting processing...")
         self.start_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
+
+        from .worker import ProcessThread
 
         self.thread = ProcessThread(
             input_paths, output_root, dpi, display, resample, img_format,

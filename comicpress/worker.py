@@ -1,11 +1,4 @@
-import os
-import zipfile
-from pathlib import Path
-from concurrent.futures import ProcessPoolExecutor
 from PyQt6 import QtCore
-import rarfile
-import pymupdf
-from .processing import process_task
 
 class ProcessThread(QtCore.QThread):
     total_pages_signal = QtCore.pyqtSignal(int)
@@ -29,6 +22,14 @@ class ProcessThread(QtCore.QThread):
         self.png_compression_level = png_compression_level
 
     def run(self):
+        import os
+        import pymupdf
+        import rarfile
+        import zipfile
+        from concurrent.futures import ProcessPoolExecutor, as_completed
+        from pathlib import Path
+        from .processing import process_task
+
         output_root = Path(self.output_root)
         output_root.mkdir(parents = True, exist_ok = True)
 
@@ -63,8 +64,6 @@ class ProcessThread(QtCore.QThread):
         self.total_pages_signal.emit(total_tasks)
         self.log_signal.emit(f"Queued {total_tasks} tasks...")
         completed = 0
-
-        from concurrent.futures import as_completed
 
         with ProcessPoolExecutor(max_workers = self.num_workers) as executor:
             futures = [

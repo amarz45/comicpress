@@ -1,9 +1,3 @@
-import os
-import zipfile
-import rarfile
-import pymupdf
-import pyvips
-
 def process_task(
     task, dpi, display, resample, img_format, webp_method, png_compression_level
 ):
@@ -16,12 +10,14 @@ def process_task(
         )
     elif kind == "cbz":
         cbz_path, (i, filename) = source, data
+        import zipfile
         return process_archive_image(
             cbz_path, filename, img_format, i, output_dir, display, resample,
             zipfile.ZipFile, webp_method, png_compression_level
         )
     elif kind == "cbr":
         cbr_path, (i, filename) = source, data
+        import rarfile
         return process_archive_image(
             cbr_path, filename, img_format, i, output_dir, display, resample,
             rarfile.RarFile, webp_method, png_compression_level
@@ -31,6 +27,9 @@ def process_pdf_page(
     pdf_path, img_format, index, output_dir, dpi, display, resample,
     webp_method, png_compression_level
 ):
+    import pymupdf
+    import pyvips
+
     doc = pymupdf.open(pdf_path)
     page = doc[index]
     zoom = dpi / 72
@@ -50,6 +49,7 @@ def process_archive_image(
 ):
     with opener(archive_path, "r") as archive:
         data = archive.read(filename)
+    import pyvips
     img = pyvips.Image.new_from_buffer(data, "")
     is_originally_greyscale = is_mostly_greyscale(img)
 
@@ -63,6 +63,9 @@ def save_processed_image(
     img, output_dir, img_format, index, display, resample,
     is_originally_greyscale, webp_method, png_compression_level
 ):
+    import os
+    import pyvips
+
     if is_originally_greyscale:
         low = img.min()
         high = img.max()

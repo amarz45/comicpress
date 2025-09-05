@@ -102,7 +102,8 @@ class ProcessThread(QtCore.QThread):
                 img_files = sorted(
                     f for f in archive.namelist()
                     if f.lower().endswith((
-                        ".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff"
+                        ".avif", ".bmp", ".heic", ".heif", ".jp2", ".jpg",
+                        ".jpeg", ".jxl", ".png", ".ppm", ".tiff", ".webp"
                     ))
                 )
                 for i, name in enumerate(img_files):

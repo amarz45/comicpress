@@ -449,8 +449,11 @@ class App(QtWidgets.QMainWindow):
         stretch_contrast = self.enable_contrast_check.isChecked()
 
         if self.enable_scaling_check.isChecked():
-            from .displays import Display
-            display = Display(self.width_spin.value(), self.height_spin.value())
+            from .displays import Display, DISPLAYS
+            display = Display(
+                self.width_spin.value(), self.height_spin.value(),
+                DISPLAYS[self.current_device[0]][self.current_device[1]].colour
+            )
         else:
             display = None
 

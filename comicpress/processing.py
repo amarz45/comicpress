@@ -39,10 +39,15 @@ def process_pdf_page(
     page = doc[index]
     zoom = dpi / 72
     matrix = pymupdf.Matrix(zoom, zoom)
-    pix = page.get_pixmap(matrix = matrix, colorspace = pymupdf.csGRAY)
+    if display.colour:
+        pix = page.get_pixmap(matrix = matrix)
+    else:
+        pix = page.get_pixmap(matrix = matrix, colorspace = pymupdf.csGRAY)
     doc.close()
 
-    img = pyvips.Image.new_from_memory(pix.samples, pix.width, pix.height, 1, "uchar")
+    img = pyvips.Image.new_from_memory(
+        pix.samples, pix.width, pix.height, pix.n, "uchar"
+    )
     output_path_base = output_dir / f"{index + 1:03d}"
     return save_processed_image(
         img, output_path_base, img_format, display, resample, bit_depth,
@@ -60,7 +65,8 @@ def process_archive_image(
     img = pyvips.Image.new_from_buffer(data, "")
     is_originally_greyscale = is_mostly_greyscale(img)
 
-    img = img.colourspace(pyvips.enums.Interpretation.B_W)
+    if not display.colour:
+        img = img.colourspace(pyvips.enums.Interpretation.B_W)
 
     # Get the directory part of the filename from the archive.
     internal_dir = os.path.dirname(filename)

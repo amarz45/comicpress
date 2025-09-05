@@ -269,6 +269,7 @@ class App(QtWidgets.QMainWindow):
         # Create action widgets.
         action_layout = QtWidgets.QHBoxLayout()
         self.start_button = QtWidgets.QPushButton("Start conversion")
+        self.start_button.setEnabled(False)
         self.cancel_button = QtWidgets.QPushButton("Cancel")
         self.cancel_button.setEnabled(False)
 
@@ -298,7 +299,12 @@ class App(QtWidgets.QMainWindow):
                 bool(self.file_list.selectedItems())
             )
         )
+        self.file_list.model().rowsInserted.connect(lambda: self.update_start_button_state())
+        self.file_list.model().rowsRemoved.connect(lambda: self.update_start_button_state())
         #self.enable_mem_limit_check.stateChanged.connect(self.toggle_mem_limit_inputs)
+
+    def update_start_button_state(self):
+        self.start_button.setEnabled(self.file_list.count() > 0)
 
     def set_progress_max(self, total_pages):
         self.progress_bar.setMaximum(total_pages)
@@ -396,9 +402,12 @@ class App(QtWidgets.QMainWindow):
             if base_names.count(base_name) > 1:
                 item.setText(path)
 
+        self.update_start_button_state()
+
     def remove_file(self):
         for item in self.file_list.selectedItems():
             self.file_list.takeItem(self.file_list.row(item))
+        self.update_start_button_state()
 
     def browse_output_dir(self):
         directory = QtWidgets.QFileDialog.getExistingDirectory(

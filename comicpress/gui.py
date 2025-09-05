@@ -48,6 +48,7 @@ class App(QtWidgets.QMainWindow):
         self.remove_file_button = QtWidgets.QPushButton("Remove selected")
         self.remove_file_button.setEnabled(False)
         self.clear_files_button = QtWidgets.QPushButton("Clear all")
+        self.clear_files_button.setEnabled(False)
 
         # Add file buttons
         file_buttons_layout.addWidget(self.add_files_button)
@@ -299,6 +300,7 @@ class App(QtWidgets.QMainWindow):
         self.browse_output_button.clicked.connect(self.browse_output_dir)
         self.img_format_combo.currentTextChanged.connect(self.on_format_changed)
         self.start_button.clicked.connect(self.start_conversion)
+        self.clear_files_button.clicked.connect(self.update_start_button_state)
         self.cancel_button.clicked.connect(self.cancel_conversion)
         self.enable_scaling_check.stateChanged.connect(
             self.toggle_scaling_inputs
@@ -317,6 +319,7 @@ class App(QtWidgets.QMainWindow):
 
     def update_start_button_state(self):
         self.start_button.setEnabled(self.file_list.count() > 0)
+        self.clear_files_button.setEnabled(self.file_list.count() > 0)
 
     def set_progress_max(self, total_pages):
         self.progress_bar.setMaximum(total_pages)

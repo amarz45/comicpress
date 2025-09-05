@@ -288,6 +288,8 @@ class App(QtWidgets.QMainWindow):
         if device_name == "Custom":
             self.enable_scaling_check.setEnabled(True)
             self.enable_scaling_check.setChecked(False)
+            self.width_spin.setEnabled(True)
+            self.height_spin.setEnabled(True)
         else:
             from .displays import DISPLAYS
             specs = DISPLAYS[device_name]
@@ -295,6 +297,8 @@ class App(QtWidgets.QMainWindow):
             self.height_spin.setValue(specs.height)
             self.enable_scaling_check.setChecked(True)
             self.enable_scaling_check.setEnabled(False)
+            self.width_spin.setEnabled(False)
+            self.height_spin.setEnabled(False)
 
     def on_format_changed(self):
         selected_format = self.img_format_combo.currentText()

@@ -30,6 +30,7 @@ class App(QtWidgets.QMainWindow):
         self.connect_signals()
         self.on_device_changed()
         self.toggle_scaling_inputs(self.enable_scaling_check.checkState())
+        self.toggle_quantization(self.enable_quantization_check.checkState())
         self.on_format_changed()
 
     def setup_ui(self):
@@ -141,6 +142,34 @@ class App(QtWidgets.QMainWindow):
         # Add to form layout
         settings_layout.addRow(scaling_widget)
 
+        # Quantization
+        quantization_widget = QtWidgets.QWidget()
+        quantization_layout = QtWidgets.QHBoxLayout(quantization_widget)
+        quantization_layout.setContentsMargins(0, 0, 0, 0)
+        quantization_layout.setSpacing(20)
+
+        # Enable quantization
+        self.enable_quantization_check = QtWidgets.QCheckBox("Quantize images")
+        quantization_layout.addWidget(self.enable_quantization_check)
+
+        # Colours label + spin
+        self.colours_combo = QtWidgets.QComboBox()
+        self.colours_combo.addItems(["1", "2", "4", "8", "16"])
+        self.colours_combo.setCurrentText("4")
+        colours_container = QtWidgets.QWidget()
+        colours_layout = QtWidgets.QHBoxLayout(colours_container)
+        colours_layout.setContentsMargins(0, 0, 0, 0)
+        colours_layout.setSpacing(4)
+        colours_layout.addWidget(QtWidgets.QLabel("Bit depth"))
+        colours_layout.addWidget(self.colours_combo)
+        quantization_layout.addWidget(colours_container)
+
+        # Stretch at the end to align left neatly.
+        quantization_layout.addStretch()
+
+        # Add to form layout
+        settings_layout.addRow(quantization_widget)
+
         # Image format
         self.img_format_combo = QtWidgets.QComboBox()
         self.img_format_combo.addItems([
@@ -228,6 +257,9 @@ class App(QtWidgets.QMainWindow):
         self.enable_scaling_check.stateChanged.connect(
             self.toggle_scaling_inputs
         )
+        self.enable_quantization_check.stateChanged.connect(
+            self.toggle_quantization
+        )
         #self.enable_mem_limit_check.stateChanged.connect(self.toggle_mem_limit_inputs)
 
     def set_progress_max(self, total_pages):
@@ -240,6 +272,11 @@ class App(QtWidgets.QMainWindow):
         self.width_spin.setEnabled(enabled)
         self.height_spin.setEnabled(enabled)
         self.filter_combo.setEnabled(enabled)
+
+    def toggle_quantization(self, state):
+        from PyQt6 import QtCore
+        enabled = (state == QtCore.Qt.CheckState.Checked.value)
+        self.colours_combo.setEnabled(enabled)
 
     def toggle_filter_inputs(self, state):
         from PyQt6 import QtCore
@@ -335,6 +372,11 @@ class App(QtWidgets.QMainWindow):
         else:
             display = None
 
+        if self.enable_quantization_check.isChecked():
+            bit_depth = int(self.colours_combo.currentText())
+        else:
+            bit_depth = None
+
         filter_str = self.filter_combo.currentText()
         from pyvips.enums import Kernel
 
@@ -368,8 +410,8 @@ class App(QtWidgets.QMainWindow):
         from .worker import ProcessThread
 
         self.thread = ProcessThread(
-            input_paths, output_root, dpi, display, resample, img_format,
-            num_workers, webp_method, png_compression_level
+            input_paths, output_root, dpi, display, resample, bit_depth,
+            img_format, num_workers, webp_method, png_compression_level
         )
 
         self.thread.log_signal.connect(self.log_output.append)

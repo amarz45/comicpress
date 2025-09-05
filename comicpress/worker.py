@@ -7,8 +7,8 @@ class ProcessThread(QtCore.QThread):
     progress_signal = QtCore.pyqtSignal(int)
 
     def __init__(
-        self, input_paths, output_root, dpi, display, resample, img_format,
-        num_workers, webp_method, png_compression_level
+        self, input_paths, output_root, dpi, display, resample, bit_depth,
+        img_format, num_workers, webp_method, png_compression_level
     ):
         super().__init__()
         self.input_paths = input_paths
@@ -17,6 +17,7 @@ class ProcessThread(QtCore.QThread):
         self.display = display
         self.resample = resample
         self.img_format = img_format
+        self.bit_depth = bit_depth
         self.num_workers = num_workers
         self.webp_method = webp_method
         self.png_compression_level = png_compression_level
@@ -69,7 +70,7 @@ class ProcessThread(QtCore.QThread):
             futures = [
                 executor.submit(
                     process_task, task, self.dpi, self.display, self.resample,
-                    self.img_format, self.webp_method,
+                    self.bit_depth, self.img_format, self.webp_method,
                     self.png_compression_level
                 )
                 for task in tasks

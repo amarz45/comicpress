@@ -280,7 +280,7 @@ class App(QtWidgets.QMainWindow):
 
         # Create action widgets.
         action_layout = QtWidgets.QHBoxLayout()
-        self.start_button = QtWidgets.QPushButton("Start conversion")
+        self.start_button = QtWidgets.QPushButton("Start")
         self.start_button.setEnabled(False)
         self.cancel_button = QtWidgets.QPushButton("Cancel")
         self.cancel_button.setEnabled(False)

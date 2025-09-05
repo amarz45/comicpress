@@ -9,6 +9,7 @@ class App(QtWidgets.QMainWindow):
         self.processed_pages = 0
         self.start_time = None
         self.setWindowTitle("Comicpress")
+        self.current_device = (None, "Custom")
 
         from PyQt6 import QtCore
         from collections import deque
@@ -81,10 +82,27 @@ class App(QtWidgets.QMainWindow):
         settings_layout.addRow("PDF pixel density (PPI)", self.density_spin)
 
         # Display presets
-        self.display_combo = QtWidgets.QComboBox()
+        self.display_button = QtWidgets.QPushButton(self.current_device[1])
+        display_menu = QtWidgets.QMenu(self)
+
         from .displays import DISPLAYS
-        self.display_combo.addItems(DISPLAYS.keys())
-        settings_layout.addRow("Display preset", self.display_combo)
+        custom_action = display_menu.addAction("Custom")
+        custom_action.triggered.connect(lambda: self.set_device(None, "Custom"))
+        display_menu.addSeparator()
+
+        # Add brand submenus.
+        for brand, models in DISPLAYS.items():
+            if isinstance(models, dict):
+                brand_menu = display_menu.addMenu(brand)
+                for model_name in models.keys():
+                    model_action = brand_menu.addAction(model_name)
+                    # Use a lambda to capture the correct model_name.
+                    model_action.triggered.connect(
+                        lambda checked = False, b = brand, m = model_name: self.set_device(b, m)
+                    )
+
+        self.display_button.setMenu(display_menu)
+        settings_layout.addRow("Display preset", self.display_button)
 
         # Image scaling
         scaling_widget = QtWidgets.QWidget()
@@ -251,7 +269,6 @@ class App(QtWidgets.QMainWindow):
         self.remove_file_button.clicked.connect(self.remove_file)
         self.clear_files_button.clicked.connect(self.file_list.clear)
         self.browse_output_button.clicked.connect(self.browse_output_dir)
-        self.display_combo.currentTextChanged.connect(self.on_device_changed)
         self.img_format_combo.currentTextChanged.connect(self.on_format_changed)
         self.start_button.clicked.connect(self.start_conversion)
         self.cancel_button.clicked.connect(self.cancel_conversion)
@@ -288,16 +305,25 @@ class App(QtWidgets.QMainWindow):
         enabled = (state == QtCore.Qt.CheckState.Checked.value)
         self.filter_combo.setEnabled(enabled)
 
+    def set_device(self, brand, name):
+        """Updates the current device and triggers a UI refresh."""
+        self.current_device  = (brand, name)
+        if brand:
+            self.display_button.setText(f"{brand} {name}")
+        else:
+            self.display_button.setText(name)
+        self.on_device_changed()
+
     def on_device_changed(self):
-        device_name = self.display_combo.currentText()
-        if device_name == "Custom":
+        brand, name = self.current_device
+        if brand == None:
             self.enable_scaling_check.setEnabled(True)
             self.enable_scaling_check.setChecked(False)
             self.width_spin.setEnabled(True)
             self.height_spin.setEnabled(True)
         else:
             from .displays import DISPLAYS
-            specs = DISPLAYS[device_name]
+            specs = DISPLAYS[brand][name]
             self.width_spin.setValue(specs.width)
             self.height_spin.setValue(specs.height)
             self.enable_scaling_check.setChecked(True)

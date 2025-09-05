@@ -83,6 +83,18 @@ class App(QtWidgets.QMainWindow):
         self.density_spin.setSingleStep(300)
         settings_layout.addRow("PDF pixel density (PPI)", self.density_spin)
 
+        # Stretch contrast
+        contrast_widget = QtWidgets.QWidget()
+        contrast_layout = QtWidgets.QHBoxLayout(contrast_widget)
+        contrast_layout.setContentsMargins(0, 0, 0, 0)
+        contrast_layout.setSpacing(20)
+
+        # Enable contrast stretching.
+        self.enable_contrast_check = QtWidgets.QCheckBox("Stretch contrast")
+        self.enable_contrast_check.setChecked(True)
+        contrast_layout.addWidget(self.enable_contrast_check)
+        settings_layout.addRow(contrast_widget)
+
         # Display presets
         self.display_button = QtWidgets.QPushButton(self.current_device[1])
         display_menu = QtWidgets.QMenu(self)
@@ -431,6 +443,8 @@ class App(QtWidgets.QMainWindow):
 
         output_root = self.output_dir_edit.text()
 
+        stretch_contrast = self.enable_contrast_check.isChecked()
+
         if self.enable_scaling_check.isChecked():
             from .displays import Display
             display = Display(self.width_spin.value(), self.height_spin.value())
@@ -477,7 +491,8 @@ class App(QtWidgets.QMainWindow):
 
         self.thread = ProcessThread(
             input_paths, output_root, dpi, display, resample, bit_depth,
-            dither, img_format, num_workers, webp_method, png_compression_level
+            dither, stretch_contrast, img_format, num_workers, webp_method,
+            png_compression_level
         )
 
         self.thread.log_signal.connect(self.log_output.append)

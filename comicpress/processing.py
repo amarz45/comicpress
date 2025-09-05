@@ -5,34 +5,35 @@ import rarfile
 import os
 
 def process_task(
-    task, dpi, display, resample, bit_depth, dither, img_format, webp_method,
-    png_compression_level
+    task, dpi, display, resample, bit_depth, dither, stretch_contrast,
+    img_format, webp_method, png_compression_level
 ):
     kind, source, data, output_dir = task
     if kind == "pdf":
         pdf_path, i = source, data
         return process_pdf_page(
             pdf_path, img_format, i, output_dir, dpi, display, resample,
-            bit_depth, dither, webp_method, png_compression_level
+            bit_depth, dither, stretch_contrast, webp_method,
+            png_compression_level
         )
     elif kind == "cbz":
         cbz_path, (i, filename) = source, data
         return process_archive_image(
             cbz_path, filename, img_format, i, output_dir, display, resample,
-            bit_depth, dither, zipfile.ZipFile, webp_method,
+            bit_depth, dither, stretch_contrast, zipfile.ZipFile, webp_method,
             png_compression_level
         )
     elif kind == "cbr":
         cbr_path, (i, filename) = source, data
         return process_archive_image(
             cbr_path, filename, img_format, i, output_dir, display, resample,
-            bit_depth, dither, rarfile.RarFile, webp_method,
+            bit_depth, dither, stretch_contrast, rarfile.RarFile, webp_method,
             png_compression_level
         )
 
 def process_pdf_page(
     pdf_path, img_format, index, output_dir, dpi, display, resample, bit_depth,
-    dither, webp_method, png_compression_level
+    dither, stretch_contrast, webp_method, png_compression_level
 ):
     doc = pymupdf.open(pdf_path)
     page = doc[index]
@@ -45,12 +46,14 @@ def process_pdf_page(
     output_path_base = output_dir / f"{index + 1:03d}"
     return save_processed_image(
         img, output_path_base, img_format, display, resample, bit_depth,
-        dither, is_mostly_greyscale(img), webp_method, png_compression_level
+        dither, stretch_contrast, is_mostly_greyscale(img), webp_method,
+        png_compression_level
     )
 
 def process_archive_image(
     archive_path, filename, img_format, index, output_dir, display, resample,
-    bit_depth, dither, opener, webp_method, png_compression_level
+    bit_depth, dither, stretch_contrast, opener, webp_method,
+    png_compression_level
 ):
     with opener(archive_path, "r") as archive:
         data = archive.read(filename)
@@ -69,14 +72,16 @@ def process_archive_image(
 
     return save_processed_image(
         img, output_path_base, img_format, display, resample, bit_depth,
-        dither, is_originally_greyscale, webp_method, png_compression_level
+        dither, stretch_contrast, is_originally_greyscale, webp_method,
+        png_compression_level
     )
 
 def save_processed_image(
     img, output_path_base, img_format, display, resample, bit_depth, dither,
-    is_originally_greyscale, webp_method, png_compression_level
+    stretch_contrast, is_originally_greyscale, webp_method,
+    png_compression_level
 ):
-    if is_originally_greyscale:
+    if stretch_contrast and is_originally_greyscale:
         low = img.min()
         high = img.max()
         if high != low:

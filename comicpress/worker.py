@@ -8,7 +8,8 @@ class ProcessThread(QtCore.QThread):
 
     def __init__(
         self, input_paths, output_root, dpi, display, resample, bit_depth,
-        dither, img_format, num_workers, webp_method, png_compression_level
+        dither, stretch_contrast, img_format, num_workers, webp_method,
+        png_compression_level
     ):
         super().__init__()
         self.input_paths = input_paths
@@ -19,6 +20,7 @@ class ProcessThread(QtCore.QThread):
         self.img_format = img_format
         self.bit_depth = bit_depth
         self.dither = dither
+        self.stretch_contrast = stretch_contrast
         self.num_workers = num_workers
         self.webp_method = webp_method
         self.png_compression_level = png_compression_level
@@ -71,8 +73,9 @@ class ProcessThread(QtCore.QThread):
             futures = [
                 executor.submit(
                     process_task, task, self.dpi, self.display, self.resample,
-                    self.bit_depth, self.dither, self.img_format,
-                    self.webp_method, self.png_compression_level
+                    self.bit_depth, self.dither, self.stretch_contrast,
+                    self.img_format, self.webp_method,
+                    self.png_compression_level
                 )
                 for task in tasks
             ]

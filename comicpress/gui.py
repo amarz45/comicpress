@@ -397,9 +397,9 @@ class App(QtWidgets.QMainWindow):
             resample = Kernel.LANCZOS2
         elif filter_str == "Lanczos 3":
             resample = Kernel.LANCZOS3
-        elif filter_str == "Magic resample Sharp 2013":
+        elif filter_str == "Magic Kernel Sharp 2013":
             resample = Kernel.MKS2013
-        elif filter_str == "Magic resample Sharp 2021":
+        elif filter_str == "Magic Kernel Sharp 2021":
             resample = Kernel.MKS2021
         elif filter_str == "Mitchell":
             resample = Kernel.MITCHELL

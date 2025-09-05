@@ -90,8 +90,12 @@ class ProcessThread(QtCore.QThread):
                 cbz_name, "w", compression = zipfile.ZIP_STORED
             ) \
             as zipf:
-                for img_file in sorted(temp_dir.iterdir()):
-                    zipf.write(img_file, arcname = img_file.name)
+                # Recursively find all files in the temporary directory
+                all_files = sorted([p for p in temp_dir.rglob("*") if p.is_file()])
+                for img_file in all_files:
+                    # Create an archive name that is relative to the temp directory
+                    arcname = img_file.relative_to(temp_dir)
+                    zipf.write(img_file, arcname=arcname)
             self.log_signal.emit(f"Created CBZ: {cbz_name}")
 
         self.done_signal.emit()

@@ -40,8 +40,9 @@ def process_pdf_page(
     doc.close()
 
     img = pyvips.Image.new_from_memory(pix.samples, pix.width, pix.height, 1, "uchar")
+    output_path_base = output_dir / f"{index + 1:03d}"
     return save_processed_image(
-        img, output_dir, img_format, index, display, resample,
+        img, output_path_base, img_format, display, resample,
         bit_depth, is_mostly_greyscale(img), webp_method, png_compression_level
     )
 
@@ -55,13 +56,22 @@ def process_archive_image(
     is_originally_greyscale = is_mostly_greyscale(img)
 
     img = img.colourspace(pyvips.enums.Interpretation.B_W)
+
+    # Get the directory part of the filename from the archive.
+    internal_dir = os.path.dirname(filename)
+    # Create the corresponding subdirectory in the output.
+    full_output_dir = output_dir / internal_dir
+    full_output_dir.mkdir(parents=True, exist_ok=True)
+    # The base path for the output file, preserving the subdirectory.
+    output_path_base = full_output_dir / f"{index + 1:03d}"
+
     return save_processed_image(
-        img, output_dir, img_format, index, display, resample,
+        img, output_path_base, img_format, display, resample,
         bit_depth, is_originally_greyscale, webp_method, png_compression_level
     )
 
 def save_processed_image(
-    img, output_dir, img_format, index, display, resample,
+    img, output_path_base, img_format, display, resample,
     bit_depth, is_originally_greyscale, webp_method, png_compression_level
 ):
     if is_originally_greyscale:
@@ -76,9 +86,8 @@ def save_processed_image(
         scale = min(display.width / img.width, display.height / img.height)
         img = img.resize(scale, kernel = resample)
 
-    output_path = output_dir / f"{index + 1:03d}"
     png_compression_level = png_compression_level if img_format == "PNG" else 0
-    png_path = f"{output_path}.png"
+    png_path = f"{output_path_base}.png"
 
     if bit_depth:
         img.pngsave(
@@ -98,7 +107,7 @@ def save_processed_image(
         return f"Saved {png_path}."
 
     if img_format == "AVIF":
-        output_path = f"{output_path}.avif"
+        output_path = f"{output_path_base}.avif"
         img.heifsave(
             output_path,
             compression = pyvips.enums.ForeignHeifCompression.AV1,
@@ -106,16 +115,16 @@ def save_processed_image(
             Q = 50
         )
     elif img_format == "JPEG":
-        output_path = f"{output_path}.jpg"
+        output_path = f"{output_path_base}.jpg"
         img.jpegsave(output_path)
     elif img_format == "JPEG XL":
-        output_path = f"{output_path}.jxl"
+        output_path = f"{output_path_base}.jxl"
         if bit_depth:
             img.jxlsave(output_path, distance = 0)
         else:
             img.jxlsave(output_path)
     else:
-        output_path = f"{output_path}.webp"
+        output_path = f"{output_path_base}.webp"
         img.webpsave(
             output_path,
             lossless = bit_depth != None,

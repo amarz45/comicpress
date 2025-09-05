@@ -183,6 +183,19 @@ class App(QtWidgets.QMainWindow):
         colours_layout.addWidget(self.colours_combo)
         quantization_layout.addWidget(colours_container)
 
+        # Dither
+        self.dither_spin = QtWidgets.QDoubleSpinBox()
+        self.dither_spin.setRange(0.0, 1.0)
+        self.dither_spin.setSingleStep(0.1)
+        self.dither_spin.setValue(1.0)
+        dither_container = QtWidgets.QWidget()
+        dither_layout = QtWidgets.QHBoxLayout(dither_container)
+        dither_layout.setContentsMargins(0, 0, 0, 0)
+        dither_layout.setSpacing(4)
+        dither_layout.addWidget(QtWidgets.QLabel("Dither"))
+        dither_layout.addWidget(self.dither_spin)
+        quantization_layout.addWidget(dither_container)
+
         # Stretch at the end to align left neatly.
         quantization_layout.addStretch()
 
@@ -299,6 +312,7 @@ class App(QtWidgets.QMainWindow):
         else:
             enabled = (state == QtCore.Qt.CheckState.Checked.value)
         self.colours_combo.setEnabled(enabled)
+        self.dither_spin.setEnabled(enabled)
 
     def toggle_filter_inputs(self, state):
         from PyQt6 import QtCore
@@ -409,8 +423,9 @@ class App(QtWidgets.QMainWindow):
 
         if self.enable_quantization_check.isChecked():
             bit_depth = int(self.colours_combo.currentText())
+            dither = self.dither_spin.value()
         else:
-            bit_depth = None
+            bit_depth = dither = None
 
         filter_str = self.filter_combo.currentText()
         from pyvips.enums import Kernel
@@ -446,7 +461,7 @@ class App(QtWidgets.QMainWindow):
 
         self.thread = ProcessThread(
             input_paths, output_root, dpi, display, resample, bit_depth,
-            img_format, num_workers, webp_method, png_compression_level
+            dither, img_format, num_workers, webp_method, png_compression_level
         )
 
         self.thread.log_signal.connect(self.log_output.append)

@@ -77,8 +77,9 @@ class App(QtWidgets.QMainWindow):
 
         # Pixel density
         self.density_spin = QtWidgets.QSpinBox()
-        self.density_spin.setRange(72, 2400)
+        self.density_spin.setRange(300, 2 ** 31 - 1)
         self.density_spin.setValue(1200)
+        self.density_spin.setSingleStep(300)
         settings_layout.addRow("PDF pixel density (PPI)", self.density_spin)
 
         # Display presets

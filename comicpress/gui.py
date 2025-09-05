@@ -150,6 +150,7 @@ class App(QtWidgets.QMainWindow):
 
         # Enable quantization
         self.enable_quantization_check = QtWidgets.QCheckBox("Quantize images")
+        self.enable_quantization_check.setChecked(True)
         quantization_layout.addWidget(self.enable_quantization_check)
 
         # Colours label + spin
@@ -275,7 +276,11 @@ class App(QtWidgets.QMainWindow):
 
     def toggle_quantization(self, state):
         from PyQt6 import QtCore
-        enabled = (state == QtCore.Qt.CheckState.Checked.value)
+        # Handle both int (from signal) and CheckState (from checkState()).
+        if isinstance(state, QtCore.Qt.CheckState):
+            enabled = (state == QtCore.Qt.CheckState.Checked)
+        else:
+            enabled = (state == QtCore.Qt.CheckState.Checked.value)
         self.colours_combo.setEnabled(enabled)
 
     def toggle_filter_inputs(self, state):

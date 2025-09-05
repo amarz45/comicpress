@@ -308,7 +308,7 @@ class App(QtWidgets.QMainWindow):
         self.png_compression_level_spin.setVisible(is_png)
 
     def add_files(self):
-        from os import path
+        import os
 
         files, _ = QtWidgets.QFileDialog.getOpenFileNames(
             self, "Select input files", "",
@@ -324,19 +324,19 @@ class App(QtWidgets.QMainWindow):
         ]
 
         all_paths = existing_paths + files
-        base_names = [path.basename(p) for p in all_paths]
+        base_names = [os.path.basename(p) for p in all_paths]
 
         for file in files:
             if file in existing_paths:
                 continue
-            item = QtWidgets.QListWidgetItem(path.basename(file))
+            item = QtWidgets.QListWidgetItem(os.path.basename(file))
             item.setData(QtCore.Qt.ItemDataRole.UserRole, file)
             self.file_list.addItem(item)
 
         for i in range(self.file_list.count()):
             item = self.file_list.item(i)
             path = item.data(QtCore.Qt.ItemDataRole.UserRole)
-            base_name = path.basename(path)
+            base_name = os.path.basename(path)
             if base_names.count(base_name) > 1:
                 item.setText(path)
 
@@ -428,7 +428,7 @@ class App(QtWidgets.QMainWindow):
 
         # Timer
         from time import time
-        self.start_time = self.last_eta_now_time = time
+        self.start_time = self.last_eta_now_time = time()
         self.images_since_last_eta_now = 0
         self.last_progress_value = 0
         self.elapsed_label.setText("Elapsed: –")

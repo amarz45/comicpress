@@ -46,6 +46,7 @@ class App(QtWidgets.QMainWindow):
         file_buttons_layout = QtWidgets.QHBoxLayout()
         self.add_files_button = QtWidgets.QPushButton("Add files")
         self.remove_file_button = QtWidgets.QPushButton("Remove selected")
+        self.remove_file_button.setEnabled(False)
         self.clear_files_button = QtWidgets.QPushButton("Clear all")
 
         # Add file buttons
@@ -291,6 +292,11 @@ class App(QtWidgets.QMainWindow):
         )
         self.enable_quantization_check.stateChanged.connect(
             self.toggle_quantization
+        )
+        self.file_list.itemSelectionChanged.connect(lambda:
+            self.remove_file_button.setEnabled(
+                bool(self.file_list.selectedItems())
+            )
         )
         #self.enable_mem_limit_check.stateChanged.connect(self.toggle_mem_limit_inputs)
 

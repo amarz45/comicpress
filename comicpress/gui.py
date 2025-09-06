@@ -82,7 +82,18 @@ class App(QtWidgets.QMainWindow):
         self.density_spin.setRange(300, 2 ** 31 - 1)
         self.density_spin.setValue(1200)
         self.density_spin.setSingleStep(300)
-        settings_layout.addRow("PDF pixel density (PPI)", self.density_spin)
+        pdf_label_widget = self._create_widget_with_info(
+            QtWidgets.QLabel("PDF pixel density (PPI)"),
+            "Sets the rendering resolution for PDF files. Higher values "
+            "produce better quality but use more memory and take longer to "
+            "process. Values higher than the target display’s pixel density "
+            "still result in higher perceived quality on that display. "
+            "Generally, it’s exceedingly difficult to notice a difference in "
+            "quality for values greater than 1200 PPI. However, rasterizing a "
+            "page in a PDF file takes roughly four times as long at 1200 PPI "
+            "than at 600 PPI."
+        )
+        settings_layout.addRow(pdf_label_widget, self.density_spin)
 
         # Stretch contrast
         contrast_widget = QtWidgets.QWidget()
@@ -90,10 +101,17 @@ class App(QtWidgets.QMainWindow):
         contrast_layout.setContentsMargins(0, 0, 0, 0)
         contrast_layout.setSpacing(20)
 
-        # Enable contrast stretching.
+        # Stretch contrast
         self.enable_contrast_check = QtWidgets.QCheckBox("Stretch contrast")
         self.enable_contrast_check.setChecked(True)
-        contrast_layout.addWidget(self.enable_contrast_check)
+        contrast_widget = self._create_widget_with_info(
+            self.enable_contrast_check,
+            "Automatically adjusts the page’s black and white points to "
+            "maximize contrast. This is highly recommended when reading on an "
+            "ereader, as it makes the colours “pop.”"
+        )
+        # We add a stretch to ensure it aligns neatly to the left.
+        contrast_widget.layout().addStretch()
         settings_layout.addRow(contrast_widget)
 
         # Display presets
@@ -127,7 +145,15 @@ class App(QtWidgets.QMainWindow):
 
         # Enable scaling checkbox
         self.enable_scaling_check = QtWidgets.QCheckBox("Scale images")
-        scaling_layout.addWidget(self.enable_scaling_check)
+        scaling_label_widget = self._create_widget_with_info(
+            self.enable_scaling_check,
+            "Scales pages to fit the target resolution. This is highly "
+            "recommended because it can potentially decrease file sizes "
+            "significantly. In addition, it improves quality since it prevents "
+            "the ereader from scaling pages itself. (Ereaders usually use "
+            "subpar scaling algorithms for speed.)"
+        )
+        scaling_layout.addWidget(scaling_label_widget)
 
         # Width label + spin
         self.width_spin = QtWidgets.QSpinBox()
@@ -165,7 +191,15 @@ class App(QtWidgets.QMainWindow):
         self.filter_combo.setCurrentText("Magic Kernel Sharp 2021")
 
         # Add resampling filter widgets.
-        filter_layout.addWidget(QtWidgets.QLabel("Resampling filter"))
+        filter_label_with_info = self._create_widget_with_info(
+            QtWidgets.QLabel("Resampling filter"),
+            "The algorithm used to calculate pixel values when resizing an "
+            "image. <i>Magic Kernel Sharp 2021</i> is recommended for the best "
+            "quality and <i>Lanczos 3</i> is a close second. Other resampling "
+            "filters are faster but usually result in significantly lower "
+            "quality."
+        )
+        filter_layout.addWidget(filter_label_with_info)
         filter_layout.addWidget(self.filter_combo)
         scaling_layout.addWidget(filter_widget)
 
@@ -184,7 +218,17 @@ class App(QtWidgets.QMainWindow):
         # Enable quantization
         self.enable_quantization_check = QtWidgets.QCheckBox("Quantize images")
         self.enable_quantization_check.setChecked(True)
-        quantization_layout.addWidget(self.enable_quantization_check)
+        quantization_widget_ = self._create_widget_with_info(
+            self.enable_quantization_check,
+            "Limits the colour palette of pages. This is highly recommended "
+            "because it decreases file size, and ereaders usually only have 16 "
+            "shades of grey anyway. In addition, this usually improves quality "
+            "because it prevents the ereader from using its own (likely "
+            "subpar) quantization algorithm. If you enable this option, make "
+            "sure to disable dithering on your ereader! Otherwise, the quality "
+            "will be ruined."
+        )
+        quantization_layout.addWidget(quantization_widget_)
 
         # Colours label + spin
         self.colours_combo = QtWidgets.QComboBox()
@@ -194,7 +238,22 @@ class App(QtWidgets.QMainWindow):
         colours_layout = QtWidgets.QHBoxLayout(colours_container)
         colours_layout.setContentsMargins(0, 0, 0, 0)
         colours_layout.setSpacing(4)
-        colours_layout.addWidget(QtWidgets.QLabel("Bit depth"))
+
+        # Add resampling filter widgets.
+        colours_label_with_info = self._create_widget_with_info(
+            QtWidgets.QLabel("Bit depth"),
+            "Determines the number of colours in the final images. "
+            "A bit depth of 4 (16 colours) is recommended in most cases "
+            "because most ereaders only have 16 colours."
+            "<br><br>"
+            "<b>Bit depth → Colours</b><br>"
+            "1 → 2<br>"
+            "2 → 4<br>"
+            "4 → 16<br>"
+            "8 → 256<br>"
+            "16 → 65 536"
+        )
+        colours_layout.addWidget(colours_label_with_info)
         colours_layout.addWidget(self.colours_combo)
         quantization_layout.addWidget(colours_container)
 
@@ -207,7 +266,15 @@ class App(QtWidgets.QMainWindow):
         dither_layout = QtWidgets.QHBoxLayout(dither_container)
         dither_layout.setContentsMargins(0, 0, 0, 0)
         dither_layout.setSpacing(4)
-        dither_layout.addWidget(QtWidgets.QLabel("Dither"))
+
+        dither_widget_with_info = self._create_widget_with_info(
+            QtWidgets.QLabel("Dither"),
+            "Sets the dither level, which is used to make quantized images "
+            "look better. It’s highly recommended recommended to leave this at "
+            "the default maximum value of 1.0 to significantly improve quality."
+        )
+
+        dither_layout.addWidget(dither_widget_with_info)
         dither_layout.addWidget(self.dither_spin)
         quantization_layout.addWidget(dither_container)
 
@@ -223,7 +290,35 @@ class App(QtWidgets.QMainWindow):
             "AVIF", "JPEG", "JPEG XL", "PNG", "WebP"
         ])
         self.img_format_combo.setCurrentText("PNG")
-        settings_layout.addRow("Image format", self.img_format_combo)
+        img_format_with_info = self._create_widget_with_info(
+            QtWidgets.QLabel("Image format"),
+            "Sets the image format for each page."
+            "<dl>"
+                "<dt>AVIF</dt>"
+                "<dd>Good for photographs, but not optimal for comics. Results in large file sizes.</dd>"
+
+                "<dt>JPEG</dt>"
+                "<dd>Worst option for both quality and file size. Only choose "
+                "this if no other image format is supported.</dd>"
+
+                "<dt>JPEG XL</dt>"
+                "<dd>The absolute best for minimizing file size while "
+                "maintaining the same quality. Choose this if your ereader "
+                "software supports it.</dd>"
+
+                "<dt>PNG</dt>"
+                "<dd>Widely supported, lossless, and has decent compression. "
+                "Choose this if your ereader software doesn’t support JPEG XL "
+                "or WebP, or if you’re unsure about whether it does.</dd>"
+
+                "<dt>WebP</dt>"
+                "<dd>Excellent compression and quality: better than PNG, but "
+                "not as good as JPEG XL. Choose this if your ereader software "
+                "supports WebP but doesn’t support JPEG XL "
+                "(e.g., KOReader).</dd>"
+            "</dl>"
+        )
+        settings_layout.addRow(img_format_with_info, self.img_format_combo)
 
         # WebP-specific options
         self.webp_method_label = QtWidgets.QLabel("Compression effort")
@@ -532,6 +627,28 @@ class App(QtWidgets.QMainWindow):
         if delta > 0:
             self.images_since_last_eta_now += delta
         self.last_progress_value = value
+
+    def _create_widget_with_info(self, main_widget: QtWidgets.QWidget, tooltip_text: str) -> QtWidgets.QWidget:
+            """Creates a container widget with an info icon on the left."""
+            container = QtWidgets.QWidget()
+            layout = QtWidgets.QHBoxLayout(container)
+            layout.setContentsMargins(0, 0, 0, 0)
+            layout.setSpacing(5)
+
+            # Create and configure the info icon label.
+            info_icon_label = QtWidgets.QLabel()
+            icon = self.style().standardIcon(
+                QtWidgets.QStyle.StandardPixmap.SP_MessageBoxInformation
+            )
+            info_icon_label.setPixmap(icon.pixmap(16, 16))
+            formatted_tooltip = f"<p>{tooltip_text}</p>"
+            info_icon_label.setToolTip(formatted_tooltip)
+
+            # Add the icon first (for left alignment), then the main widget.
+            layout.addWidget(info_icon_label)
+            layout.addWidget(main_widget)
+
+            return container
 
     def update_time_labels(self):
         if not self.start_time:

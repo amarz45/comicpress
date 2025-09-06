@@ -1,45 +1,47 @@
 import pymupdf
 import pyvips
-import zipfile
-import rarfile
 import os
+import rarfile
+import zipfile
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .config import Config
+    from pathlib import Path
 
 def process_task(
-    task, dpi, display, resample, bit_depth, dither, stretch_contrast,
-    img_format, webp_method, png_compression_level
-):
+    task: tuple[str, str, int | tuple[int, str], "Path"],
+    config: "Config"
+) \
+-> str | None:
     kind, source, data, output_dir = task
     if kind == "pdf":
         pdf_path, i = source, data
-        return process_pdf_page(
-            pdf_path, img_format, i, output_dir, dpi, display, resample,
-            bit_depth, dither, stretch_contrast, webp_method,
-            png_compression_level
-        )
+        return process_pdf_page(pdf_path, i, output_dir, config)
     elif kind == "cbz":
         cbz_path, (i, filename) = source, data
         return process_archive_image(
-            cbz_path, filename, img_format, i, output_dir, display, resample,
-            bit_depth, dither, stretch_contrast, zipfile.ZipFile, webp_method,
-            png_compression_level
+            cbz_path, filename, i, output_dir, zipfile.ZipFile, config
         )
     elif kind == "cbr":
         cbr_path, (i, filename) = source, data
         return process_archive_image(
-            cbr_path, filename, img_format, i, output_dir, display, resample,
-            bit_depth, dither, stretch_contrast, rarfile.RarFile, webp_method,
-            png_compression_level
+            cbr_path, filename, i, output_dir, rarfile.RarFile, config
         )
 
 def process_pdf_page(
-    pdf_path, img_format, index, output_dir, dpi, display, resample, bit_depth,
-    dither, stretch_contrast, webp_method, png_compression_level
-):
+    pdf_path: str,
+    index: int,
+    output_dir: "Path",
+    config: "Config"
+) \
+-> str:
     doc = pymupdf.open(pdf_path)
     page = doc[index]
-    zoom = dpi / 72
+    zoom = config.dpi / 72
     matrix = pymupdf.Matrix(zoom, zoom)
-    if display.colour:
+    if config.display and config.display.colour:
         pix = page.get_pixmap(matrix = matrix)
     else:
         pix = page.get_pixmap(matrix = matrix, colorspace = pymupdf.csGRAY)
@@ -50,44 +52,46 @@ def process_pdf_page(
     )
     output_path_base = output_dir / f"{index + 1:03d}"
     return save_processed_image(
-        img, output_path_base, img_format, display, resample, bit_depth,
-        dither, stretch_contrast, is_mostly_greyscale(img), webp_method,
-        png_compression_level
+        img, output_path_base, is_mostly_greyscale(img), config
     )
 
 def process_archive_image(
-    archive_path, filename, img_format, index, output_dir, display, resample,
-    bit_depth, dither, stretch_contrast, opener, webp_method,
-    png_compression_level
-):
+    archive_path: str,
+    filename: str,
+    index: int,
+    output_dir: "Path",
+    opener: type[zipfile.ZipFile] | type[rarfile.RarFile],
+    config: "Config"
+) \
+-> str:
     with opener(archive_path, "r") as archive:
         data = archive.read(filename)
     img = pyvips.Image.new_from_buffer(data, "")
     is_originally_greyscale = is_mostly_greyscale(img)
 
-    if not display.colour:
+    if not config.display or not config.display.colour:
         img = img.colourspace(pyvips.enums.Interpretation.B_W)
 
     # Get the directory part of the filename from the archive.
     internal_dir = os.path.dirname(filename)
     # Create the corresponding subdirectory in the output.
     full_output_dir = output_dir / internal_dir
-    full_output_dir.mkdir(parents=True, exist_ok=True)
+    full_output_dir.mkdir(parents = True, exist_ok = True)
     # The base path for the output file, preserving the subdirectory.
     output_path_base = full_output_dir / f"{index + 1:03d}"
 
     return save_processed_image(
-        img, output_path_base, img_format, display, resample, bit_depth,
-        dither, stretch_contrast, is_originally_greyscale, webp_method,
-        png_compression_level
+        img, output_path_base, is_originally_greyscale, config
     )
 
 def save_processed_image(
-    img, output_path_base, img_format, display, resample, bit_depth, dither,
-    stretch_contrast, is_originally_greyscale, webp_method,
-    png_compression_level
-):
-    if stretch_contrast and is_originally_greyscale:
+    img: pyvips.Image,
+    output_path_base: "Path",
+    is_originally_greyscale: bool,
+    config: "Config"
+) \
+-> str:
+    if config.stretch_contrast and is_originally_greyscale:
         low = img.min()
         high = img.max()
         if high != low:
@@ -95,31 +99,35 @@ def save_processed_image(
             offset = -low * scale
             img = img.linear(scale, offset)
 
-    if display:
-        scale = min(display.width / img.width, display.height / img.height)
-        img = img.resize(scale, kernel = resample)
+    if config.display:
+        width_ratio = config.display.width / img.width
+        height_ratio = config.display.height / img.height
+        scale = min(width_ratio, height_ratio)
+        img = img.resize(scale, kernel = config.resample)
 
-    png_compression_level = png_compression_level if img_format == "PNG" else 0
+    png_compression_level = (
+        config.png_compression_level if config.img_format == "PNG" else 0
+    )
     png_path = f"{output_path_base}.png"
 
-    if bit_depth:
+    if config.bit_depth:
         img.pngsave(
             png_path,
             compression = png_compression_level,
             palette = True,
-            bitdepth = bit_depth,
-            dither = dither,
+            bitdepth = config.bit_depth,
+            dither = config.dither,
             effort = 10
         )
-        if img_format == "PNG":
+        if config.img_format == "PNG":
             return f"Saved {png_path}."
         img = pyvips.Image.new_from_file(png_path)
 
-    if img_format == "PNG":
+    if config.img_format == "PNG":
         img.pngsave(png_path, compression = png_compression_level)
         return f"Saved {png_path}."
 
-    if img_format == "AVIF":
+    if config.img_format == "AVIF":
         output_path = f"{output_path_base}.avif"
         img.heifsave(
             output_path,
@@ -127,12 +135,12 @@ def save_processed_image(
             subsample_mode = pyvips.enums.ForeignSubsample.ON,
             Q = 50
         )
-    elif img_format == "JPEG":
+    elif config.img_format == "JPEG":
         output_path = f"{output_path_base}.jpg"
         img.jpegsave(output_path)
-    elif img_format == "JPEG XL":
+    elif config.img_format == "JPEG XL":
         output_path = f"{output_path_base}.jxl"
-        if bit_depth:
+        if config.bit_depth:
             img.jxlsave(output_path, distance = 0)
         else:
             img.jxlsave(output_path)
@@ -140,15 +148,15 @@ def save_processed_image(
         output_path = f"{output_path_base}.webp"
         img.webpsave(
             output_path,
-            lossless = bit_depth != None,
-            effort = webp_method
+            lossless = config.bit_depth != None,
+            effort = config.webp_method
         )
 
     os.remove(png_path)
 
     return f"Saved {output_path}."
 
-def is_mostly_greyscale(img_orig, threshold = 10):
+def is_mostly_greyscale(img_orig: pyvips.Image, threshold: int = 10) -> bool:
     if img_orig.bands < 3:
         return True
 

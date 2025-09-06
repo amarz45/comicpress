@@ -416,18 +416,18 @@ class App(QtWidgets.QMainWindow):
         self.start_button.setEnabled(self.file_list.count() > 0)
         self.clear_files_button.setEnabled(self.file_list.count() > 0)
 
-    def set_progress_max(self, total_pages):
+    def set_progress_max(self, total_pages: int):
         self.progress_bar.setMaximum(total_pages)
         self.progress_bar.setFormat("%p % (%v / %m pages)")
 
-    def toggle_scaling_inputs(self, state):
+    def toggle_scaling_inputs(self, state: int):
         from PyQt6 import QtCore
         enabled = (state == QtCore.Qt.CheckState.Checked.value)
         self.width_spin.setEnabled(enabled)
         self.height_spin.setEnabled(enabled)
         self.filter_combo.setEnabled(enabled)
 
-    def toggle_quantization(self, state):
+    def toggle_quantization(self, state: int):
         from PyQt6 import QtCore
         # Handle both int (from signal) and CheckState (from checkState()).
         if isinstance(state, QtCore.Qt.CheckState):
@@ -437,12 +437,12 @@ class App(QtWidgets.QMainWindow):
         self.colours_combo.setEnabled(enabled)
         self.dither_spin.setEnabled(enabled)
 
-    def toggle_filter_inputs(self, state):
+    def toggle_filter_inputs(self, state: int):
         from PyQt6 import QtCore
         enabled = (state == QtCore.Qt.CheckState.Checked.value)
         self.filter_combo.setEnabled(enabled)
 
-    def set_device(self, brand, name):
+    def set_device(self, brand, name: int):
         """Updates the current device and triggers a UI refresh."""
         self.current_device  = (brand, name)
         if brand:
@@ -588,12 +588,23 @@ class App(QtWidgets.QMainWindow):
         self.start_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
 
+        from .config import Config
         from .worker import ProcessThread
 
+        config = Config(
+            dpi = dpi,
+            display = display,
+            resample = resample,
+            bit_depth = bit_depth,
+            dither = dither,
+            stretch_contrast = stretch_contrast,
+            img_format = img_format,
+            webp_method = webp_method,
+            png_compression_level = png_compression_level
+        )
+
         self.thread = ProcessThread(
-            input_paths, output_root, dpi, display, resample, bit_depth,
-            dither, stretch_contrast, img_format, num_workers, webp_method,
-            png_compression_level
+            input_paths, output_root, num_workers, config
         )
 
         self.thread.log_signal.connect(self.log_output.append)
@@ -628,7 +639,12 @@ class App(QtWidgets.QMainWindow):
             self.images_since_last_eta_now += delta
         self.last_progress_value = value
 
-    def _create_widget_with_info(self, main_widget: QtWidgets.QWidget, tooltip_text: str) -> QtWidgets.QWidget:
+    def _create_widget_with_info(
+        self,
+        main_widget: QtWidgets.QWidget,
+        tooltip_text: str
+    ) \
+    -> QtWidgets.QWidget:
             """Creates a container widget with an info icon on the left."""
             container = QtWidgets.QWidget()
             layout = QtWidgets.QHBoxLayout(container)

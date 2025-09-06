@@ -1,4 +1,11 @@
 from PyQt6 import QtCore
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
+    from rarfile import RarFile
+    from zipfile import ZipFile
+    from .config import Config
 
 class ProcessThread(QtCore.QThread):
     total_pages_signal = QtCore.pyqtSignal(int)
@@ -7,23 +14,17 @@ class ProcessThread(QtCore.QThread):
     progress_signal = QtCore.pyqtSignal(int)
 
     def __init__(
-        self, input_paths, output_root, dpi, display, resample, bit_depth,
-        dither, stretch_contrast, img_format, num_workers, webp_method,
-        png_compression_level
+        self,
+        input_paths: list[str],
+        output_root: str,
+        num_workers: int,
+        config: "Config"
     ):
         super().__init__()
         self.input_paths = input_paths
         self.output_root = output_root
-        self.dpi = dpi
-        self.display = display
-        self.resample = resample
-        self.img_format = img_format
-        self.bit_depth = bit_depth
-        self.dither = dither
-        self.stretch_contrast = stretch_contrast
+        self.config = config
         self.num_workers = num_workers
-        self.webp_method = webp_method
-        self.png_compression_level = png_compression_level
 
     def run(self):
         import os
@@ -71,12 +72,7 @@ class ProcessThread(QtCore.QThread):
 
         with ProcessPoolExecutor(max_workers = self.num_workers) as executor:
             futures = [
-                executor.submit(
-                    process_task, task, self.dpi, self.display, self.resample,
-                    self.bit_depth, self.dither, self.stretch_contrast,
-                    self.img_format, self.webp_method,
-                    self.png_compression_level
-                )
+                executor.submit(process_task, task, self.config)
                 for task in tasks
             ]
 
@@ -104,7 +100,14 @@ class ProcessThread(QtCore.QThread):
 
         self.done_signal.emit()
 
-    def process_archive(self, tasks, file_ext, path, output_dir, opener):
+    def process_archive(
+        self,
+        tasks: "list[tuple[str, str, tuple[int, str], Path]]",
+        file_ext: str,
+        path: str,
+        output_dir: "Path",
+        opener: "type[ZipFile] | type[RarFile]"
+    ):
         try:
             with opener(path, "r") as archive:
                 img_files = sorted(

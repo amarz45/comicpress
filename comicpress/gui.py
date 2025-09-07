@@ -142,7 +142,7 @@ class App(QtWidgets.QMainWindow):
                     if not model_action:
                         continue
                     model_action.triggered.connect(lambda
-                        b = brand, m = model_name: self.set_device(b, m)
+                        _, b = brand, m = model_name: self.set_device(b, m)
                     )
 
         self.display_button.setMenu(display_menu)

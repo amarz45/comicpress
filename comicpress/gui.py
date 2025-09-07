@@ -7,6 +7,65 @@ if TYPE_CHECKING:
 class App(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
+
+        self.IMAGE_FORMAT_SETTINGS = {
+            "AVIF": {
+                "compression_type_configurable": False,
+                "compression_effort": {
+                    "min": 0,
+                    "max": 9,
+                    "default": 4
+                },
+                "quality": {
+                    "min": 0,
+                    "max": 100,
+                    "default": 50
+                }
+            },
+            "JPEG XL": {
+                "compression_type_configurable": False,
+                "compression_effort": {
+                    "min": 1,
+                    "max": 9,
+                    "default": 7
+                },
+                "quality": {
+                    "min": 0,
+                    "max": 100,
+                    "default": 100
+                },
+                "distance": {
+                    "min": 0,
+                    "max": 15,
+                    "default": 0
+                },
+            },
+            "PNG": {
+                "compression_type_configurable": False,
+                "compression_effort": {
+                    "min": 0,
+                    "max": 9,
+                    "default": 9
+                }
+            },
+            "WebP": {
+                "compression_type_configurable": True,
+                "compression_effort": {
+                    "min": 0,
+                    "max": 6,
+                    "default": 4
+                }
+            },
+            "JPEG": {
+                "compression_type_configurable": False,
+                "quality": {
+                    "min": 0,
+                    "max": 100,
+                    "default": 75
+                },
+            }
+        }
+
         self.worker: ProcessThread | None = None
         self.process_thread: ProcessThread | None = None
         self.total_pages = 0
@@ -79,7 +138,7 @@ class App(QtWidgets.QMainWindow):
 
         # Settings
         settings_group = QtWidgets.QGroupBox("Processing parameters")
-        settings_layout = QtWidgets.QFormLayout(settings_group)
+        self.settings_layout = QtWidgets.QFormLayout(settings_group)
 
         # Pixel density
         self.density_spin = QtWidgets.QSpinBox()
@@ -97,7 +156,7 @@ class App(QtWidgets.QMainWindow):
             "page in a PDF file takes roughly four times as long at 1200 PPI "
             "than at 600 PPI."
         )
-        settings_layout.addRow(pdf_label_widget, self.density_spin)
+        self.settings_layout.addRow(pdf_label_widget, self.density_spin)
 
         # Stretch contrast
         contrast_widget = QtWidgets.QWidget()
@@ -117,7 +176,7 @@ class App(QtWidgets.QMainWindow):
         # We add a stretch to ensure it aligns neatly to the left.
         if (layout := contrast_widget.layout()) is not None:
             layout.addStretch() # type: ignore
-        settings_layout.addRow(contrast_widget)
+        self.settings_layout.addRow(contrast_widget)
 
         # Display presets
         self.display_button = QtWidgets.QPushButton(self.current_device[1])
@@ -146,7 +205,7 @@ class App(QtWidgets.QMainWindow):
                     )
 
         self.display_button.setMenu(display_menu)
-        settings_layout.addRow("Display preset", self.display_button)
+        self.settings_layout.addRow("Display preset", self.display_button)
 
         # Image scaling
         scaling_widget = QtWidgets.QWidget()
@@ -218,7 +277,7 @@ class App(QtWidgets.QMainWindow):
         scaling_layout.addStretch()
 
         # Add to form layout
-        settings_layout.addRow(scaling_widget)
+        self.settings_layout.addRow(scaling_widget)
 
         # Quantization
         quantization_widget = QtWidgets.QWidget()
@@ -293,7 +352,7 @@ class App(QtWidgets.QMainWindow):
         quantization_layout.addStretch()
 
         # Add to form layout
-        settings_layout.addRow(quantization_widget)
+        self.settings_layout.addRow(quantization_widget)
 
         # Image format
         self.img_format_combo = QtWidgets.QComboBox()
@@ -329,30 +388,16 @@ class App(QtWidgets.QMainWindow):
                 "(e.g., KOReader).</dd>"
             "</dl>"
         )
-        settings_layout.addRow(img_format_with_info, self.img_format_combo)
+        self.settings_layout.addRow(img_format_with_info, self.img_format_combo)
 
-        # WebP-specific options
-        self.webp_method_label = QtWidgets.QLabel("Compression effort")
-        self.webp_method_spin = QtWidgets.QSpinBox()
-        self.webp_method_spin.setRange(0, 6)
-        self.webp_method_spin.setValue(4)
-        settings_layout.addRow(self.webp_method_label, self.webp_method_spin)
-
-        # PNG-specific options
-        self.png_compression_level_label = QtWidgets.QLabel("Compression effort")
-        self.png_compression_level_spin = QtWidgets.QSpinBox()
-        self.png_compression_level_spin.setRange(0, 9)
-        self.png_compression_level_spin.setValue(9)
-        settings_layout.addRow(
-            self.png_compression_level_label, self.png_compression_level_spin
-        )
+        self.add_img_format_specific_options(self.settings_layout)
 
         # Parallel jobs
         self.jobs_spin = QtWidgets.QSpinBox()
         num_cpus = cpu_count() or 1
         self.jobs_spin.setRange(1, num_cpus)
         self.jobs_spin.setValue(num_cpus)
-        settings_layout.addRow("Parallel jobs", self.jobs_spin)
+        self.settings_layout.addRow("Parallel jobs", self.jobs_spin)
 
         # Todo: add memory limiter widget.
 
@@ -399,6 +444,39 @@ class App(QtWidgets.QMainWindow):
 
         self.main_layout.addWidget(log_group)
 
+    def add_img_format_specific_options(self, layout: QtWidgets.QFormLayout):
+        # Compression type
+        self.compression_type_label = QtWidgets.QLabel("Compression type")
+        self.compression_type_combo = QtWidgets.QComboBox()
+        self.compression_type_combo.addItems(["Lossless", "Lossy"])
+        self.compression_type_combo.setCurrentText("Lossless")
+        layout.addRow(self.compression_type_label, self.compression_type_combo)
+
+        # Compression effort
+        self.compression_effort_label = QtWidgets.QLabel("Compression effort")
+        self.compression_effort_spin = QtWidgets.QSpinBox()
+        layout.addRow(self.compression_effort_label, self.compression_effort_spin)
+
+        # Quality/distance
+        quality_label_container = QtWidgets.QWidget()
+        quality_label_layout = QtWidgets.QHBoxLayout(quality_label_container)
+        quality_label_layout.setContentsMargins(0, 0, 0, 0)
+        quality_label_layout.setSpacing(0)
+
+        self.quality_label = QtWidgets.QLabel("Quality")
+        self.jpeg_xl_quality_mode_combo = QtWidgets.QComboBox()
+        self.jpeg_xl_quality_mode_combo.addItems(["Distance", "Quality"])
+
+        quality_label_layout.addWidget(self.quality_label)
+        quality_label_layout.addWidget(self.jpeg_xl_quality_mode_combo)
+
+        self.quality_spin = QtWidgets.QSpinBox()
+        self.quality_spin.setRange(0, 100)
+        self.quality_spin.setValue(100)
+
+        layout.addRow(quality_label_container, self.quality_spin)
+
+
     def connect_signals(self):
         self.add_files_button.clicked.connect(self.add_files)
         self.remove_file_button.clicked.connect(self.remove_file)
@@ -419,6 +497,9 @@ class App(QtWidgets.QMainWindow):
                 bool(self.file_list.selectedItems())
             )
         )
+        self.jpeg_xl_quality_mode_combo.currentTextChanged.connect(
+            self.on_jpeg_xl_mode_changed
+        )
         file_list_model = self.file_list.model()
         if file_list_model:
             file_list_model.rowsInserted.connect(
@@ -427,6 +508,17 @@ class App(QtWidgets.QMainWindow):
             file_list_model.rowsRemoved.connect(
                 lambda: self.update_start_button_state()
             )
+
+    def on_jpeg_xl_mode_changed(self, mode: str):
+        settings = self.IMAGE_FORMAT_SETTINGS["JPEG XL"]
+        if mode == "Distance":
+            distance = settings["distance"]
+            self.quality_spin.setRange(distance["min"], distance["max"])
+            self.quality_spin.setValue(distance["default"])
+        elif mode == "Quality":
+            quality = settings["quality"]
+            self.quality_spin.setRange(quality["min"], quality["max"])
+            self.quality_spin.setValue(quality["default"])
 
     def update_start_button_state(self):
         self.start_button.setEnabled(self.file_list.count() > 0)
@@ -481,15 +573,48 @@ class App(QtWidgets.QMainWindow):
             self.height_spin.setEnabled(False)
 
     def on_format_changed(self):
-        selected_format = self.img_format_combo.currentText()
+        img_format = self.img_format_combo.currentText()
+        settings = self.IMAGE_FORMAT_SETTINGS[img_format]
 
-        is_webp = selected_format == "WebP"
-        self.webp_method_label.setVisible(is_webp)
-        self.webp_method_spin.setVisible(is_webp)
+        # Compression type
+        compression_type_visible = settings["compression_type_configurable"]
+        self.compression_type_label.setVisible(compression_type_visible)
+        self.compression_type_combo.setVisible(compression_type_visible)
 
-        is_png = selected_format == "PNG"
-        self.png_compression_level_label.setVisible(is_png)
-        self.png_compression_level_spin.setVisible(is_png)
+        # Compression effort
+        compression_effort = settings.get("compression_effort")
+        compression_effort_is_not_none = compression_effort is not None
+
+        if compression_effort_is_not_none:
+            self.compression_effort_spin.setRange(
+                compression_effort["min"], compression_effort["max"]
+            )
+            self.compression_effort_spin.setValue(compression_effort["default"])
+
+        self.compression_effort_label.setVisible(compression_effort_is_not_none)
+        self.compression_effort_spin.setVisible(compression_effort_is_not_none)
+
+        # Quality/distance
+        quality = settings.get("quality")
+        quality_visible = quality is not None
+
+        if (row := self.settings_layout.getWidgetPosition(self.quality_spin)[0]) != -1:
+            self.settings_layout.setRowVisible(row, quality_visible)
+
+        if quality_visible:
+            if img_format == "JPEG XL":
+                self.quality_label.hide()
+                self.jpeg_xl_quality_mode_combo.show()
+                self.jpeg_xl_quality_mode_combo.setCurrentText("Distance")
+                self.on_jpeg_xl_mode_changed(
+                    self.jpeg_xl_quality_mode_combo.currentText()
+                )
+            else:
+                self.jpeg_xl_quality_mode_combo.hide()
+                self.quality_label.show()
+                self.quality_spin.setRange(quality["min"], quality["max"])
+                self.quality_spin.setValue(quality["default"])
+
 
     def add_files(self):
         import os
@@ -608,18 +733,29 @@ class App(QtWidgets.QMainWindow):
         img_format = self.img_format_combo.currentText()
         num_workers = self.jobs_spin.value()
 
-        if img_format == "PNG":
-            compression_or_speed_level = self.png_compression_level_spin.value()
-        elif img_format == "WebP":
-            compression_or_speed_level = self.webp_method_spin.value()
+        if self.IMAGE_FORMAT_SETTINGS.get(img_format):
+            compression_or_speed_level = self.compression_effort_spin.value()
         else:
             compression_or_speed_level = 0
+
+        from .config import Config, CompressionType, QualityType
+
+        compression_type = CompressionType[
+            self.compression_type_combo.currentText()
+        ]
+
+        jpeg_xl_quality_mode = self.jpeg_xl_quality_mode_combo.currentText()
+        if img_format == "JPEG XL":
+            quality_type = QualityType[jpeg_xl_quality_mode]
+        else:
+            quality_type = QualityType["Quality"]
+
+        quality = self.quality_spin.value()
 
         self.log_output.append("Starting processing...")
         self.start_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
 
-        from .config import Config
         from .worker import ProcessThread
 
         config = Config(
@@ -630,7 +766,10 @@ class App(QtWidgets.QMainWindow):
             dither = dither,
             stretch_contrast = stretch_contrast,
             img_format = img_format,
-            compression_or_speed_level = compression_or_speed_level
+            compression_or_speed_level = compression_or_speed_level,
+            compression_type = compression_type,
+            quality_type = quality_type,
+            img_quality = quality
         )
 
         self.process_thread = ProcessThread(

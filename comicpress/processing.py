@@ -5,6 +5,7 @@ import rarfile
 import zipfile
 
 from typing import TYPE_CHECKING
+from .config import CompressionType, QualityType
 
 if TYPE_CHECKING:
     from .config import Config
@@ -111,7 +112,7 @@ def save_processed_image(
         img = img.resize(scale, kernel = config.resample) # type: ignore
 
     png_compression_level = (
-        config.png_compression_level if config.img_format == "PNG" else 0
+        config.compression_or_speed_level if config.img_format == "PNG" else 0
     )
     png_path = f"{output_path_base}.png"
 
@@ -143,22 +144,25 @@ def save_processed_image(
             output_path,
             compression = compression, # type: ignore
             subsample_mode = subsample_mode, # type: ignore
-            Q = 50 # type: ignore
+            Q = config.img_quality # type: ignore
         )
     elif config.img_format == "JPEG":
         output_path = f"{output_path_base}.jpg"
-        img.jpegsave(output_path) # type: ignore
+        img.jpegsave(output_path, Q = config.img_quality) # type: ignore
     elif config.img_format == "JPEG XL":
         output_path = f"{output_path_base}.jxl"
-        if config.bit_depth:
-            img.jxlsave(output_path, distance = 0) # type: ignore
+        if img.quality_type == QualityType.DISTANCE:
+            img.jxlsave( # type: ignore
+                output_path, distance = config.img_quality # type: ignore
+            )
         else:
-            img.jxlsave(output_path) # type: ignore
+            img.jxlsave(output_path, Q = config.img_quality) # type: ignore
     else:
         output_path = f"{output_path_base}.webp"
+        lossless = config.compression_type == CompressionType.LOSSLESS
         img.webpsave( # type: ignore
             output_path,
-            lossless = config.bit_depth != None, # type: ignore
+            lossless = lossless, # type: ignore
             effort = config.compression_or_speed_level # type: ignore
         )
 

@@ -607,8 +607,13 @@ class App(QtWidgets.QMainWindow):
         dpi = self.density_spin.value()
         img_format = self.img_format_combo.currentText()
         num_workers = self.jobs_spin.value()
-        webp_method = self.webp_method_spin.value()
-        png_compression_level = self.png_compression_level_spin.value()
+
+        if img_format == "PNG":
+            compression_or_speed_level = self.png_compression_level_spin.value()
+        elif img_format == "WebP":
+            compression_or_speed_level = self.webp_method_spin.value()
+        else:
+            compression_or_speed_level = 0
 
         self.log_output.append("Starting processing...")
         self.start_button.setEnabled(False)
@@ -625,8 +630,7 @@ class App(QtWidgets.QMainWindow):
             dither = dither,
             stretch_contrast = stretch_contrast,
             img_format = img_format,
-            webp_method = webp_method,
-            png_compression_level = png_compression_level
+            compression_or_speed_level = compression_or_speed_level
         )
 
         self.process_thread = ProcessThread(

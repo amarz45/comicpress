@@ -131,7 +131,7 @@ def save_processed_image(
     if config.img_format == "PNG":
         img.pngsave( # type: ignore
             png_path,
-            compression = png_compression_level # type: ignore
+            compression = config.compression_or_speed_level # type: ignore
         )
         return f"Saved {png_path}."
 
@@ -159,7 +159,7 @@ def save_processed_image(
         img.webpsave( # type: ignore
             output_path,
             lossless = config.bit_depth != None, # type: ignore
-            effort = config.webp_method # type: ignore
+            effort = config.compression_or_speed_level # type: ignore
         )
 
     os.remove(png_path)

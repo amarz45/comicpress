@@ -14,5 +14,4 @@ class Config:
     dither: float | None
     stretch_contrast: bool
     img_format: str
-    webp_method: int
-    png_compression_level: int
+    compression_or_speed_level: int

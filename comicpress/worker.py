@@ -25,6 +25,10 @@ class ProcessThread(QtCore.QThread):
         self.output_root = output_root
         self.config = config
         self.num_workers = num_workers
+        self._is_running = True
+
+    def stop(self):
+        self._is_running = False
 
     def run(self):
         import os
@@ -78,11 +82,19 @@ class ProcessThread(QtCore.QThread):
 
             completed = 0
             for fut in as_completed(futures):
+                if not self._is_running:
+                    for f in futures:
+                        f.cancel()
+                    break
+
                 msg = fut.result()
                 if msg:
                     self.log_signal.emit(msg)
                 completed += 1
                 self.progress_signal.emit(completed)
+
+        if not self._is_running:
+            return
 
         for _, temp_dir in output_dirs.items():
             cbz_name = output_root / f"{temp_dir.name}.cbz"

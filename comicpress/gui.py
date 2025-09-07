@@ -115,7 +115,8 @@ class App(QtWidgets.QMainWindow):
             "ereader, as it makes the colours “pop.”"
         )
         # We add a stretch to ensure it aligns neatly to the left.
-        contrast_layout.addStretch()
+        if (layout := contrast_widget.layout()) is not None:
+            layout.addStretch() # type: ignore
         settings_layout.addRow(contrast_widget)
 
         # Display presets

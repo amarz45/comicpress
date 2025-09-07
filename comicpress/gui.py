@@ -1,13 +1,17 @@
 from PyQt6 import QtWidgets
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .worker import ProcessThread
 
 class App(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
-        self.worker = None
-        self.thread = None
+        self.worker: ProcessThread | None = None
+        self.process_thread: ProcessThread | None = None
         self.total_pages = 0
         self.processed_pages = 0
-        self.start_time = None
+        self.start_time: float | None = None
         self.setWindowTitle("Comicpress")
         self.current_device = (None, "Custom")
 
@@ -17,7 +21,7 @@ class App(QtWidgets.QMainWindow):
         # Timer
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.update_time_labels)
-        self.last_eta_now_time = None
+        self.last_eta_now_time: float | None = None
         self.images_since_last_eta_now = 0
         self.last_progress_value = 0
         self.eta_now_intervals = deque(maxlen = 5)
@@ -30,8 +34,8 @@ class App(QtWidgets.QMainWindow):
         self.setup_ui()
         self.connect_signals()
         self.on_device_changed()
-        self.toggle_scaling_inputs(self.enable_scaling_check.checkState())
-        self.toggle_quantization(self.enable_quantization_check.checkState())
+        self.toggle_scaling_inputs(self.enable_scaling_check.checkState().value)
+        self.toggle_quantization(self.enable_quantization_check.checkState().value)
         self.on_format_changed()
 
     def setup_ui(self):
@@ -111,7 +115,7 @@ class App(QtWidgets.QMainWindow):
             "ereader, as it makes the colours “pop.”"
         )
         # We add a stretch to ensure it aligns neatly to the left.
-        contrast_widget.layout().addStretch()
+        contrast_layout.addStretch()
         settings_layout.addRow(contrast_widget)
 
         # Display presets
@@ -120,18 +124,24 @@ class App(QtWidgets.QMainWindow):
 
         from .displays import DISPLAYS
         custom_action = display_menu.addAction("Custom")
-        custom_action.triggered.connect(lambda: self.set_device(None, "Custom"))
+        if custom_action:
+            custom_action.triggered.connect(
+                lambda: self.set_device(None, "Custom")
+            )
         display_menu.addSeparator()
 
         # Add brand submenus.
         for brand, models in DISPLAYS.items():
             if isinstance(models, dict):
                 brand_menu = display_menu.addMenu(brand)
+                if not brand_menu:
+                    continue
                 for model_name in models.keys():
                     model_action = brand_menu.addAction(model_name)
-                    # Use a lambda to capture the correct model_name.
-                    model_action.triggered.connect(
-                        lambda checked = False, b = brand, m = model_name: self.set_device(b, m)
+                    if not model_action:
+                        continue
+                    model_action.triggered.connect(lambda
+                        b = brand, m = model_name: self.set_device(b, m)
                     )
 
         self.display_button.setMenu(display_menu)
@@ -408,9 +418,14 @@ class App(QtWidgets.QMainWindow):
                 bool(self.file_list.selectedItems())
             )
         )
-        self.file_list.model().rowsInserted.connect(lambda: self.update_start_button_state())
-        self.file_list.model().rowsRemoved.connect(lambda: self.update_start_button_state())
-        #self.enable_mem_limit_check.stateChanged.connect(self.toggle_mem_limit_inputs)
+        file_list_model = self.file_list.model()
+        if file_list_model:
+            file_list_model.rowsInserted.connect(
+                lambda: self.update_start_button_state()
+            )
+            file_list_model.rowsRemoved.connect(
+                lambda: self.update_start_button_state()
+            )
 
     def update_start_button_state(self):
         self.start_button.setEnabled(self.file_list.count() > 0)
@@ -422,27 +437,23 @@ class App(QtWidgets.QMainWindow):
 
     def toggle_scaling_inputs(self, state: int):
         from PyQt6 import QtCore
-        enabled = (state == QtCore.Qt.CheckState.Checked.value)
+        enabled = state == QtCore.Qt.CheckState.Checked.value
         self.width_spin.setEnabled(enabled)
         self.height_spin.setEnabled(enabled)
         self.filter_combo.setEnabled(enabled)
 
     def toggle_quantization(self, state: int):
         from PyQt6 import QtCore
-        # Handle both int (from signal) and CheckState (from checkState()).
-        if isinstance(state, QtCore.Qt.CheckState):
-            enabled = (state == QtCore.Qt.CheckState.Checked)
-        else:
-            enabled = (state == QtCore.Qt.CheckState.Checked.value)
+        enabled = state == QtCore.Qt.CheckState.Checked.value
         self.colours_combo.setEnabled(enabled)
         self.dither_spin.setEnabled(enabled)
 
     def toggle_filter_inputs(self, state: int):
         from PyQt6 import QtCore
-        enabled = (state == QtCore.Qt.CheckState.Checked.value)
+        enabled = state == QtCore.Qt.CheckState.Checked.value
         self.filter_combo.setEnabled(enabled)
 
-    def set_device(self, brand, name: int):
+    def set_device(self, brand: str | None, name: str):
         """Updates the current device and triggers a UI refresh."""
         self.current_device  = (brand, name)
         if brand:
@@ -490,10 +501,14 @@ class App(QtWidgets.QMainWindow):
             return
 
         from PyQt6 import QtCore
-        existing_paths = [
-            self.file_list.item(i).data(QtCore.Qt.ItemDataRole.UserRole)
-            for i in range(self.file_list.count())
-        ]
+        existing_paths = []
+        for i in range(self.file_list.count()):
+            item = self.file_list.item(i)
+            if not item:
+                continue
+            path = item.data(QtCore.Qt.ItemDataRole.UserRole)
+            if path:
+                existing_paths.append(path)
 
         all_paths = existing_paths + files
         base_names = [os.path.basename(p) for p in all_paths]
@@ -507,6 +522,8 @@ class App(QtWidgets.QMainWindow):
 
         for i in range(self.file_list.count()):
             item = self.file_list.item(i)
+            if not item:
+                continue
             path = item.data(QtCore.Qt.ItemDataRole.UserRole)
             base_name = os.path.basename(path)
             if base_names.count(base_name) > 1:
@@ -534,10 +551,14 @@ class App(QtWidgets.QMainWindow):
             return
 
         from PyQt6 import QtCore
-        input_paths = [
-            self.file_list.item(i).data(QtCore.Qt.ItemDataRole.UserRole)
-            for i in range(self.file_list.count())
-        ]
+        input_paths = []
+        for i in range(self.file_list.count()):
+            item = self.file_list.item(i)
+            if not item:
+                continue
+            path = item.data(QtCore.Qt.ItemDataRole.UserRole)
+            if path:
+                input_paths.append(path)
 
         output_root = self.output_dir_edit.text()
 
@@ -545,9 +566,13 @@ class App(QtWidgets.QMainWindow):
 
         if self.enable_scaling_check.isChecked():
             from .displays import Display, DISPLAYS
+            brand, name = self.current_device
+            if brand is not None:
+                is_colour = DISPLAYS[brand][name].colour
+            else:
+                is_colour = False
             display = Display(
-                self.width_spin.value(), self.height_spin.value(),
-                DISPLAYS[self.current_device[0]][self.current_device[1]].colour
+                self.width_spin.value(), self.height_spin.value(), is_colour
             )
         else:
             display = None
@@ -594,7 +619,7 @@ class App(QtWidgets.QMainWindow):
         config = Config(
             dpi = dpi,
             display = display,
-            resample = resample,
+            resample = resample, # type: ignore
             bit_depth = bit_depth,
             dither = dither,
             stretch_contrast = stretch_contrast,
@@ -603,21 +628,21 @@ class App(QtWidgets.QMainWindow):
             png_compression_level = png_compression_level
         )
 
-        self.thread = ProcessThread(
+        self.process_thread = ProcessThread(
             input_paths, output_root, num_workers, config
         )
 
-        self.thread.log_signal.connect(self.log_output.append)
-        self.thread.done_signal.connect(
+        self.process_thread.log_signal.connect(self.log_output.append)
+        self.process_thread.done_signal.connect(
             lambda: self.log_output.append("Processing complete")
         )
-        self.thread.progress_signal.connect(self.update_progress)
-        self.thread.total_pages_signal.connect(self.set_progress_max)
-        self.thread.finished.connect(lambda: self.start_button.setEnabled(True))
-        self.thread.finished.connect(
+        self.process_thread.progress_signal.connect(self.update_progress)
+        self.process_thread.total_pages_signal.connect(self.set_progress_max)
+        self.process_thread.finished.connect(lambda: self.start_button.setEnabled(True))
+        self.process_thread.finished.connect(
             lambda: self.cancel_button.setEnabled(False)
         )
-        self.thread.finished.connect(self.timer.stop)
+        self.process_thread.finished.connect(self.timer.stop)
 
         # Timer
         from time import time
@@ -629,7 +654,7 @@ class App(QtWidgets.QMainWindow):
         self.eta_now_label.setText("ETA (recent): –")
         self.timer.start(1000)
 
-        self.thread.start()
+        self.process_thread.start()
 
     def update_progress(self, value: int):
         self.progress_bar.setValue(value)
@@ -653,15 +678,18 @@ class App(QtWidgets.QMainWindow):
 
             # Create and configure the info icon label.
             info_icon_label = QtWidgets.QLabel()
-            icon = self.style().standardIcon(
-                QtWidgets.QStyle.StandardPixmap.SP_MessageBoxInformation
-            )
-            info_icon_label.setPixmap(icon.pixmap(16, 16))
-            formatted_tooltip = f"<p>{tooltip_text}</p>"
-            info_icon_label.setToolTip(formatted_tooltip)
 
-            # Add the icon first (for left alignment), then the main widget.
-            layout.addWidget(info_icon_label)
+            if style := self.style():
+                icon = style.standardIcon(
+                    QtWidgets.QStyle.StandardPixmap.SP_MessageBoxInformation
+                )
+                info_icon_label.setPixmap(icon.pixmap(16, 16))
+                formatted_tooltip = f"<p>{tooltip_text}</p>"
+                info_icon_label.setToolTip(formatted_tooltip)
+
+                # Add the icon first (for left alignment), then the main widget.
+                layout.addWidget(info_icon_label)
+
             layout.addWidget(main_widget)
 
             return container
@@ -684,7 +712,11 @@ class App(QtWidgets.QMainWindow):
 
         # ETA now (short-term estimate)
         now = time()
-        if now - self.last_eta_now_time >= 1.0 and self.images_since_last_eta_now > 0:
+        if (
+            self.last_eta_now_time is not None
+            and now - self.last_eta_now_time >= 1.0
+            and self.images_since_last_eta_now > 0
+        ):
             interval = now - self.last_eta_now_time
             speed = self.images_since_last_eta_now / interval  # images/sec
             total_remaining = self.progress_bar.maximum() - value
@@ -703,9 +735,9 @@ class App(QtWidgets.QMainWindow):
             self.eta_now_label.setText(f"ETA (recent): {time_to_str(avg_eta)}")
 
     def cancel_conversion(self):
-        if self.thread:
-            self.thread.terminate()
-            self.thread.wait()
+        if self.process_thread:
+            self.process_thread.terminate()
+            self.process_thread.wait()
         self.start_button.setEnabled(True)
         self.cancel_button.setEnabled(False)
         self.log_output.append("Cancelled")

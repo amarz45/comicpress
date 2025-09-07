@@ -737,8 +737,7 @@ class App(QtWidgets.QMainWindow):
 
     def cancel_conversion(self):
         if self.process_thread:
-            self.process_thread.terminate()
-            self.process_thread.wait()
+            self.process_thread.stop()
         self.start_button.setEnabled(True)
         self.cancel_button.setEnabled(False)
         self.log_output.append("Cancelled")

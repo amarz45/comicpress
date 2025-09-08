@@ -99,7 +99,16 @@ class App(QtWidgets.QMainWindow):
         self.on_format_changed()
 
     def setup_ui(self):
-        from os import getcwd, cpu_count
+        io_group = self._create_io_group()
+        settings_group = self._create_settings_group()
+        log_group = self._create_log_group()
+
+        self.main_layout.addWidget(io_group)
+        self.main_layout.addWidget(settings_group)
+        self.main_layout.addWidget(log_group)
+
+    def _create_io_group(self) -> QtWidgets.QGroupBox:
+        from os import getcwd
 
         # Input and output
         io_group = QtWidgets.QGroupBox()
@@ -135,29 +144,71 @@ class App(QtWidgets.QMainWindow):
         output_layout.addWidget(self.browse_output_button)
 
         io_layout.addLayout(output_layout)
-        self.main_layout.addWidget(io_group)
 
-        # Settings
+        return io_group
+
+    def _create_settings_group(self) -> QtWidgets.QGroupBox:
         settings_group = QtWidgets.QGroupBox("Processing parameters")
         self.settings_layout = QtWidgets.QFormLayout(settings_group)
 
-        # Pixel density
-        self.density_spin = QtWidgets.QSpinBox()
-        self.density_spin.setRange(300, 2 ** 31 - 1)
-        self.density_spin.setValue(1200)
-        self.density_spin.setSingleStep(300)
-        pdf_label_widget = self._create_widget_with_info(
-            QtWidgets.QLabel(ui_constants.PDF_LABEL), ui_constants.PDF_TOOLTIP
-        )
-        self.settings_layout.addRow(pdf_label_widget, self.density_spin)
+        self._add_pdf_pixel_density_widget()
+        self._add_contrast_widget()
+        self._add_display_presets_widget()
+        self._add_scaling_widgets()
+        self._add_quantization_widget()
+        self._add_img_format_widget()
+        self._add_img_format_specific_options(self.settings_layout)
+        self._add_parallel_jobs_widget()
 
-        # Stretch contrast
+        return settings_group
+
+    def _create_log_group(self) -> QtWidgets.QGroupBox:
+        log_group = QtWidgets.QGroupBox()
+        log_layout = QtWidgets.QVBoxLayout(log_group)
+
+        # Progress bar
+        self.progress_bar = QtWidgets.QProgressBar()
+        self.progress_bar.setValue(0)
+        self.progress_bar.setTextVisible(True)
+        self.progress_bar.setFormat("%p %")
+        log_layout.addWidget(self.progress_bar)
+
+        # Time elapsed and ETA
+        time_layout = QtWidgets.QHBoxLayout()
+        self.elapsed_label = QtWidgets.QLabel("Elapsed: –")
+        self.eta_label = QtWidgets.QLabel("ETA (overall): –")
+        self.eta_now_label = QtWidgets.QLabel("ETA (recent): –")
+        time_layout.addWidget(self.elapsed_label)
+        time_layout.addWidget(self.eta_label)
+        time_layout.addWidget(self.eta_now_label)
+        log_layout.addLayout(time_layout)
+
+        # Log output
+        self.log_output = QtWidgets.QTextEdit()
+        self.log_output.setReadOnly(True)
+        self.log_output.setFontFamily("monospace")
+        log_layout.addWidget(self.log_output)
+
+        # Create action widgets.
+        action_layout = QtWidgets.QHBoxLayout()
+        self.start_button = QtWidgets.QPushButton("Start")
+        self.start_button.setEnabled(False)
+        self.cancel_button = QtWidgets.QPushButton("Cancel")
+        self.cancel_button.setEnabled(False)
+
+        # Add action widgets.
+        action_layout.addWidget(self.start_button)
+        action_layout.addWidget(self.cancel_button)
+        log_layout.addLayout(action_layout)
+
+        return log_group
+
+    def _add_contrast_widget(self):
         contrast_widget = QtWidgets.QWidget()
         contrast_layout = QtWidgets.QHBoxLayout(contrast_widget)
         contrast_layout.setContentsMargins(0, 0, 0, 0)
         contrast_layout.setSpacing(20)
 
-        # Stretch contrast
         self.enable_contrast_check = QtWidgets.QCheckBox(
             ui_constants.CONTRAST_LABEL
         )
@@ -170,7 +221,7 @@ class App(QtWidgets.QMainWindow):
             layout.addStretch() # type: ignore
         self.settings_layout.addRow(contrast_widget)
 
-        # Display presets
+    def _add_display_presets_widget(self):
         self.display_button = QtWidgets.QPushButton(self.current_device[1])
         display_menu = QtWidgets.QMenu(self)
 
@@ -199,7 +250,7 @@ class App(QtWidgets.QMainWindow):
         self.display_button.setMenu(display_menu)
         self.settings_layout.addRow("Display preset", self.display_button)
 
-        # Image scaling
+    def _add_scaling_widgets(self):
         scaling_widget = QtWidgets.QWidget()
         scaling_layout = QtWidgets.QHBoxLayout(scaling_widget)
         scaling_layout.setContentsMargins(0, 0, 0, 0)
@@ -260,7 +311,7 @@ class App(QtWidgets.QMainWindow):
         # Add to form layout
         self.settings_layout.addRow(scaling_widget)
 
-        # Quantization
+    def _add_quantization_widget(self):
         quantization_widget = QtWidgets.QWidget()
         quantization_layout = QtWidgets.QHBoxLayout(quantization_widget)
         quantization_layout.setContentsMargins(0, 0, 0, 0)
@@ -319,7 +370,7 @@ class App(QtWidgets.QMainWindow):
         # Add to form layout
         self.settings_layout.addRow(quantization_widget)
 
-        # Image format
+    def _add_img_format_widget(self):
         self.img_format_combo = QtWidgets.QComboBox()
         self.img_format_combo.addItems(ui_constants.IMG_FORMATS)
         self.img_format_combo.setCurrentText(ui_constants.IMG_FORMAT_DEFAULT)
@@ -329,61 +380,25 @@ class App(QtWidgets.QMainWindow):
         )
         self.settings_layout.addRow(img_format_with_info, self.img_format_combo)
 
-        self.add_img_format_specific_options(self.settings_layout)
-
-        # Parallel jobs
+    def _add_parallel_jobs_widget(self):
+        from os import cpu_count
         self.jobs_spin = QtWidgets.QSpinBox()
         num_cpus = cpu_count() or 1
         self.jobs_spin.setRange(1, num_cpus)
         self.jobs_spin.setValue(num_cpus)
         self.settings_layout.addRow("Parallel jobs", self.jobs_spin)
 
-        # Todo: add memory limiter widget.
+    def _add_pdf_pixel_density_widget(self):
+        self.density_spin = QtWidgets.QSpinBox()
+        self.density_spin.setRange(300, 2 ** 31 - 1)
+        self.density_spin.setValue(1200)
+        self.density_spin.setSingleStep(300)
+        pdf_label_widget = self._create_widget_with_info(
+            QtWidgets.QLabel(ui_constants.PDF_LABEL), ui_constants.PDF_TOOLTIP
+        )
+        self.settings_layout.addRow(pdf_label_widget, self.density_spin)
 
-        self.main_layout.addWidget(settings_group)
-
-        # Logging
-        log_group = QtWidgets.QGroupBox()
-        log_layout = QtWidgets.QVBoxLayout(log_group)
-
-        # Progress bar
-        self.progress_bar = QtWidgets.QProgressBar()
-        self.progress_bar.setValue(0)
-        self.progress_bar.setTextVisible(True)
-        self.progress_bar.setFormat("%p %")
-        log_layout.addWidget(self.progress_bar)
-
-        # Time elapsed and ETA
-        time_layout = QtWidgets.QHBoxLayout()
-        self.elapsed_label = QtWidgets.QLabel("Elapsed: –")
-        self.eta_label = QtWidgets.QLabel("ETA (overall): –")
-        self.eta_now_label = QtWidgets.QLabel("ETA (recent): –")
-        time_layout.addWidget(self.elapsed_label)
-        time_layout.addWidget(self.eta_label)
-        time_layout.addWidget(self.eta_now_label)
-        log_layout.addLayout(time_layout)
-
-        # Log output
-        self.log_output = QtWidgets.QTextEdit()
-        self.log_output.setReadOnly(True)
-        self.log_output.setFontFamily("monospace")
-        log_layout.addWidget(self.log_output)
-
-        # Create action widgets.
-        action_layout = QtWidgets.QHBoxLayout()
-        self.start_button = QtWidgets.QPushButton("Start")
-        self.start_button.setEnabled(False)
-        self.cancel_button = QtWidgets.QPushButton("Cancel")
-        self.cancel_button.setEnabled(False)
-
-        # Add action widgets.
-        action_layout.addWidget(self.start_button)
-        action_layout.addWidget(self.cancel_button)
-        log_layout.addLayout(action_layout)
-
-        self.main_layout.addWidget(log_group)
-
-    def add_img_format_specific_options(self, layout: QtWidgets.QFormLayout):
+    def _add_img_format_specific_options(self, layout: QtWidgets.QFormLayout):
         # Compression type
         self.compression_type_label = QtWidgets.QLabel(
             ui_constants.COMPRESSION_LABEL
@@ -422,7 +437,6 @@ class App(QtWidgets.QMainWindow):
         self.quality_spin.setValue(100)
 
         layout.addRow(quality_label_container, self.quality_spin)
-
 
     def connect_signals(self):
         self.add_files_button.clicked.connect(self.add_files)
@@ -590,7 +604,6 @@ class App(QtWidgets.QMainWindow):
             else:
                 compression_type = "Lossy"
             self.compression_type_combo.setCurrentText(compression_type)
-
 
     def add_files(self):
         import os

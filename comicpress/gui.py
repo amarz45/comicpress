@@ -4,67 +4,67 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .worker import ProcessThread
 
+IMAGE_FORMAT_SETTINGS = {
+    "AVIF": {
+        "compression_type_configurable": False,
+        "compression_effort": {
+            "min": 0,
+            "max": 9,
+            "default": 4
+        },
+        "quality": {
+            "min": 0,
+            "max": 100,
+            "default": 50
+        }
+    },
+    "JPEG XL": {
+        "compression_type_configurable": False,
+        "compression_effort": {
+            "min": 1,
+            "max": 9,
+            "default": 7
+        },
+        "quality": {
+            "min": 0,
+            "max": 100,
+            "default": 100
+        },
+        "distance": {
+            "min": 0,
+            "max": 15,
+            "default": 0
+        },
+    },
+    "PNG": {
+        "compression_type_configurable": False,
+        "compression_effort": {
+            "min": 0,
+            "max": 9,
+            "default": 9
+        }
+    },
+    "WebP": {
+        "compression_type_configurable": True,
+        "compression_effort": {
+            "min": 0,
+            "max": 6,
+            "default": 4
+        }
+    },
+    "JPEG": {
+        "compression_type_configurable": False,
+        "quality": {
+            "min": 0,
+            "max": 100,
+            "default": 75
+        },
+    }
+}
+
 class App(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
-
-        self.IMAGE_FORMAT_SETTINGS = {
-            "AVIF": {
-                "compression_type_configurable": False,
-                "compression_effort": {
-                    "min": 0,
-                    "max": 9,
-                    "default": 4
-                },
-                "quality": {
-                    "min": 0,
-                    "max": 100,
-                    "default": 50
-                }
-            },
-            "JPEG XL": {
-                "compression_type_configurable": False,
-                "compression_effort": {
-                    "min": 1,
-                    "max": 9,
-                    "default": 7
-                },
-                "quality": {
-                    "min": 0,
-                    "max": 100,
-                    "default": 100
-                },
-                "distance": {
-                    "min": 0,
-                    "max": 15,
-                    "default": 0
-                },
-            },
-            "PNG": {
-                "compression_type_configurable": False,
-                "compression_effort": {
-                    "min": 0,
-                    "max": 9,
-                    "default": 9
-                }
-            },
-            "WebP": {
-                "compression_type_configurable": True,
-                "compression_effort": {
-                    "min": 0,
-                    "max": 6,
-                    "default": 4
-                }
-            },
-            "JPEG": {
-                "compression_type_configurable": False,
-                "quality": {
-                    "min": 0,
-                    "max": 100,
-                    "default": 75
-                },
-            }
-        }
 
         self.worker: ProcessThread | None = None
         self.process_thread: ProcessThread | None = None
@@ -510,15 +510,18 @@ class App(QtWidgets.QMainWindow):
             )
 
     def on_jpeg_xl_mode_changed(self, mode: str):
-        settings = self.IMAGE_FORMAT_SETTINGS["JPEG XL"]
+        settings = IMAGE_FORMAT_SETTINGS["JPEG XL"]
+        quantize_enabled = self.enable_quantization_check.isChecked()
+
         if mode == "Distance":
-            distance = settings["distance"]
-            self.quality_spin.setRange(distance["min"], distance["max"])
-            self.quality_spin.setValue(distance["default"])
-        elif mode == "Quality":
-            quality = settings["quality"]
-            self.quality_spin.setRange(quality["min"], quality["max"])
-            self.quality_spin.setValue(quality["default"])
+            setting = settings["distance"]
+            value = 0 if quantize_enabled else 1
+        else:
+            setting = settings["quality"]
+            value = 100 if quantize_enabled else 75
+
+        self.quality_spin.setRange(setting["min"], setting["max"])
+        self.quality_spin.setValue(value)
 
     def update_start_button_state(self):
         self.start_button.setEnabled(self.file_list.count() > 0)
@@ -540,6 +543,23 @@ class App(QtWidgets.QMainWindow):
         enabled = state == QtCore.Qt.CheckState.Checked.value
         self.colours_combo.setEnabled(enabled)
         self.dither_spin.setEnabled(enabled)
+
+        img_format = self.img_format_combo.currentText()
+        settings = IMAGE_FORMAT_SETTINGS[img_format]
+        compression_type_visible = settings["compression_type_configurable"]
+
+        if compression_type_visible:
+            compression_type = "Lossless" if enabled else "Lossy"
+            self.compression_type_combo.setCurrentText(compression_type)
+        elif img_format == "JPEG XL":
+            mode = self.jpeg_xl_quality_mode_combo.currentText()
+            if mode == "Distance":
+                value = 0 if enabled else 1
+            else:
+                value = 100 if enabled else 75
+            self.quality_spin.setValue(value)
+        else:
+            return
 
     def toggle_filter_inputs(self, state: int):
         from PyQt6 import QtCore
@@ -614,6 +634,15 @@ class App(QtWidgets.QMainWindow):
                 self.quality_label.show()
                 self.quality_spin.setRange(quality["min"], quality["max"])
                 self.quality_spin.setValue(quality["default"])
+
+        # Default to lossless compression for quantized images.
+        quantize_enabled = self.enable_quantization_check.isChecked()
+        if compression_type_visible:
+            if quantize_enabled:
+                compression_type = "Lossless"
+            else:
+                compression_type = "Lossy"
+            self.compression_type_combo.setCurrentText(compression_type)
 
 
     def add_files(self):

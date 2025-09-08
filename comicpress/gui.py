@@ -594,7 +594,7 @@ class App(QtWidgets.QMainWindow):
 
     def on_format_changed(self):
         img_format = self.img_format_combo.currentText()
-        settings = self.IMAGE_FORMAT_SETTINGS[img_format]
+        settings = IMAGE_FORMAT_SETTINGS[img_format]
 
         # Compression type
         compression_type_visible = settings["compression_type_configurable"]
@@ -762,7 +762,7 @@ class App(QtWidgets.QMainWindow):
         img_format = self.img_format_combo.currentText()
         num_workers = self.jobs_spin.value()
 
-        if self.IMAGE_FORMAT_SETTINGS.get(img_format):
+        if IMAGE_FORMAT_SETTINGS.get(img_format):
             compression_or_speed_level = self.compression_effort_spin.value()
         else:
             compression_or_speed_level = 0

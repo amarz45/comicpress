@@ -1,6 +1,7 @@
 from PyQt6 import QtWidgets
 from typing import TYPE_CHECKING
 from . import ui_constants
+from .config import Config
 
 if TYPE_CHECKING:
     from .worker import ProcessThread
@@ -444,7 +445,7 @@ class App(QtWidgets.QMainWindow):
         self.clear_files_button.clicked.connect(self.file_list.clear)
         self.browse_output_button.clicked.connect(self.browse_output_dir)
         self.img_format_combo.currentTextChanged.connect(self.on_format_changed)
-        self.start_button.clicked.connect(self.start_conversion)
+        self.start_button.clicked.connect(self._start_conversion)
         self.clear_files_button.clicked.connect(self.update_start_button_state)
         self.cancel_button.clicked.connect(self.cancel_conversion)
         self.enable_scaling_check.stateChanged.connect(
@@ -658,15 +659,50 @@ class App(QtWidgets.QMainWindow):
         if directory:
             self.output_dir_edit.setText(directory)
 
-    def start_conversion(self):
+    def _start_conversion(self):
         if self.file_list.count() == 0:
             QtWidgets.QMessageBox.warning(
                 self, "Input required", "Please add at least one input file."
             )
             return
 
+        input_paths = self._get_input_paths()
+        output_root = self.output_dir_edit.text()
+        num_workers = self.jobs_spin.value()
+        config = self._build_config_from_ui()
+
+        self.process_thread = ProcessThread(
+            input_paths, output_root, num_workers, config
+        )
+
+        self.process_thread.log_signal.connect(self.log_output.append)
+        self.process_thread.done_signal.connect(
+            lambda: self.log_output.append("Processing complete")
+        )
+        self.process_thread.progress_signal.connect(self.update_progress)
+        self.process_thread.total_pages_signal.connect(self.set_progress_max)
+        self.process_thread.finished.connect(lambda: self.start_button.setEnabled(True))
+        self.process_thread.finished.connect(
+            lambda: self.cancel_button.setEnabled(False)
+        )
+        self.process_thread.finished.connect(self.timer.stop)
+
+        # Timer
+        from time import time
+        self.start_time = self.last_eta_now_time = time()
+        self.images_since_last_eta_now = 0
+        self.last_progress_value = 0
+        self.elapsed_label.setText("Elapsed: –")
+        self.eta_label.setText("ETA (overall): –")
+        self.eta_now_label.setText("ETA (recent): –")
+        self.timer.start(1000)
+
+        self.process_thread.start()
+
+    def _get_input_paths(self) -> list[str]:
         from PyQt6 import QtCore
         input_paths = []
+
         for i in range(self.file_list.count()):
             item = self.file_list.item(i)
             if not item:
@@ -675,8 +711,9 @@ class App(QtWidgets.QMainWindow):
             if path:
                 input_paths.append(path)
 
-        output_root = self.output_dir_edit.text()
+        return input_paths
 
+    def _build_config_from_ui(self) -> Config:
         stretch_contrast = self.enable_contrast_check.isChecked()
 
         if self.enable_scaling_check.isChecked():
@@ -720,14 +757,13 @@ class App(QtWidgets.QMainWindow):
 
         dpi = self.density_spin.value()
         img_format = self.img_format_combo.currentText()
-        num_workers = self.jobs_spin.value()
 
         if IMAGE_FORMAT_SETTINGS.get(img_format):
             compression_or_speed_level = self.compression_effort_spin.value()
         else:
             compression_or_speed_level = 0
 
-        from .config import Config, CompressionType, QualityType
+        from .config import CompressionType, QualityType
 
         compression_type = CompressionType[
             self.compression_type_combo.currentText().upper()
@@ -747,7 +783,7 @@ class App(QtWidgets.QMainWindow):
 
         from .worker import ProcessThread
 
-        config = Config(
+        return Config(
             dpi = dpi,
             display = display,
             resample = resample, # type: ignore
@@ -760,34 +796,6 @@ class App(QtWidgets.QMainWindow):
             quality_type = quality_type,
             img_quality = quality
         )
-
-        self.process_thread = ProcessThread(
-            input_paths, output_root, num_workers, config
-        )
-
-        self.process_thread.log_signal.connect(self.log_output.append)
-        self.process_thread.done_signal.connect(
-            lambda: self.log_output.append("Processing complete")
-        )
-        self.process_thread.progress_signal.connect(self.update_progress)
-        self.process_thread.total_pages_signal.connect(self.set_progress_max)
-        self.process_thread.finished.connect(lambda: self.start_button.setEnabled(True))
-        self.process_thread.finished.connect(
-            lambda: self.cancel_button.setEnabled(False)
-        )
-        self.process_thread.finished.connect(self.timer.stop)
-
-        # Timer
-        from time import time
-        self.start_time = self.last_eta_now_time = time()
-        self.images_since_last_eta_now = 0
-        self.last_progress_value = 0
-        self.elapsed_label.setText("Elapsed: –")
-        self.eta_label.setText("ETA (overall): –")
-        self.eta_now_label.setText("ETA (recent): –")
-        self.timer.start(1000)
-
-        self.process_thread.start()
 
     def update_progress(self, value: int):
         self.progress_bar.setValue(value)

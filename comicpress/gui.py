@@ -736,24 +736,7 @@ class App(QtWidgets.QMainWindow):
             bit_depth = dither = None
 
         filter_str = self.filter_combo.currentText()
-        from pyvips.enums import Kernel
-
-        if filter_str == "Bicubic interpolation":
-            resample = Kernel.CUBIC
-        elif filter_str == "Bilinear interpolation":
-            resample = Kernel.LINEAR
-        elif filter_str == "Lanczos 2":
-            resample = Kernel.LANCZOS2
-        elif filter_str == "Lanczos 3":
-            resample = Kernel.LANCZOS3
-        elif filter_str == "Magic Kernel Sharp 2013":
-            resample = Kernel.MKS2013
-        elif filter_str == "Magic Kernel Sharp 2021":
-            resample = Kernel.MKS2021
-        elif filter_str == "Mitchell":
-            resample = Kernel.MITCHELL
-        else:
-            resample = Kernel.NEAREST
+        resample = ui_constants.RESAMPLE_FILTER_MAP[filter_str]
 
         dpi = self.density_spin.value()
         img_format = self.img_format_combo.currentText()

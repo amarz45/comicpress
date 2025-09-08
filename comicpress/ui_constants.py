@@ -1,3 +1,5 @@
+from pyvips.enums import Kernel
+
 TITLE = "Comicpress"
 
 # PDF
@@ -46,6 +48,17 @@ quality and <i>Lanczos 3</i> is a close second. Other resampling
 filters are faster but usually result in significantly lower
 quality.
 """
+
+RESAMPLE_FILTER_MAP = {
+    "Bicubic interpolation": Kernel.CUBIC,
+    "Bilinear interpolation": Kernel.LINEAR,
+    "Lanczos 2": Kernel.LANCZOS2,
+    "Lanczos 3": Kernel.LANCZOS3,
+    "Magic Kernel Sharp 2013": Kernel.MKS2013,
+    "Magic Kernel Sharp 2021": Kernel.MKS2021,
+    "Mitchell": Kernel.MITCHELL,
+    "Nearest": Kernel.NEAREST,
+}
 
 # Quantize
 QUANTIZE_LABEL = "Quantize images"

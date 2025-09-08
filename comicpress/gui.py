@@ -770,14 +770,14 @@ class App(QtWidgets.QMainWindow):
         from .config import Config, CompressionType, QualityType
 
         compression_type = CompressionType[
-            self.compression_type_combo.currentText()
+            self.compression_type_combo.currentText().upper()
         ]
 
         jpeg_xl_quality_mode = self.jpeg_xl_quality_mode_combo.currentText()
         if img_format == "JPEG XL":
-            quality_type = QualityType[jpeg_xl_quality_mode]
+            quality_type = QualityType[jpeg_xl_quality_mode.upper()]
         else:
-            quality_type = QualityType["Quality"]
+            quality_type = QualityType["QUALITY"]
 
         quality = self.quality_spin.value()
 

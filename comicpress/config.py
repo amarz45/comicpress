@@ -7,12 +7,12 @@ if TYPE_CHECKING:
     from pyvips.enums import Kernel
 
 class CompressionType(Enum):
-    LOSSLESS = "Lossless"
-    LOSSY = "Lossy"
+    LOSSLESS = 0
+    LOSSY = 1
 
 class QualityType(Enum):
-    DISTANCE = "Distance"
-    QUALITY = "Quality"
+    DISTANCE = 0
+    QUALITY = 1
 
 @dataclass(frozen = True)
 class Config:

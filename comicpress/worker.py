@@ -37,6 +37,7 @@ class ProcessThread(QtCore.QThread):
         import zipfile
         from concurrent.futures import ProcessPoolExecutor, as_completed
         from pathlib import Path
+        from shutil import rmtree
         from .processing import process_task
 
         output_root = Path(self.output_root)
@@ -109,6 +110,7 @@ class ProcessThread(QtCore.QThread):
                     arcname = img_file.relative_to(temp_dir)
                     zipf.write(img_file, arcname=arcname)
             self.log_signal.emit(f"Created CBZ: {cbz_name}")
+            rmtree(temp_dir)
 
         self.done_signal.emit()
 

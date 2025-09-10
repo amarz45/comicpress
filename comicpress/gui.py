@@ -660,6 +660,8 @@ class App(QtWidgets.QMainWindow):
             self.output_dir_edit.setText(directory)
 
     def _start_conversion(self):
+        from .worker import ProcessThread
+
         if self.file_list.count() == 0:
             QtWidgets.QMessageBox.warning(
                 self, "Input required", "Please add at least one input file."

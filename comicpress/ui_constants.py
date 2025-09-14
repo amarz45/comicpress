@@ -22,7 +22,7 @@ ereader, as it makes the colours “pop.”
 """
 
 # Scale
-SCALE_LABEL = "Scale images"
+SCALE_LABEL = "Scale pages"
 SCALE_TOOLTIP = """
 Scales pages to fit the target resolution. This is highly
 recommended because it can potentially decrease file sizes
@@ -38,7 +38,7 @@ RESAMPLING_FILTERS = [
     "Nearest neighbour"
 ]
 RESAMPLING_FILTER_DEFAULT = "Magic Kernel Sharp 2021"
-RESAMPLING_FILTER_LABEL = "Resampling filter"
+RESAMPLING_FILTER_LABEL = "Resampler"
 RESAMPLING_FILTER_TOOLTIP = """
 The algorithm used to calculate pixel values when resizing an
 image. <i>Magic Kernel Sharp 2021</i> is recommended for the best
@@ -59,7 +59,7 @@ RESAMPLE_FILTER_MAP = {
 }
 
 # Quantize
-QUANTIZE_LABEL = "Quantize images"
+QUANTIZE_LABEL = "Quantize pages"
 QUANTIZE_TOOLTIP = """
 Limits the colour palette of pages. This is highly recommended
 because it decreases file size, and ereaders usually only have 16

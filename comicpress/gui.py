@@ -1,4 +1,4 @@
-from PyQt6 import QtWidgets
+from PyQt6 import QtWidgets, QtGui
 from typing import TYPE_CHECKING
 from . import ui_constants
 
@@ -90,7 +90,6 @@ class App(QtWidgets.QMainWindow):
         # Central widget
         self.central_widget = QtWidgets.QWidget()
         self.setCentralWidget(self.central_widget)
-        self.main_layout = QtWidgets.QVBoxLayout(self.central_widget)
 
         self.setup_ui()
         self.connect_signals()
@@ -100,13 +99,26 @@ class App(QtWidgets.QMainWindow):
         self.on_format_changed()
 
     def setup_ui(self):
+        container_layout = QtWidgets.QHBoxLayout(self.central_widget)
+        content_widget = QtWidgets.QWidget()
+
+        self.main_layout = QtWidgets.QVBoxLayout(content_widget)
+        self.main_layout.setContentsMargins(0, 0, 0, 0) # Optional: removes padding
+
         io_group = self._create_io_group()
-        settings_group = self._create_settings_group()
+        settings_group = self._create_settings_group() # The refactored version
         log_group = self._create_log_group()
 
         self.main_layout.addWidget(io_group)
         self.main_layout.addWidget(settings_group)
         self.main_layout.addWidget(log_group)
+        self.main_layout.addItem(
+            QtWidgets.QSpacerItem(1000, 0, QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Fixed)
+        )
+
+        container_layout.addStretch(1)
+        container_layout.addWidget(content_widget)
+        container_layout.addStretch(1)
 
     def _create_io_group(self) -> QtWidgets.QGroupBox:
         from os import getcwd
@@ -128,6 +140,7 @@ class App(QtWidgets.QMainWindow):
         file_buttons_layout.addWidget(self.add_files_button)
         file_buttons_layout.addWidget(self.remove_file_button)
         file_buttons_layout.addWidget(self.clear_files_button)
+        file_buttons_layout.addStretch(1)
 
         # Add input widgets.
         io_layout.addWidget(QtWidgets.QLabel("Input files"))
@@ -198,6 +211,7 @@ class App(QtWidgets.QMainWindow):
         self.cancel_button.setEnabled(False)
 
         # Add action widgets.
+        action_layout.addStretch(1)
         action_layout.addWidget(self.start_button)
         action_layout.addWidget(self.cancel_button)
         log_layout.addLayout(action_layout)
@@ -249,14 +263,15 @@ class App(QtWidgets.QMainWindow):
                     )
 
         self.display_button.setMenu(display_menu)
-        self.settings_layout.addRow("Display preset", self.display_button)
+
+        hbox = QtWidgets.QHBoxLayout()
+        hbox.setContentsMargins(0, 0, 0, 0) # Remove padding
+        hbox.addWidget(self.display_button)
+        hbox.addStretch(1) # This spacer will absorb all extra horizontal space
+
+        self.settings_layout.addRow("Display preset", hbox)
 
     def _add_scaling_widgets(self):
-        scaling_widget = QtWidgets.QWidget()
-        scaling_layout = QtWidgets.QHBoxLayout(scaling_widget)
-        scaling_layout.setContentsMargins(0, 0, 0, 0)
-        scaling_layout.setSpacing(20)
-
         # Enable scaling checkbox
         self.enable_scaling_check = QtWidgets.QCheckBox(
             ui_constants.SCALE_LABEL
@@ -264,7 +279,18 @@ class App(QtWidgets.QMainWindow):
         scaling_label_widget = self._create_widget_with_info(
             self.enable_scaling_check, ui_constants.SCALE_TOOLTIP
         )
-        scaling_layout.addWidget(scaling_label_widget)
+
+        if (layout := scaling_label_widget.layout()) is not None:
+            layout.addStretch() # type: ignore
+
+        self.settings_layout.addRow(scaling_label_widget)
+
+        #scaling_layout.addWidget(scaling_label_widget)
+
+        self.scaling_options_container = QtWidgets.QWidget()
+        scaling_layout = QtWidgets.QHBoxLayout(self.scaling_options_container)
+        scaling_layout.setContentsMargins(40, 0, 0, 0)
+        scaling_layout.setSpacing(20)
 
         # Width label + spin
         self.width_spin = QtWidgets.QSpinBox()
@@ -310,23 +336,33 @@ class App(QtWidgets.QMainWindow):
         scaling_layout.addStretch()
 
         # Add to form layout
-        self.settings_layout.addRow(scaling_widget)
+        #self.settings_layout.addRow(scaling_widget)
+        self.settings_layout.addRow(self.scaling_options_container)
+
+        self.enable_scaling_check.stateChanged.connect(
+            self.scaling_options_container.setVisible
+        )
+
+        self.scaling_options_container.setVisible(self.enable_scaling_check.isChecked())
 
     def _add_quantization_widget(self):
-        quantization_widget = QtWidgets.QWidget()
-        quantization_layout = QtWidgets.QHBoxLayout(quantization_widget)
-        quantization_layout.setContentsMargins(0, 0, 0, 0)
-        quantization_layout.setSpacing(20)
-
-        # Enable quantization
         self.enable_quantization_check = QtWidgets.QCheckBox(
             ui_constants.QUANTIZE_LABEL
         )
         self.enable_quantization_check.setChecked(True)
-        quantization_widget_ = self._create_widget_with_info(
+        quantization_label_widget = self._create_widget_with_info(
             self.enable_quantization_check, ui_constants.QUANTIZE_TOOLTIP
         )
-        quantization_layout.addWidget(quantization_widget_)
+
+        if (layout := quantization_label_widget.layout()) is not None:
+            layout.addStretch() # type: ignore
+
+        self.settings_layout.addRow(quantization_label_widget)
+
+        self.quantization_options_container = QtWidgets.QWidget()
+        quantization_layout = QtWidgets.QHBoxLayout(self.quantization_options_container)
+        quantization_layout.setContentsMargins(40, 0, 0, 0)
+        quantization_layout.setSpacing(20)
 
         # Colours label + spin
         self.colours_combo = QtWidgets.QComboBox()
@@ -369,7 +405,13 @@ class App(QtWidgets.QMainWindow):
         quantization_layout.addStretch()
 
         # Add to form layout
-        self.settings_layout.addRow(quantization_widget)
+        self.settings_layout.addRow(self.quantization_options_container)
+
+        self.enable_quantization_check.stateChanged.connect(
+            self.quantization_options_container.setVisible
+        )
+
+        self.quantization_options_container.setVisible(self.enable_quantization_check.isChecked())
 
     def _add_img_format_widget(self):
         self.img_format_combo = QtWidgets.QComboBox()
@@ -379,7 +421,13 @@ class App(QtWidgets.QMainWindow):
             QtWidgets.QLabel(ui_constants.IMG_FORMAT_LABEL),
             ui_constants.IMG_FORMAT_TOOLTIP
         )
-        self.settings_layout.addRow(img_format_with_info, self.img_format_combo)
+
+        hbox = QtWidgets.QHBoxLayout()
+        hbox.setContentsMargins(0, 0, 0, 0)
+        hbox.addWidget(self.img_format_combo)
+        hbox.addStretch(1)
+
+        self.settings_layout.addRow(img_format_with_info, hbox)
 
     def _add_parallel_jobs_widget(self):
         from os import cpu_count
@@ -387,17 +435,27 @@ class App(QtWidgets.QMainWindow):
         num_cpus = cpu_count() or 1
         self.jobs_spin.setRange(1, num_cpus)
         self.jobs_spin.setValue(num_cpus)
-        self.settings_layout.addRow("Parallel jobs", self.jobs_spin)
+        hbox = QtWidgets.QHBoxLayout()
+        hbox.setContentsMargins(0, 0, 0, 0) # Remove padding
+        hbox.addWidget(self.jobs_spin)
+        hbox.addStretch(1) # This spacer will absorb all extra horizontal space
+        self.settings_layout.addRow("Parallel jobs", hbox)
 
     def _add_pdf_pixel_density_widget(self):
         self.density_spin = QtWidgets.QSpinBox()
-        self.density_spin.setRange(300, 2 ** 31 - 1)
+        self.density_spin.setRange(300, 9999)
         self.density_spin.setValue(1200)
         self.density_spin.setSingleStep(300)
         pdf_label_widget = self._create_widget_with_info(
             QtWidgets.QLabel(ui_constants.PDF_LABEL), ui_constants.PDF_TOOLTIP
         )
-        self.settings_layout.addRow(pdf_label_widget, self.density_spin)
+
+        hbox = QtWidgets.QHBoxLayout()
+        hbox.setContentsMargins(0, 0, 0, 0) # Remove padding
+        hbox.addWidget(self.density_spin)
+        hbox.addStretch(1) # This spacer will absorb all extra horizontal space
+
+        self.settings_layout.addRow(pdf_label_widget, hbox)
 
     def _add_img_format_specific_options(self, layout: QtWidgets.QFormLayout):
         # Compression type
@@ -409,18 +467,26 @@ class App(QtWidgets.QMainWindow):
         self.compression_type_combo.setCurrentText(
             ui_constants.COMPRESSION_DEFAULT
         )
-        layout.addRow(self.compression_type_label, self.compression_type_combo)
+        hbox = QtWidgets.QHBoxLayout()
+        hbox.setContentsMargins(0, 0, 0, 0) # Remove padding
+        hbox.addWidget(self.compression_type_combo)
+        hbox.addStretch(1) # This spacer will absorb all extra horizontal space
+        layout.addRow(self.compression_type_label, hbox)
 
         # Compression effort
         self.compression_effort_label = QtWidgets.QLabel(
             ui_constants.COMPRESSION_EFFORT_LABEL
         )
         self.compression_effort_spin = QtWidgets.QSpinBox()
-        layout.addRow(self.compression_effort_label, self.compression_effort_spin)
+        hbox = QtWidgets.QHBoxLayout()
+        hbox.setContentsMargins(0, 0, 0, 0) # Remove padding
+        hbox.addWidget(self.compression_effort_spin)
+        hbox.addStretch(1) # This spacer will absorb all extra horizontal space
+        layout.addRow(self.compression_effort_label, hbox)
 
         # Quality/distance
-        quality_label_container = QtWidgets.QWidget()
-        quality_label_layout = QtWidgets.QHBoxLayout(quality_label_container)
+        self.quality_label_container = QtWidgets.QWidget()
+        quality_label_layout = QtWidgets.QHBoxLayout(self.quality_label_container)
         quality_label_layout.setContentsMargins(0, 0, 0, 0)
         quality_label_layout.setSpacing(0)
 
@@ -437,7 +503,15 @@ class App(QtWidgets.QMainWindow):
         self.quality_spin.setRange(0, 100)
         self.quality_spin.setValue(100)
 
-        layout.addRow(quality_label_container, self.quality_spin)
+        # Create a container widget
+        self.quality_field_container = QtWidgets.QWidget()
+        quality_field_layout = QtWidgets.QHBoxLayout(self.quality_field_container)
+        quality_field_layout.setContentsMargins(0, 0, 0, 0)
+        quality_field_layout.addWidget(self.quality_spin)
+        quality_field_layout.addStretch(1)
+
+        # Add the container widget to the form layout
+        layout.addRow(self.quality_label_container, self.quality_field_container)
 
     def connect_signals(self):
         self.add_files_button.clicked.connect(self.add_files)
@@ -580,8 +654,10 @@ class App(QtWidgets.QMainWindow):
         quality = settings.get("quality")
         quality_visible = quality is not None
 
-        if (row := self.settings_layout.getWidgetPosition(self.quality_spin)[0]) != -1:
-            self.settings_layout.setRowVisible(row, quality_visible)
+        self.quality_label_container.setVisible(quality_visible)
+        self.quality_field_container.setVisible(quality_visible)
+        #if (row := self.settings_layout.getWidgetPosition(self.quality_spin)[0]) != -1:
+            #self.settings_layout.setRowVisible(row, quality_visible)
 
         if quality_visible:
             if img_format == "JPEG XL":

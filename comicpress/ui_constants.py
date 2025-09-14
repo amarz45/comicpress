@@ -48,14 +48,14 @@ quality.
 """
 
 RESAMPLE_FILTER_MAP = {
-    "Bicubic interpolation": "CUBIC",
-    "Bilinear interpolation": "LINEAR",
-    "Lanczos 2": "LANCZOS2",
-    "Lanczos 3": "LANCZOS3",
-    "Magic Kernel Sharp 2013": "MKS2013",
-    "Magic Kernel Sharp 2021": "MKS2021",
-    "Mitchell": "MITCHELL",
-    "Nearest": "NEAREST",
+    "Bicubic interpolation": "cubic",
+    "Bilinear interpolation": "linear",
+    "Lanczos 2": "lanczos2",
+    "Lanczos 3": "lanczos3",
+    "Magic Kernel Sharp 2013": "mks2013",
+    "Magic Kernel Sharp 2021": "mks2021",
+    "Mitchell": "mitchell",
+    "Nearest": "nearest",
 }
 
 # Quantize

@@ -794,7 +794,7 @@ class App(QtWidgets.QMainWindow):
         return input_paths
 
     def _build_config_from_ui(self) -> "Config":
-        import config
+        from . import config
 
         stretch_contrast = self.enable_contrast_check.isChecked()
 

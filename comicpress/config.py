@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .displays import Display
-    from pyvips.enums import Kernel
 
 class CompressionType(Enum):
     LOSSLESS = 0
@@ -18,7 +17,7 @@ class QualityType(Enum):
 class Config:
     dpi: int
     display: "Display | None"
-    resample: "Kernel"
+    resample: str
     bit_depth: int | None
     dither: float | None
     stretch_contrast: bool

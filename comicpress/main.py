@@ -2,7 +2,7 @@ import sys
 from PyQt6 import QtWidgets
 from .gui import App
 
-if __name__ == "__main__":
+def main():
     app = QtWidgets.QApplication(sys.argv)
 
     app.setStyleSheet("""

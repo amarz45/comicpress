@@ -1,9 +1,9 @@
 from PyQt6 import QtWidgets
 from typing import TYPE_CHECKING
 from . import ui_constants
-from .config import Config
 
 if TYPE_CHECKING:
+    from .config import Config
     from .worker import ProcessThread
 
 IMAGE_FORMAT_SETTINGS = {
@@ -611,7 +611,8 @@ class App(QtWidgets.QMainWindow):
 
         files, _ = QtWidgets.QFileDialog.getOpenFileNames(
             self, "Select input files", "",
-            "Supported files (*.pdf *.cbz *.cbr)"
+            "Supported files (*.pdf *.cbz *.cbr)",
+            options=QtWidgets.QFileDialog.Option.DontUseNativeDialog
         )
         if not files:
             return
@@ -654,7 +655,8 @@ class App(QtWidgets.QMainWindow):
 
     def browse_output_dir(self):
         directory = QtWidgets.QFileDialog.getExistingDirectory(
-            self, "Select output folder"
+            self, "Select output folder",
+            options=QtWidgets.QFileDialog.Option.DontUseNativeDialog
         )
         if directory:
             self.output_dir_edit.setText(directory)
@@ -715,7 +717,9 @@ class App(QtWidgets.QMainWindow):
 
         return input_paths
 
-    def _build_config_from_ui(self) -> Config:
+    def _build_config_from_ui(self) -> "Config":
+        import config
+
         stretch_contrast = self.enable_contrast_check.isChecked()
 
         if self.enable_scaling_check.isChecked():
@@ -748,17 +752,15 @@ class App(QtWidgets.QMainWindow):
         else:
             compression_or_speed_level = 0
 
-        from .config import CompressionType, QualityType
-
-        compression_type = CompressionType[
+        compression_type = config.CompressionType[
             self.compression_type_combo.currentText().upper()
         ]
 
         jpeg_xl_quality_mode = self.jpeg_xl_quality_mode_combo.currentText()
         if img_format == "JPEG XL":
-            quality_type = QualityType[jpeg_xl_quality_mode.upper()]
+            quality_type = config.QualityType[jpeg_xl_quality_mode.upper()]
         else:
-            quality_type = QualityType["QUALITY"]
+            quality_type = config.QualityType["QUALITY"]
 
         quality = self.quality_spin.value()
 
@@ -766,9 +768,7 @@ class App(QtWidgets.QMainWindow):
         self.start_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
 
-        from .worker import ProcessThread
-
-        return Config(
+        return config.Config(
             dpi = dpi,
             display = display,
             resample = resample, # type: ignore

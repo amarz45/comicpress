@@ -439,7 +439,7 @@ class App(QtWidgets.QMainWindow):
         hbox.setContentsMargins(0, 0, 0, 0) # Remove padding
         hbox.addWidget(self.jobs_spin)
         hbox.addStretch(1) # This spacer will absorb all extra horizontal space
-        self.settings_layout.addRow("Parallel jobs", hbox)
+        self.settings_layout.addRow("Threads", hbox)
 
     def _add_pdf_pixel_density_widget(self):
         self.density_spin = QtWidgets.QSpinBox()

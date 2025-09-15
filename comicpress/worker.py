@@ -8,10 +8,10 @@ if TYPE_CHECKING:
     from .config import Config
 
 class ProcessThread(QtCore.QThread):
-    total_pages_signal = QtCore.pyqtSignal(int)
-    log_signal = QtCore.pyqtSignal(str)
-    done_signal = QtCore.pyqtSignal()
-    progress_signal = QtCore.pyqtSignal(int)
+    total_pages_signal = QtCore.Signal(int)
+    log_signal = QtCore.Signal(str)
+    done_signal = QtCore.Signal()
+    progress_signal = QtCore.Signal(int)
 
     def __init__(
         self,

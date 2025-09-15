@@ -1,4 +1,4 @@
-from PyQt6 import QtWidgets, QtGui
+from PyQt6 import QtWidgets
 from typing import TYPE_CHECKING
 from . import ui_constants
 
@@ -687,8 +687,7 @@ class App(QtWidgets.QMainWindow):
 
         files, _ = QtWidgets.QFileDialog.getOpenFileNames(
             self, "Select input files", "",
-            "Supported files (*.pdf *.cbz *.cbr)",
-            options=QtWidgets.QFileDialog.Option.DontUseNativeDialog
+            "Supported files (*.pdf *.cbz *.cbr)"
         )
         if not files:
             return
@@ -731,8 +730,7 @@ class App(QtWidgets.QMainWindow):
 
     def browse_output_dir(self):
         directory = QtWidgets.QFileDialog.getExistingDirectory(
-            self, "Select output folder",
-            options=QtWidgets.QFileDialog.Option.DontUseNativeDialog
+            self, "Select output folder"
         )
         if directory:
             self.output_dir_edit.setText(directory)

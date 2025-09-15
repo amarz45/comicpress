@@ -1,4 +1,4 @@
-from PyQt6 import QtWidgets
+from PySide6 import QtWidgets
 from typing import TYPE_CHECKING
 from . import ui_constants
 
@@ -76,7 +76,7 @@ class App(QtWidgets.QMainWindow):
         self.setWindowTitle(ui_constants.TITLE)
         self.current_device = (None, "Custom")
 
-        from PyQt6 import QtCore
+        from PySide6 import QtCore
         from collections import deque
 
         # Timer
@@ -568,14 +568,14 @@ class App(QtWidgets.QMainWindow):
         self.progress_bar.setFormat("%p % (%v / %m pages)")
 
     def toggle_scaling_inputs(self, state: int):
-        from PyQt6 import QtCore
+        from PySide6 import QtCore
         enabled = state == QtCore.Qt.CheckState.Checked.value
         self.width_spin.setEnabled(enabled)
         self.height_spin.setEnabled(enabled)
         self.filter_combo.setEnabled(enabled)
 
     def toggle_quantization(self, state: int):
-        from PyQt6 import QtCore
+        from PySide6 import QtCore
         enabled = state == QtCore.Qt.CheckState.Checked.value
         self.colours_combo.setEnabled(enabled)
         self.dither_spin.setEnabled(enabled)
@@ -598,7 +598,7 @@ class App(QtWidgets.QMainWindow):
             return
 
     def toggle_filter_inputs(self, state: int):
-        from PyQt6 import QtCore
+        from PySide6 import QtCore
         enabled = state == QtCore.Qt.CheckState.Checked.value
         self.filter_combo.setEnabled(enabled)
 
@@ -692,7 +692,7 @@ class App(QtWidgets.QMainWindow):
         if not files:
             return
 
-        from PyQt6 import QtCore
+        from PySide6 import QtCore
         existing_paths = []
         for i in range(self.file_list.count()):
             item = self.file_list.item(i)
@@ -778,7 +778,7 @@ class App(QtWidgets.QMainWindow):
         self.process_thread.start()
 
     def _get_input_paths(self) -> list[str]:
-        from PyQt6 import QtCore
+        from PySide6 import QtCore
         input_paths = []
 
         for i in range(self.file_list.count()):

@@ -490,8 +490,9 @@ void Window::on_start_button_clicked() {
 
     total_files_to_process = tasks.count();
     this->files_processed = 0;
-    progress_bar->setValue(0);
-    progress_bar->setMaximum(total_files_to_process);
+    this->progress_bar->setValue(0);
+    this->progress_bar->setMaximum(total_files_to_process);
+    this->progress_bar->setFormat("%p % (%v / %m pages)");
     log_output->append(
         QString("Found %1 pages. Starting processing...")
             .arg(total_files_to_process)

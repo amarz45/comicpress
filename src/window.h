@@ -14,7 +14,6 @@
 #include <QSpinBox>
 #include <QTextEdit>
 #include <QVBoxLayout>
-#include <filesystem>
 #include <string>
 
 #include "qpushbutton.h"

@@ -15,6 +15,11 @@ int main(int argc, char** argv) {
     vips_concurrency_set(1);
 
     QApplication app(argc, argv);
+
+    auto font = app.font();
+    font.setPointSize(14);
+    app.setFont(font);
+
     Window window;
     window.show();
     return app.exec();

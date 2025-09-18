@@ -22,6 +22,7 @@
 #include <chrono>
 #include <iomanip>
 #include <mupdf/fitz.h>
+#include <numeric>
 #include <sstream>
 #include <thread>
 #include <vips/vips8>
@@ -73,8 +74,48 @@ void Window::update_time_labels() {
         .count();
 
     auto elapsed = ms - start_time;
-    auto qstr = QString::fromStdString("Elapsed: " + time_to_str(elapsed));
-    this->elapsed_label->setText(qstr);
+    auto elapsed_str = "Elapsed: " + time_to_str(elapsed);
+    this->elapsed_label->setText(QString::fromStdString(elapsed_str));
+
+    auto value = this->progress_bar->value();
+
+    // Overall ETA
+    if (value > 0) {
+        auto total = this->progress_bar->maximum();
+        auto per_unit = static_cast<double>(elapsed) / value;
+        auto remaining = static_cast<double>(total - value) * per_unit;
+        auto eta_overall_str = "ETA (overall): " + time_to_str(static_cast<int64_t>(remaining));
+        this->eta_overall_label->setText(
+            QString::fromStdString(eta_overall_str)
+        );
+    }
+
+    // Recent ETA
+    if (
+        this->last_eta_recent_time.has_value()
+        && ms - this->last_eta_recent_time.value() >= 1000
+        && this->images_since_last_eta_recent > 0
+    ) {
+        auto interval = ms - this->last_eta_recent_time.value();
+        auto speed = static_cast<double>(this->images_since_last_eta_recent) / static_cast<double>(interval);
+        auto total_remaining = this->progress_bar->maximum() - value;
+        auto remaining = static_cast<double>(total_remaining) / speed;
+
+        // Add to moving average window.
+        this->eta_recent_intervals.push_front(static_cast<int64_t>(remaining));
+
+        // Reset snapshot.
+        this->last_eta_recent_time = ms;
+        this->images_since_last_eta_recent = 0;
+    }
+
+    if (!this->eta_recent_intervals.dq.empty()) {
+        auto dq = this->eta_recent_intervals.dq;
+        auto sum = std::accumulate(dq.begin(), dq.end(), 0LL);
+        auto avg_eta = static_cast<double>(sum) / dq.size();
+        auto eta_recent_str = "ETA (recent): " + time_to_str(static_cast<int64_t>(avg_eta));
+        this->eta_recent_label->setText(QString::fromStdString(eta_recent_str));
+    }
 }
 
 void Window::setup_ui() {
@@ -533,6 +574,7 @@ void Window::on_start_button_clicked() {
         (now.time_since_epoch())
         .count();
     this->start_time = ms;
+    this->last_eta_recent_time = ms;
     this->images_since_last_eta_recent = 0;
     this->last_progress_value = 0;
     this->elapsed_label->setText("Elapsed: –");
@@ -555,6 +597,7 @@ void Window::handle_log_message(const QString& message) {
 
 void Window::handle_task_finished() {
     this->files_processed += 1;
+    this->images_since_last_eta_recent += 1;
 
     progress_bar->setValue(this->files_processed.load());
 

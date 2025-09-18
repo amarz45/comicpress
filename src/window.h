@@ -22,10 +22,10 @@
 #include "qpushbutton.h"
 
 class BoundedDeque {
-    std::deque<int64_t> dq;
     size_t max_size;
 
 public:
+    std::deque<int64_t> dq;
     BoundedDeque(size_t n) : max_size(n) {}
 
     void push_back(int val) {

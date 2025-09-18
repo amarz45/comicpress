@@ -570,14 +570,14 @@ void Window::connect_signals() {
 void Window::set_display_preset(std::string brand, std::string model) {
     this->display_preset.brand = brand;
     this->display_preset.model = model;
-    if (model.length() == 0) {
-        auto text = QString::fromStdString(brand + " " + model);
-        this->display_preset_button->setText(text);
+    QString text;
+    if (model.empty()) {
+        text = QString::fromStdString(brand);
     }
     else {
-        auto text = QString::fromStdString(model);
-        this->display_preset_button->setText(text);
+        text = QString::fromStdString(brand + " " + model);
     }
+    this->display_preset_button->setText(text);
     this->on_display_preset_changed();
 }
 

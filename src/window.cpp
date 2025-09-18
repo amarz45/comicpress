@@ -14,11 +14,15 @@
 #include <QPushButton>
 #include <QSpinBox>
 #include <QTextEdit>
+#include <QTimer>
 #include <QVector>
 #include <QVBoxLayout>
 #include <archive.h>
 #include <archive_entry.h>
+#include <chrono>
+#include <iomanip>
 #include <mupdf/fitz.h>
+#include <sstream>
 #include <thread>
 #include <vips/vips8>
 
@@ -31,9 +35,17 @@
 
 namespace fs = std::filesystem;
 
-Window::Window(QWidget* parent) : QMainWindow(parent) {
+Window::Window(QWidget* parent) : QMainWindow(parent), eta_recent_intervals(5) {
     auto threads = std::thread::hardware_concurrency();
     QThreadPool::globalInstance()->setMaxThreadCount(threads);
+
+    // Timer
+    this->timer = new QTimer(this);
+    connect(this->timer, &QTimer::timeout, this, &Window::update_time_labels);
+    this->start_time = std::nullopt;
+    this->last_eta_recent_time = std::nullopt;
+    this->images_since_last_eta_recent = 0;
+    this->last_progress_value = 0.0;
 
     this->setWindowTitle("Comicpress");
     central_widget = new QWidget(this);
@@ -46,6 +58,23 @@ Window::Window(QWidget* parent) : QMainWindow(parent) {
         this->enable_image_scaling_check_box->checkState()
     );
     this->connect_signals();
+}
+
+void Window::update_time_labels() {
+    if (!this->start_time.has_value()) {
+        return;
+    }
+
+    auto start_time = this->start_time.value();
+
+    auto now = std::chrono::system_clock::now();
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>
+        (now.time_since_epoch())
+        .count();
+
+    auto elapsed = ms - start_time;
+    auto qstr = QString::fromStdString("Elapsed: " + time_to_str(elapsed));
+    this->elapsed_label->setText(qstr);
 }
 
 void Window::setup_ui() {
@@ -498,6 +527,19 @@ void Window::on_start_button_clicked() {
             .arg(total_files_to_process)
     );
 
+    // Timer
+    auto now = std::chrono::system_clock::now();
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>
+        (now.time_since_epoch())
+        .count();
+    this->start_time = ms;
+    this->images_since_last_eta_recent = 0;
+    this->last_progress_value = 0;
+    this->elapsed_label->setText("Elapsed: –");
+    this->eta_overall_label->setText("ETA (overall): –");
+    this->eta_recent_label->setText("ETA (recent): –");
+    this->timer->start(1000);
+
     for (const auto& task: tasks) {
         auto worker = new Worker(task);
         connect(worker, &Worker::logMessage, this, &Window::handle_log_message);
@@ -582,3 +624,28 @@ void Window::set_display_preset(std::string brand, std::string model) {
 }
 
 Window::~Window() {}
+
+std::string time_to_str(int64_t millis) {
+    int seconds = static_cast<int>(millis / 1000);
+
+    int h = seconds / 3600;
+    int rem = seconds % 3600;
+    int m = rem / 60;
+    int s = rem % 60;
+
+    std::ostringstream oss;
+    if (seconds < 60) {
+        oss << s << " s";
+    }
+    else if (seconds < 3600) {
+        oss << m << " min " << std::setw(2) << std::setfill('0') << s << " s";
+    }
+    else {
+        oss << h << " h "
+            << std::setw(2) << std::setfill('0') << m << " min "
+            << std::setw(2) << std::setfill('0') << s << " s"
+        ;
+    }
+
+    return oss.str();
+}

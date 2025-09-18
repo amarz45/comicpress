@@ -1,6 +1,5 @@
 #pragma once
 
-#include <atomic>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QFormLayout>
@@ -13,10 +12,41 @@
 #include <QPushButton>
 #include <QSpinBox>
 #include <QTextEdit>
+#include <QTimer>
 #include <QVBoxLayout>
+#include <atomic>
+#include <deque>
+#include <optional>
 #include <string>
 
 #include "qpushbutton.h"
+
+class BoundedDeque {
+    std::deque<int64_t> dq;
+    size_t max_size;
+
+public:
+    BoundedDeque(size_t n) : max_size(n) {}
+
+    void push_back(int val) {
+        if (dq.size() == max_size) {
+            dq.pop_front();
+        }
+        dq.push_back(val);
+    }
+
+    void push_front(int val) {
+        if (dq.size() == max_size) {
+            dq.pop_back();
+        }
+        dq.push_front(val);
+    }
+
+    //void print() {
+    //    for (int x : dq) std::cout << x << " ";
+    //    std::cout << "\n";
+    //}
+};
 
 namespace vips {
     class VImage;
@@ -47,6 +77,14 @@ private:
     QWidget* central_widget;
     QVBoxLayout* main_layout;
 
+    // Timer
+    QTimer* timer;
+    std::optional<int64_t> start_time;
+    std::optional<int64_t> last_eta_recent_time;
+    int images_since_last_eta_recent;
+    float last_progress_value;
+    BoundedDeque eta_recent_intervals;
+
     // Input and output
     QListWidget* file_list;
     QPushButton* add_files_button;
@@ -73,6 +111,9 @@ private:
     QTextEdit* log_output;
     QPushButton* start_button;
     QPushButton* cancel_button;
+
+    // Timer
+    void update_time_labels();
 
     // UI setup
     void setup_ui();
@@ -105,3 +146,5 @@ private:
     int total_files_to_process;
     std::atomic<int> files_processed; // atomic is thread-safe!
 };
+
+std::string time_to_str(int64_t milliseconds);

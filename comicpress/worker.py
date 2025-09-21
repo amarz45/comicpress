@@ -32,7 +32,7 @@ class ProcessThread(QtCore.QThread):
 
     def run(self):
         import os
-        import pymupdf
+        import pypdfium2 as pdfium
         import rarfile
         import zipfile
         from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -55,10 +55,9 @@ class ProcessThread(QtCore.QThread):
 
             if ext == ".pdf":
                 try:
-                    doc = pymupdf.open(path)
+                    doc = pdfium.PdfDocument(path)
                     for i in range(len(doc)):
                         tasks.append(("pdf", path, i, output_dir))
-                    doc.close()
                 except Exception as e:
                     self.log_signal.emit(f"Error reading PDF {path}: {e}")
             elif ext == ".cbz":

@@ -16,7 +16,3 @@ Comicpress is similar to [KCC](https://github.com/ciromattia/kcc), but different
 - Comicpress’s image processing operations are more customizable than in KCC. Scaling, quantization, and dithering can easily be adjusted or turned off.
 - Comicpress generally has an easier-to-use user interface than KCC.
 - There are a few features present in KCC that are not in Comicpress, such as automatically cropping out margins.
-
-## Licence
-
-All of the code written by the authors and contributors of this project is released under [CC0](Licence.txt). However, this project depends on PyMuPDF, which is licensed under the AGPL. Therefore, any distributed version of this project that includes PyMuPDF is licensed under the [AGPL v3](Licence-AGPL.txt).

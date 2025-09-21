@@ -10,7 +10,7 @@ readme = "Readme.md"
 requires-python = ">=3.8"
 
 dependencies = [
-    "PyMuPDF==1.26.4",
+    "pypdfium2==4.30.0",
     "PySide6==6.9.2",
     "pyvips==3.0.0",
     "rarfile==4.2",

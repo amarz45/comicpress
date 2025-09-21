@@ -1,4 +1,4 @@
-import pymupdf
+import pypdfium2 as pdfium
 import pyvips
 import os
 import rarfile
@@ -40,25 +40,29 @@ def process_pdf_page(
     config: "Config"
 ) \
 -> str:
-    doc = pymupdf.open(pdf_path)
-    page = doc[index]
-    zoom = config.dpi / 72
-    matrix = pymupdf.Matrix(zoom, zoom)
-    if config.display and config.display.colour:
-        pix = page.get_pixmap(matrix = matrix) # type: ignore
-    else:
-        pix = page.get_pixmap( # type: ignore
-            matrix = matrix,
-            colorspace = pymupdf.csGRAY
-        )
-    doc.close()
+    pdf = pdfium.PdfDocument(pdf_path)
+    page = pdf[index]
+    zoom = config.dpi / 72.0
+    extra_flags = (
+        pdfium.raw.FPDF_NO_NATIVETEXT
+            | pdfium.raw.FPDF_REVERSE_BYTE_ORDER
+    )
+    bitmap = page.render(
+        scale = zoom,
+        optimize_mode = None,
+        extra_flags = extra_flags
+    )
 
     img = pyvips.Image.new_from_memory(
-        pix.samples, pix.width, pix.height, pix.n, "uchar"
+        bitmap.buffer, bitmap.width, bitmap.height, 3, "uchar"
     )
+
+    if config.display and not config.display.colour:
+        img = img.colourspace(pyvips.enums.Interpretation.B_W) # type: ignore
+
     output_path_base = output_dir / f"{index + 1:03d}"
     return save_processed_image(
-        img, output_path_base, is_mostly_greyscale(img), config
+        img, output_path_base, is_mostly_greyscale(img), config # type: ignore
     )
 
 def process_archive_image(
@@ -151,7 +155,7 @@ def save_processed_image(
         img.jpegsave(output_path, Q = config.img_quality) # type: ignore
     elif config.img_format == "JPEG XL":
         output_path = f"{output_path_base}.jxl"
-        if img.quality_type == QualityType.DISTANCE:
+        if config.quality_type == QualityType.DISTANCE:
             img.jxlsave( # type: ignore
                 output_path, distance = config.img_quality # type: ignore
             )

@@ -44,8 +44,7 @@ def process_pdf_page(
     page = pdf[index]
     zoom = config.dpi / 72.0
     extra_flags = (
-        pdfium.raw.FPDF_NO_NATIVETEXT
-            | pdfium.raw.FPDF_REVERSE_BYTE_ORDER
+        pdfium.raw.FPDF_NO_NATIVETEXT | pdfium.raw.FPDF_REVERSE_BYTE_ORDER
     )
     bitmap = page.render(
         scale = zoom,

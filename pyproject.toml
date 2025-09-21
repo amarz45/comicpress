@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "comicpress"
+version = "0.1.0"
+description = "A minimal Python application"
+readme = "Readme.md"
+requires-python = ">=3.8"
+
+dependencies = [
+    "PyMuPDF==1.26.4",
+    "PySide6==6.9.2",
+    "pyvips==3.0.0",
+    "rarfile==4.2",
+]
+
+[project.scripts]
+comicpress = "comicpress.main:main"

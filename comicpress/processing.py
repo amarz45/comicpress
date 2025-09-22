@@ -43,25 +43,39 @@ def process_pdf_page(
     pdf = pdfium.PdfDocument(pdf_path)
     page = pdf[index]
     zoom = config.dpi / 72.0
-    extra_flags = (
-        pdfium.raw.FPDF_NO_NATIVETEXT | pdfium.raw.FPDF_REVERSE_BYTE_ORDER
-    )
+    extra_flags = pdfium.raw.FPDF_NO_NATIVETEXT
+    is_colour_display = config.display and config.display.colour
+
+    if is_colour_display:
+        render_page_greyscale = False
+    else:
+        render_page_greyscale = is_preview_greyscale(page)
+
+    print(f"Page {index + 1}: {render_page_greyscale}")
+
+    if render_page_greyscale:
+        bands = 1
+    else:
+        bands = 3
+
     bitmap = page.render(
         scale = zoom,
+        grayscale = render_page_greyscale,
         optimize_mode = None,
+        rev_byteorder = not render_page_greyscale,
         extra_flags = extra_flags
     )
 
     img = pyvips.Image.new_from_memory(
-        bitmap.buffer, bitmap.width, bitmap.height, 3, "uchar"
+        bitmap.buffer, bitmap.width, bitmap.height, bands, "uchar"
     )
 
-    if config.display and not config.display.colour:
+    if not is_colour_display and not render_page_greyscale:
         img = img.colourspace(pyvips.enums.Interpretation.B_W) # type: ignore
 
     output_path_base = output_dir / f"{index + 1:03d}"
     return save_processed_image(
-        img, output_path_base, is_mostly_greyscale(img), config # type: ignore
+        img, output_path_base, is_greyscale(img), config # type: ignore
     )
 
 def process_archive_image(
@@ -76,7 +90,7 @@ def process_archive_image(
     with opener(archive_path, "r") as archive:
         data = archive.read(filename)
     img = pyvips.Image.new_from_buffer(data, "")
-    is_originally_greyscale = is_mostly_greyscale(img) # type: ignore
+    is_originally_greyscale = is_greyscale(img) # type: ignore
 
     if not config.display or not config.display.colour:
         img = img.colourspace(pyvips.enums.Interpretation.B_W) # type: ignore
@@ -173,7 +187,22 @@ def save_processed_image(
 
     return f"Saved {output_path}."
 
-def is_mostly_greyscale(img_orig: pyvips.Image, threshold: int = 10) -> bool:
+def is_preview_greyscale(page: pdfium.PdfPage) -> bool:
+    try:
+        preview_bitmap = page.render(
+            scale = 10 / 72,
+            optimize_mode = None,
+            extra_flags = pdfium.raw.FPDF_NO_NATIVETEXT
+        )
+        preview_img = pyvips.Image.new_from_memory(
+            preview_bitmap.buffer, preview_bitmap.width, preview_bitmap.height,
+            3, "uchar"
+        )
+        return is_greyscale(preview_img, threshold = 1)
+    except Exception:
+        return False
+
+def is_greyscale(img_orig: pyvips.Image, threshold: int = 10) -> bool:
     if img_orig.bands < 3: # type: ignore
         return True
 

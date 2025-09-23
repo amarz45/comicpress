@@ -28,7 +28,7 @@
 #include <numeric>
 #include <sstream>
 #include <vips/vips8>
-#include "fpdfview.h"
+#include <fpdfview.h>
 
 namespace fs = std::filesystem;
 

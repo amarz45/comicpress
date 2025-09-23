@@ -6,7 +6,7 @@
 #include <vips/vips8>
 #include <archive.h>
 #include <archive_entry.h>
-#include "fpdfview.h"
+#include <fpdfview.h>
 
 int main(int argc, char** argv) {
     if (VIPS_INIT(argv[0])) {

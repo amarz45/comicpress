@@ -8,7 +8,7 @@
 #include <stdexcept>
 #include <string>
 #include <vips/vips8>
-#include "fpdfview.h"
+#include <fpdfview.h>
 
 #include "task.h"
 

@@ -10,7 +10,6 @@
 #include <string>
 #include <vips/vips8>
 
-#include "mupdf_locking.h"
 #include "task.h"
 
 using Logger = const std::function<void(const std::string&)>&;
@@ -18,7 +17,7 @@ using Logger = const std::function<void(const std::string&)>&;
 namespace fs = std::filesystem;
 
 vips::VImage load_pdf_page(const PageTask& task, Logger log) {
-    auto ctx = fz_new_context(nullptr, &mupdf_locks, FZ_STORE_DEFAULT);
+    auto ctx = fz_new_context(nullptr, nullptr, FZ_STORE_DEFAULT);
     if (!ctx) {
         throw std::runtime_error("Cannot create MuPDF context.");
     }

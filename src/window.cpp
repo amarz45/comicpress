@@ -1,6 +1,5 @@
 #include "window.h"
 #include "display_presets.h"
-#include "mupdf_locking.h"
 #include "processing.h"
 #include "task.h"
 #include "ui_constants.h"
@@ -459,7 +458,7 @@ void Window::on_start_button_clicked() {
         try {
             if (extension == ".pdf") {
                 auto ctx = fz_new_context(
-                    nullptr, &mupdf_locks, FZ_STORE_DEFAULT
+                    nullptr, nullptr, FZ_STORE_DEFAULT
                 );
                 if (!ctx) {
                     log_output->append(

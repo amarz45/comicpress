@@ -14,7 +14,6 @@
 #include <QTextEdit>
 #include <QTimer>
 #include <QVBoxLayout>
-#include <atomic>
 #include <deque>
 #include <optional>
 #include <string>
@@ -144,7 +143,7 @@ private:
     void set_display_preset(std::string brand, std::string model);
 
     int total_files_to_process;
-    std::atomic<int> files_processed; // atomic is thread-safe!
+    int files_processed;
 };
 
 std::string time_to_str(int64_t milliseconds);

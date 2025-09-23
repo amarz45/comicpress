@@ -1,8 +1,13 @@
+#include "window.h"
+#include "display_presets.h"
+#include "mupdf_locking.h"
+#include "processing.h"
+#include "task.h"
+#include "ui_constants.h"
 #include <QAction>
-#include <QComboBox>
 #include <QCheckBox>
+#include <QComboBox>
 #include <QCoreApplication>
-#include <QThreadPool>
 #include <QFileDialog>
 #include <QFormLayout>
 #include <QGroupBox>
@@ -24,22 +29,11 @@
 #include <mupdf/fitz.h>
 #include <numeric>
 #include <sstream>
-#include <thread>
 #include <vips/vips8>
-
-#include "display_presets.h"
-#include "mupdf_locking.h"
-#include "task.h"
-#include "ui_constants.h"
-#include "window.h"
-#include "worker.h"
 
 namespace fs = std::filesystem;
 
 Window::Window(QWidget* parent) : QMainWindow(parent), eta_recent_intervals(5) {
-    auto threads = std::thread::hardware_concurrency();
-    QThreadPool::globalInstance()->setMaxThreadCount(threads);
-
     // Timer
     this->timer = new QTimer(this);
     connect(this->timer, &QTimer::timeout, this, &Window::update_time_labels);
@@ -183,7 +177,7 @@ QGroupBox* Window::create_log_group() {
     this->progress_bar = new QProgressBar();
     this->progress_bar->setValue(0);
     this->progress_bar->setTextVisible(true);
-    this->progress_bar->setFormat("%p %");
+    this->progress_bar->setFormat("%p %");
 
     // Time elapsed and ETA
     auto time_layout = new QHBoxLayout();
@@ -562,7 +556,7 @@ void Window::on_start_button_clicked() {
     this->files_processed = 0;
     this->progress_bar->setValue(0);
     this->progress_bar->setMaximum(total_files_to_process);
-    this->progress_bar->setFormat("%p % (%v / %m pages)");
+    this->progress_bar->setFormat("%p % (%v / %m pages)");
     log_output->append(
         QString("Found %1 pages. Starting processing...")
             .arg(total_files_to_process)
@@ -582,12 +576,30 @@ void Window::on_start_button_clicked() {
     this->eta_recent_label->setText("ETA (recent): –");
     this->timer->start(1000);
 
+    auto logger = [this](const std::string& msg) {
+        handle_log_message(QString::fromStdString(msg));
+    };
+
     for (const auto& task: tasks) {
-        auto worker = new Worker(task);
-        connect(worker, &Worker::logMessage, this, &Window::handle_log_message);
-        connect(worker, &Worker::finished, this, &Window::handle_task_finished);
-        connect(worker, &Worker::finished, worker, &QObject::deleteLater);
-        QThreadPool::globalInstance()->start(worker);
+        try {
+            vips::VImage image;
+            if (task.page_number != -1) {
+                image = load_pdf_page(task, logger);
+            } else if (!task.path_in_archive.empty()) {
+                image = load_archive_image(task, logger);
+            } else {
+                logger("Error: Invalid task for file " + task.source_file.stem().string());
+                handle_task_finished();
+                QCoreApplication::processEvents();
+                continue;
+            }
+            process_vimage(image, task.output_dir, task.output_base_name, logger);
+        } catch (const std::exception& e) {
+            logger("Error processing task for " + task.source_file.stem().string() + ": " + e.what());
+        }
+
+        handle_task_finished();
+        QCoreApplication::processEvents();
     }
 }
 

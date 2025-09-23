@@ -610,9 +610,9 @@ void Window::handle_task_finished() {
     this->files_processed += 1;
     this->images_since_last_eta_recent += 1;
 
-    progress_bar->setValue(this->files_processed.load());
+    progress_bar->setValue(this->files_processed);
 
-    if (this->files_processed.load() == total_files_to_process) {
+    if (this->files_processed == total_files_to_process) {
         log_output->append("\n✅ All processing complete.");
         start_button->setEnabled(true);
     }

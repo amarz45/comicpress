@@ -25,10 +25,10 @@
 #include <archive_entry.h>
 #include <chrono>
 #include <iomanip>
-#include <mupdf/fitz.h>
 #include <numeric>
 #include <sstream>
 #include <vips/vips8>
+#include "fpdfview.h"
 
 namespace fs = std::filesystem;
 
@@ -457,47 +457,31 @@ void Window::on_start_button_clicked() {
 
         try {
             if (extension == ".pdf") {
-                auto ctx = fz_new_context(
-                    nullptr, nullptr, FZ_STORE_DEFAULT
-                );
-                if (!ctx) {
+                FPDF_DOCUMENT doc = FPDF_LoadDocument(source_file.c_str(), nullptr);
+                if (!doc) {
                     log_output->append(
-                        QString("Error: Cannot create MuPDF context for %1")
-                            .arg(file_qstr)
+                        QString("Error: Cannot open PDF document %1. Error code: %2")
+                            .arg(file_qstr).arg(FPDF_GetLastError())
                     );
                     continue;
                 }
 
-                fz_register_document_handlers(ctx);
+                auto page_count = FPDF_GetPageCount(doc);
+                for (int i = 0; i < page_count; i += 1) {
+                    PageTask task;
+                    task.source_file = source_file;
+                    task.output_dir = output_dir;
+                    task.page_number = i;
 
-                fz_document* doc = nullptr;
-                fz_try(ctx) {
-                    doc = fz_open_document(ctx, source_file.c_str());
-                    auto page_count = fz_count_pages(ctx, doc);
-                    for (int i = 0; i < page_count; i += 1) {
-                        PageTask task;
-                        task.source_file = source_file;
-                        task.output_dir = output_dir;
-                        task.page_number = i;
-
-                        char base_name[512];
-                        snprintf(
-                            base_name, sizeof(base_name), "%s_page_%04d",
-                            source_file.stem().c_str(), i + 1
-                        );
-                        task.output_base_name = base_name;
-                        tasks.append(task);
-                    }
+                    char base_name[512];
+                    snprintf(
+                        base_name, sizeof(base_name), "%s_page_%04d",
+                        source_file.stem().c_str(), i + 1
+                    );
+                    task.output_base_name = base_name;
+                    tasks.append(task);
                 }
-                fz_catch(ctx) {
-                     log_output->append(
-                         QString("Error discovering pages in %1: %2")
-                            .arg(file_qstr, fz_caught_message(ctx))
-                     );
-                }
-
-                if (doc) fz_drop_document(ctx, doc);
-                fz_drop_context(ctx);
+                FPDF_CloseDocument(doc);
             }
             else if (extension == ".cbz" || extension == ".cbr") {
                 auto archive = archive_read_new();

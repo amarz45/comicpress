@@ -4,15 +4,17 @@
 #include "window.h"
 
 #include <vips/vips8>
-#include <mupdf/fitz.h>
 #include <archive.h>
 #include <archive_entry.h>
+#include "fpdfview.h"
 
 int main(int argc, char** argv) {
     if (VIPS_INIT(argv[0])) {
         vips_error_exit(nullptr);
     }
     vips_concurrency_set(1);
+
+    FPDF_InitLibrary();
 
     QApplication app(argc, argv);
 
@@ -22,5 +24,8 @@ int main(int argc, char** argv) {
 
     Window window;
     window.show();
-    return app.exec();
+    auto result = app.exec();
+
+    FPDF_DestroyLibrary();
+    return result;
 }

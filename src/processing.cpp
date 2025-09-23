@@ -5,10 +5,10 @@
 #include <functional>
 #include <fstream>
 #include <iostream>
-#include <mupdf/fitz.h>
 #include <stdexcept>
 #include <string>
 #include <vips/vips8>
+#include "fpdfview.h"
 
 #include "task.h"
 
@@ -17,83 +17,57 @@ using Logger = const std::function<void(const std::string&)>&;
 namespace fs = std::filesystem;
 
 vips::VImage load_pdf_page(const PageTask& task, Logger log) {
-    auto ctx = fz_new_context(nullptr, nullptr, FZ_STORE_DEFAULT);
-    if (!ctx) {
-        throw std::runtime_error("Cannot create MuPDF context.");
+    FPDF_DOCUMENT doc = FPDF_LoadDocument(task.source_file.c_str(), nullptr);
+    if (!doc) {
+        throw std::runtime_error(
+            "PDFium: Cannot open document. Error code: "
+            + std::to_string(FPDF_GetLastError())
+        );
     }
 
-    fz_register_document_handlers(ctx);
-
-    fz_document* doc = nullptr;
-    vips::VImage img;
-    fz_page* page = nullptr;
-    fz_pixmap* pix = nullptr;
-
-    try {
-        fz_try(ctx) {
-            doc = fz_open_document(ctx, task.source_file.c_str());
-        }
-        fz_catch(ctx) {
-            std::string err = fz_caught_message(ctx);
-            fz_drop_context(ctx);
-            throw std::runtime_error("MuPDF: Cannot open document: " + err);
-        }
-
-        auto zoom = 1200.0 / 72.0;
-        auto transform = fz_scale(zoom, zoom);
-
-        fz_try(ctx) {
-            page = fz_load_page(ctx, doc, task.page_number);
-            pix = fz_new_pixmap_from_page(
-                ctx, page, transform, fz_device_gray(ctx), 0
-            );
-
-            auto samples = fz_pixmap_samples(ctx, pix);
-            auto width = fz_pixmap_width(ctx, pix);
-            auto height = fz_pixmap_height(ctx, pix);
-            auto bands = fz_pixmap_components(ctx, pix);
-
-            img = vips::VImage::new_from_memory_copy(
-                samples, (size_t)width * height * bands, width, height, bands,
-                VIPS_FORMAT_UCHAR
-            );
-        }
-        fz_catch(ctx) {
-            std::string err = fz_caught_message(ctx);
-            throw std::runtime_error(
-                "MuPDF: Error loading or rendering page: " + err
-            );
-        }
-    }
-    catch (...) {
-        if (pix) {
-            fz_drop_pixmap(ctx, pix);
-        }
-        if (page) {
-            fz_drop_page(ctx, page);
-        }
-        if (doc) {
-            fz_drop_document(ctx, doc);
-        }
-        if (ctx) {
-            fz_drop_context(ctx);
-        }
-
-        throw;
+    FPDF_PAGE page = FPDF_LoadPage(doc, task.page_number);
+    if (!page) {
+        FPDF_CloseDocument(doc);
+        throw std::runtime_error(
+            "PDFium: Failed to load page "
+            + std::to_string(task.page_number)
+        );
     }
 
-    if (pix) {
-        fz_drop_pixmap(ctx, pix);
+    auto width_pt = FPDF_GetPageWidth(page);
+    auto height_pt = FPDF_GetPageHeight(page);
+    auto width = static_cast<int>(width_pt * 1200.0 / 72.0);
+    auto height = static_cast<int>(height_pt * 1200.0 / 72.0);
+
+    FPDF_BITMAP bitmap = FPDFBitmap_CreateEx(width, height, FPDFBitmap_BGR, nullptr, width * 3);
+    if (!bitmap) {
+        FPDF_ClosePage(page);
+        FPDF_CloseDocument(doc);
+        throw std::runtime_error(
+            "PDFium: Failed to create bitmap for page "
+            + std::to_string(task.page_number)
+        );
     }
-    if (page) {
-        fz_drop_page(ctx, page);
-    }
-    if (doc) {
-        fz_drop_document(ctx, doc);
-    }
-    if (ctx) {
-        fz_drop_context(ctx);
-    }
+
+    // Fill with white background.
+    FPDFBitmap_FillRect(bitmap, 0, 0, width, height, 0xFFFFFFFF);
+
+    // Render page to bitmap.
+    auto render_flags = FPDF_REVERSE_BYTE_ORDER | FPDF_ANNOT | FPDF_NO_NATIVETEXT;
+    FPDF_RenderPageBitmap(bitmap, page, 0, 0, width, height, 0, render_flags);
+
+    void* buffer = FPDFBitmap_GetBuffer(bitmap);
+
+    // Create VImage by copying the buffer. The buffer is owned by the bitmap,
+    // which is destroyed before the function returns, so we must copy.
+    vips::VImage img = vips::VImage::new_from_memory_copy(
+        buffer, static_cast<size_t>(width) * height * 3, width, height, 3, VIPS_FORMAT_UCHAR
+    );
+
+    // Cleanup PDFium objects
+    FPDFBitmap_Destroy(bitmap);
+    FPDF_ClosePage(page);
+    FPDF_CloseDocument(doc);
 
     return img;
 }
@@ -214,83 +188,6 @@ void process_image_file(
         );
     }
 }
-
-void handle_pdf(
-    const fs::path& pdf_path,
-    const fs::path& output_dir,
-    Logger log
-) {
-    log("Processing PDF: " + pdf_path.filename().string());
-    fz_context *ctx = fz_new_context(NULL, NULL, FZ_STORE_DEFAULT);
-    if (!ctx) {
-        log("Error: Cannot create MuPDF context.");
-        return;
-    }
-
-    fz_document *doc = nullptr;
-    try {
-        fz_try(ctx) {
-            fz_register_document_handlers(ctx);
-        }
-        fz_catch(ctx) {
-            throw std::runtime_error(
-                std::string("MuPDF Error: Cannot register document handlers. ")
-                    + fz_caught_message(ctx)
-            );
-        }
-
-        fz_try(ctx) {
-            doc = fz_open_document(ctx, pdf_path.c_str());
-        }
-        fz_catch(ctx) {
-            throw std::runtime_error(
-                std::string("MuPDF Error: Cannot open document '")
-                    + pdf_path.string()
-                    + "'. "
-                    + fz_caught_message(ctx)
-            );
-        }
-
-        auto page_count = fz_count_pages(ctx, doc);
-        auto zoom = 1200.0 / 72.0;
-        fz_matrix transform = fz_scale(zoom, zoom);
-
-        for (int i = 0; i < page_count; i += 1) {
-            fz_page *page = fz_load_page(ctx, doc, i);
-            fz_pixmap *pix = fz_new_pixmap_from_page(
-                ctx, page, transform, fz_device_gray(ctx), 0
-            );
-
-            unsigned char *samples = fz_pixmap_samples(ctx, pix);
-            int width = fz_pixmap_width(ctx, pix);
-            int height = fz_pixmap_height(ctx, pix);
-            int bands = fz_pixmap_components(ctx, pix);
-
-            vips::VImage img = vips::VImage::new_from_memory_copy(
-                samples, (size_t) width * height * bands, width, height, bands,
-                VIPS_FORMAT_UCHAR
-            );
-
-            char base_name[512];
-            snprintf(
-                base_name, sizeof(base_name), "%s_page_%04d",
-                pdf_path.stem().c_str(), i + 1
-            );
-
-            process_vimage(img, output_dir, std::string(base_name), log);
-
-            fz_drop_pixmap(ctx, pix);
-            fz_drop_page(ctx, page);
-        }
-    }
-    catch (const std::exception& e) {
-        log("Error processing PDF: " + std::string(e.what()));
-    }
-
-    if (doc) fz_drop_document(ctx, doc);
-    if (ctx) fz_drop_context(ctx);
-}
-
 
 void handle_archive(
     const fs::path& archive_path,

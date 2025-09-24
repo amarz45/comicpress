@@ -10,7 +10,7 @@
 #include <string>
 #include <vips/vips8>
 
-#include "task.hpp"
+#include "include/task.hpp"
 
 using Logger = const std::function<void(const std::string &)> &;
 

@@ -8,8 +8,10 @@
 #include <QLineEdit>
 #include <QListWidget>
 #include <QMainWindow>
+#include <QProcess>
 #include <QProgressBar>
 #include <QPushButton>
+#include <QQueue>
 #include <QSpinBox>
 #include <QTextEdit>
 #include <QTimer>
@@ -19,6 +21,7 @@
 #include <string>
 
 #include "qpushbutton.h"
+#include "task.h"
 
 class BoundedDeque {
     size_t max_size;
@@ -47,10 +50,6 @@ public:
     //}
 };
 
-namespace vips {
-    class VImage;
-}
-
 struct DisplayPreset {
     std::string brand;
     std::string model;
@@ -69,8 +68,12 @@ public:
 
 private slots:
     void on_start_button_clicked();
+    void on_cancel_button_clicked();
     void handle_log_message(const QString& message);
     void handle_task_finished();
+    void start_next_task();
+    void on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus);
+    void on_worker_output();
 
 private:
     QWidget* central_widget;
@@ -101,6 +104,7 @@ private:
     QSpinBox* width_spin_box;
     QSpinBox* height_spin_box;
     QComboBox* resampler_combo_box;
+    QSpinBox* jobs_spin_box;
 
     // Progress
     QProgressBar* progress_bar;
@@ -110,6 +114,12 @@ private:
     QTextEdit* log_output;
     QPushButton* start_button;
     QPushButton* cancel_button;
+
+    // Process Management
+    QQueue<PageTask> task_queue;
+    QList<QProcess*> running_processes;
+    int max_concurrent_jobs;
+    bool is_processing_cancelled;
 
     // Timer
     void update_time_labels();
@@ -125,8 +135,6 @@ private:
     void add_contrast_widget();
     void add_display_presets_widget();
     void add_scaling_widgets();
-    void add_img_format_widget();
-    void add_img_format_specific_options();
     void add_parallel_jobs_widget();
 
     // UI updates

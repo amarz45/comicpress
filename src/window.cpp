@@ -1,6 +1,5 @@
 #include "window.h"
 #include "display_presets.h"
-#include "processing.h"
 #include "task.h"
 #include "ui_constants.h"
 #include <QAction>
@@ -14,6 +13,7 @@
 #include <QLineEdit>
 #include <QListWidget>
 #include <QMenu>
+#include <QProcess>
 #include <QProgressBar>
 #include <QPushButton>
 #include <QSpinBox>
@@ -24,11 +24,11 @@
 #include <archive.h>
 #include <archive_entry.h>
 #include <chrono>
+#include <fpdfview.h>
 #include <iomanip>
 #include <numeric>
 #include <sstream>
-#include <vips/vips8>
-#include <fpdfview.h>
+#include <thread>
 
 namespace fs = std::filesystem;
 
@@ -40,6 +40,7 @@ Window::Window(QWidget* parent) : QMainWindow(parent), eta_recent_intervals(5) {
     this->last_eta_recent_time = std::nullopt;
     this->images_since_last_eta_recent = 0;
     this->last_progress_value = 0.0;
+    this->is_processing_cancelled = false;
 
     this->setWindowTitle("Comicpress");
     central_widget = new QWidget(this);
@@ -94,10 +95,8 @@ void Window::update_time_labels() {
         auto total_remaining = this->progress_bar->maximum() - value;
         auto remaining = static_cast<double>(total_remaining) / speed;
 
-        // Add to moving average window.
         this->eta_recent_intervals.push_front(static_cast<int64_t>(remaining));
 
-        // Reset snapshot.
         this->last_eta_recent_time = ms;
         this->images_since_last_eta_recent = 0;
     }
@@ -128,7 +127,6 @@ QGroupBox* Window::create_io_group() {
 
     this->file_list = new QListWidget();
 
-    // Create file buttons.
     this->add_files_button = new QPushButton("Add files");
     this->remove_selected_button = new QPushButton("Remove selected");
     this->clear_all_button = new QPushButton("Clear all");
@@ -136,21 +134,21 @@ QGroupBox* Window::create_io_group() {
     this->remove_selected_button->setEnabled(false);
     this->clear_all_button->setEnabled(false);
 
-    // Add file buttons.
     file_buttons_layout->addWidget(this->add_files_button);
     file_buttons_layout->addWidget(this->remove_selected_button);
     file_buttons_layout->addWidget(this->clear_all_button);
 
-    // Add input widgets.
-    auto input_files_label = new QLabel("Input files");
-    io_layout->addWidget(input_files_label);
-
-    // Create output buttons.
-    auto output_layout = new QHBoxLayout();
-    this->output_dir_field = new QLineEdit("/home/zubaidi/code/CPP/out");
-    this->browse_output_button = new QPushButton("Browse");
-
+    io_layout->addWidget(new QLabel("Input files"));
+    io_layout->addWidget(file_list);
     io_layout->addLayout(file_buttons_layout);
+
+    auto output_layout = new QHBoxLayout();
+    this->output_dir_field = new QLineEdit(".");
+    this->browse_output_button = new QPushButton("Browse");
+    output_layout->addWidget(new QLabel("Output directory"));
+    output_layout->addWidget(this->output_dir_field);
+    output_layout->addWidget(this->browse_output_button);
+
     io_layout->addLayout(output_layout);
 
     return io_group;
@@ -164,6 +162,7 @@ QGroupBox* Window::create_settings_group() {
     this->add_contrast_widget();
     this->add_display_presets_widget();
     this->add_scaling_widgets();
+    this->add_parallel_jobs_widget();
 
     return settings_group;
 }
@@ -172,13 +171,11 @@ QGroupBox* Window::create_log_group() {
     auto log_group = new QGroupBox();
     auto log_layout = new QVBoxLayout(log_group);
 
-    // Progress bar
     this->progress_bar = new QProgressBar();
     this->progress_bar->setValue(0);
     this->progress_bar->setTextVisible(true);
     this->progress_bar->setFormat("%p %");
 
-    // Time elapsed and ETA
     auto time_layout = new QHBoxLayout();
     this->elapsed_label = new QLabel("Elapsed: –");
     this->eta_overall_label = new QLabel("ETA (overall): –");
@@ -187,15 +184,14 @@ QGroupBox* Window::create_log_group() {
     time_layout->addWidget(this->eta_overall_label);
     time_layout->addWidget(this->eta_recent_label);
 
-    // Log output
     this->log_output = new QTextEdit();
     this->log_output->setReadOnly(true);
     this->log_output->setFontFamily("monospace");
 
-    // Action
     auto action_layout = new QHBoxLayout();
     this->start_button = new QPushButton("Start");
     this->cancel_button = new QPushButton("Cancel");
+    this->cancel_button->setEnabled(false);
     action_layout->addWidget(this->start_button);
     action_layout->addWidget(this->cancel_button);
 
@@ -341,6 +337,14 @@ void Window::add_scaling_widgets() {
     this->settings_layout->addRow(scaling_widget);
 }
 
+void Window::add_parallel_jobs_widget() {
+    this->jobs_spin_box = new QSpinBox();
+    auto threads = std::thread::hardware_concurrency();
+    this->jobs_spin_box->setRange(1, threads);
+    this->jobs_spin_box->setValue(threads);
+    this->settings_layout->addRow("Parallel jobs", this->jobs_spin_box);
+}
+
 void Window::on_add_files_clicked() {
     auto files = QFileDialog::getOpenFileNames(
         this, "Select input files", "", "Supported files (*.pdf *.cbz *.cbr)"
@@ -352,50 +356,18 @@ void Window::on_add_files_clicked() {
 
     QStringList existing_paths;
     for (int i = 0; i < file_list->count(); i += 1) {
-        auto item = file_list->item(i);
-        if (!item) {
-            continue;
+        if (auto item = file_list->item(i)) {
+            if (auto data = item->data(Qt::UserRole); data.isValid()) {
+                existing_paths.append(data.toString());
+            }
         }
-
-        auto data = item->data(Qt::UserRole);
-        if (data.isValid()) {
-            existing_paths.append(data.toString());
-        }
-    }
-
-    auto all_paths = existing_paths;
-    all_paths.append(files);
-
-    QStringList base_names;
-    for (const QString& path : all_paths) {
-        base_names.append(QFileInfo(path).fileName());
     }
 
     for (const QString& file : files) {
-        if (existing_paths.contains(file)) {
-            continue;
-        }
-
-        auto item = new QListWidgetItem(QFileInfo(file).fileName());
-        item->setData(Qt::UserRole, file);
-        file_list->addItem(item);
-    }
-
-    QMap<QString, int> name_count;
-    for (const QString& name : base_names) {
-        name_count[name] += 1;
-    }
-
-    for (int i = 0; i < file_list->count(); i += 1) {
-        auto item = file_list->item(i);
-        if (!item) {
-            continue;
-        }
-
-        auto path = item->data(Qt::UserRole).toString();
-        auto base_name = QFileInfo(path).fileName();
-        if (name_count.value(base_name, 0) > 1) {
-            item->setText(path);
+        if (!existing_paths.contains(file)) {
+            auto item = new QListWidgetItem(QFileInfo(file).fileName());
+            item->setData(Qt::UserRole, file);
+            file_list->addItem(item);
         }
     }
 }
@@ -436,10 +408,16 @@ void Window::on_start_button_clicked() {
     }
 
     start_button->setEnabled(false);
+    cancel_button->setEnabled(true);
     log_output->clear();
+    task_queue.clear();
+    running_processes.clear();
+    is_processing_cancelled = false;
     files_processed = 0;
+    max_concurrent_jobs = jobs_spin_box->value();
 
     fs::path output_dir = fs::path(output_dir_field->text().toStdString());
+    fs::create_directories(output_dir);
     log_output->append(
         "Output directory: " + QString::fromStdString(output_dir.string())
     );
@@ -472,14 +450,9 @@ void Window::on_start_button_clicked() {
                     task.source_file = source_file;
                     task.output_dir = output_dir;
                     task.page_number = i;
-
-                    char base_name[512];
-                    snprintf(
-                        base_name, sizeof(base_name), "%s_page_%04d",
-                        source_file.stem().c_str(), i + 1
-                    );
-                    task.output_base_name = base_name;
-                    tasks.append(task);
+                    // TODO: Fix this abomination.
+                    task.output_base_name = QString("%1_page_%2").arg(QString::fromStdString(source_file.stem().string())).arg(i + 1, 4, 10, QChar('0')).toStdString();
+                    task_queue.enqueue(task);
                 }
                 FPDF_CloseDocument(doc);
             }
@@ -507,14 +480,9 @@ void Window::on_start_button_clicked() {
                     task.source_file = source_file;
                     task.output_dir = output_dir;
                     task.path_in_archive = archive_entry_pathname(entry);
-
-                    char base_name[512];
-                    snprintf(
-                        base_name, sizeof(base_name), "%s_page_%04d",
-                        source_file.stem().c_str(), i + 1
-                    );
-                    task.output_base_name = base_name;
-                    tasks.append(task);
+                    // TODO: Fix this abomination.
+                    task.output_base_name = QString("%1_page_%2").arg(QString::fromStdString(source_file.stem().string())).arg(i + 1, 4, 10, QChar('0')).toStdString();
+                    task_queue.enqueue(task);
                     i += 1;
                 }
                 archive_read_close(archive);
@@ -529,14 +497,14 @@ void Window::on_start_button_clicked() {
         }
     }
 
-    if (tasks.isEmpty()) {
+    if (task_queue.isEmpty()) {
         log_output->append("No pages found to process.");
         start_button->setEnabled(true);
+        cancel_button->setEnabled(false);
         return;
     }
 
-    total_files_to_process = tasks.count();
-    this->files_processed = 0;
+    total_files_to_process = task_queue.count();
     this->progress_bar->setValue(0);
     this->progress_bar->setMaximum(total_files_to_process);
     this->progress_bar->setFormat("%p % (%v / %m pages)");
@@ -547,42 +515,103 @@ void Window::on_start_button_clicked() {
 
     // Timer
     auto now = std::chrono::system_clock::now();
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>
-        (now.time_since_epoch())
-        .count();
-    this->start_time = ms;
-    this->last_eta_recent_time = ms;
-    this->images_since_last_eta_recent = 0;
-    this->last_progress_value = 0;
-    this->elapsed_label->setText("Elapsed: –");
-    this->eta_overall_label->setText("ETA (overall): –");
-    this->eta_recent_label->setText("ETA (recent): –");
-    this->timer->start(1000);
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+    start_time = ms;
+    last_eta_recent_time = ms;
+    images_since_last_eta_recent = 0;
+    last_progress_value = 0;
+    elapsed_label->setText("Elapsed: –");
+    eta_overall_label->setText("ETA (overall): –");
+    eta_recent_label->setText("ETA (recent): –");
+    timer->start(1000);
 
-    auto logger = [this](const std::string& msg) {
-        handle_log_message(QString::fromStdString(msg));
-    };
+    for (int i = 0; i < max_concurrent_jobs; ++i) {
+        start_next_task();
+    }
+}
 
-    for (const auto& task: tasks) {
-        try {
-            vips::VImage image;
-            if (task.page_number != -1) {
-                image = load_pdf_page(task, logger);
-            } else if (!task.path_in_archive.empty()) {
-                image = load_archive_image(task, logger);
-            } else {
-                logger("Error: Invalid task for file " + task.source_file.stem().string());
-                handle_task_finished();
-                QCoreApplication::processEvents();
-                continue;
-            }
-            process_vimage(image, task.output_dir, task.output_base_name, logger);
-        } catch (const std::exception& e) {
-            logger("Error processing task for " + task.source_file.stem().string() + ": " + e.what());
+void Window::on_cancel_button_clicked() {
+    if (is_processing_cancelled) return;
+
+    is_processing_cancelled = true;
+    log_output->append("\n🛑 Cancelling processing...");
+
+    task_queue.clear();
+
+    for (QProcess* p : running_processes) {
+        p->kill();
+    }
+    running_processes.clear();
+
+    timer->stop();
+    start_button->setEnabled(true);
+    cancel_button->setEnabled(false);
+    log_output->append("Processing cancelled.");
+}
+
+void Window::start_next_task() {
+    if (task_queue.isEmpty() || running_processes.size() >= max_concurrent_jobs || is_processing_cancelled) {
+        return;
+    }
+
+    PageTask task = task_queue.dequeue();
+
+    QProcess* process = new QProcess(this);
+    running_processes.append(process);
+
+    connect(process, &QProcess::readyReadStandardOutput, this, &Window::on_worker_output);
+    connect(process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, &Window::on_worker_finished);
+
+    QString program = QCoreApplication::applicationDirPath() + "/comicpress-worker";
+    QStringList arguments;
+    arguments << QString::fromStdString(task.source_file.string())
+              << QString::fromStdString(task.output_dir.string())
+              << QString::fromStdString(task.output_base_name)
+              << QString::number(task.page_number)
+              << (task.path_in_archive.empty() ? "NULL" : QString::fromStdString(task.path_in_archive));
+
+    process->start(program, arguments);
+}
+
+void Window::on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus) {
+    QProcess* process = qobject_cast<QProcess*>(sender());
+    if (!process) return;
+
+    running_processes.removeAll(process);
+
+    if (exitStatus == QProcess::CrashExit || exitCode != 0) {
+        log_output->append(QString("Worker process failed or crashed. Exit code: %1").arg(exitCode));
+    }
+
+    handle_task_finished();
+
+    if (is_processing_cancelled) {
+        if (running_processes.isEmpty()) {
+            log_output->append("All running tasks have been cancelled.");
         }
+    }
+    else {
+        if (files_processed == total_files_to_process) {
+            log_output->append("\n✅ All processing complete.");
+            timer->stop();
+            start_button->setEnabled(true);
+            cancel_button->setEnabled(false);
+        }
+        else {
+            start_next_task();
+        }
+    }
 
-        handle_task_finished();
-        QCoreApplication::processEvents();
+    process->deleteLater();
+}
+
+void Window::on_worker_output() {
+    QProcess* process = qobject_cast<QProcess*>(sender());
+    if (process) {
+        // Read line by line to prevent partial messages
+        while (process->canReadLine()) {
+            log_output->append(process->readLine().trimmed());
+        }
     }
 }
 
@@ -591,72 +620,40 @@ void Window::handle_log_message(const QString& message) {
 }
 
 void Window::handle_task_finished() {
-    this->files_processed += 1;
-    this->images_since_last_eta_recent += 1;
-
-    progress_bar->setValue(this->files_processed);
-
-    if (this->files_processed == total_files_to_process) {
-        log_output->append("\n✅ All processing complete.");
-        start_button->setEnabled(true);
-    }
+    files_processed++;
+    images_since_last_eta_recent++;
+    progress_bar->setValue(files_processed);
 }
 
-QWidget* Window::create_widget_with_info(
-    QWidget* main_widget,
-    const char* tooltip_text
-) {
+QWidget* Window::create_widget_with_info(QWidget* main_widget, const char* tooltip_text) {
     auto container = new QWidget();
     auto layout = new QHBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(5);
 
     auto info_icon_label = new QLabel();
-
     if (auto style = this->style()) {
-        auto icon = style->standardIcon(
-            QStyle::StandardPixmap::SP_MessageBoxInformation
-        );
-        std::string formatted_tooltip = tooltip_text;
-        formatted_tooltip = "<p>" + formatted_tooltip + "</p>";
-
+        auto icon = style->standardIcon(QStyle::StandardPixmap::SP_MessageBoxInformation);
+        std::string formatted_tooltip = "<p>" + std::string(tooltip_text) + "</p>";
         info_icon_label->setPixmap(icon.pixmap(16, 16));
         info_icon_label->setToolTip(QString::fromStdString(formatted_tooltip));
-
         layout->addWidget(info_icon_label);
     }
-
     layout->addWidget(main_widget);
     return container;
 }
 
 void Window::connect_signals() {
-    connect(
-        this->add_files_button, &QPushButton::clicked, this,
-        &Window::on_add_files_clicked
-    );
-
-    connect(
-        this->enable_image_scaling_check_box, &QCheckBox::checkStateChanged,
-        this, &Window::on_enable_image_scaling_changed
-    );
-
-    connect(
-        this->start_button, &QPushButton::clicked, this,
-        &Window::on_start_button_clicked
-    );
+    connect(this->add_files_button, &QPushButton::clicked, this, &Window::on_add_files_clicked);
+    connect(this->enable_image_scaling_check_box, &QCheckBox::checkStateChanged, this, &Window::on_enable_image_scaling_changed);
+    connect(this->start_button, &QPushButton::clicked, this, &Window::on_start_button_clicked);
+    connect(this->cancel_button, &QPushButton::clicked, this, &Window::on_cancel_button_clicked);
 }
 
 void Window::set_display_preset(std::string brand, std::string model) {
     this->display_preset.brand = brand;
     this->display_preset.model = model;
-    QString text;
-    if (model.empty()) {
-        text = QString::fromStdString(brand);
-    }
-    else {
-        text = QString::fromStdString(brand + " " + model);
-    }
+    QString text = model.empty() ? QString::fromStdString(brand) : QString::fromStdString(brand + " " + model);
     this->display_preset_button->setText(text);
     this->on_display_preset_changed();
 }

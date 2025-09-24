@@ -1,19 +1,11 @@
 #include <QApplication>
 #include <QWidget>
+#include <fpdfview.h>
 
 #include "window.h"
 
-#include <vips/vips8>
-#include <archive.h>
-#include <archive_entry.h>
-#include <fpdfview.h>
-
 int main(int argc, char** argv) {
-    if (VIPS_INIT(argv[0])) {
-        vips_error_exit(nullptr);
-    }
-    vips_concurrency_set(1);
-
+    // PDFium is needed here to discover the number of pages in PDF files.
     FPDF_InitLibrary();
 
     QApplication app(argc, argv);

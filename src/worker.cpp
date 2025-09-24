@@ -2,14 +2,14 @@
 #include "task.h"
 
 #include <fpdfview.h>
-#include <vips/vips8>
 #include <iostream>
 #include <string>
+#include <vips/vips8>
 
 // This is the main entry point for the worker executable. It takes task details
 // as command-line arguments, performs the processing, and prints logs to
 // standard output for the main application to capture.
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     if (argc < 6) {
         std::cerr << "Worker error: Insufficient arguments." << std::endl;
         return 1;
@@ -30,7 +30,8 @@ int main(int argc, char* argv[]) {
     task.output_base_name = argv[3];
     try {
         task.page_number = std::stoi(argv[4]);
-    } catch (const std::invalid_argument& e) {
+    }
+    catch (const std::invalid_argument &e) {
         std::cerr << "Worker error: Invalid page number format." << std::endl;
         return 1;
     }
@@ -41,23 +42,30 @@ int main(int argc, char* argv[]) {
     }
 
     // A simple logger that prints to standard output.
-    auto logger = [](const std::string& msg) {
-        std::cout << msg << std::endl;
-    };
+    auto logger = [](const std::string &msg) { std::cout << msg << std::endl; };
 
     try {
         vips::VImage image;
         if (task.page_number != -1) {
             image = load_pdf_page(task, logger);
-        } else if (!task.path_in_archive.empty()) {
+        }
+        else if (!task.path_in_archive.empty()) {
             image = load_archive_image(task, logger);
-        } else {
-            logger("Worker error: Invalid task arguments for " + task.source_file.string());
+        }
+        else {
+            logger(
+                "Worker error: Invalid task arguments for "
+                + task.source_file.string()
+            );
             return 1;
         }
         process_vimage(image, task.output_dir, task.output_base_name, logger);
-    } catch (const std::exception& e) {
-        logger("Worker error processing task for " + task.source_file.stem().string() + ": " + e.what());
+    }
+    catch (const std::exception &e) {
+        logger(
+            "Worker error processing task for "
+            + task.source_file.stem().string() + ": " + e.what()
+        );
         FPDF_DestroyLibrary();
         vips_shutdown();
         return 1;

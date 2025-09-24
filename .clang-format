@@ -1,0 +1,38 @@
+BasedOnStyle: LLVM
+
+IndentWidth: 4
+UseTab: Never
+ColumnLimit: 80
+ContinuationIndentWidth: 4
+
+AlignAfterOpenBracket: BlockIndent
+
+# One-argument-per-line behavior
+BinPackArguments: false
+BinPackParameters: false
+
+# Preserve attach-style for most braces, but force newlines before catch/else
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: false
+  AfterControlStatement: Never
+  AfterEnum: false
+  AfterFunction: false
+  AfterNamespace: false
+  BeforeCatch: true
+  BeforeElse: true
+  BeforeWhile: false
+  BeforeLambdaBody: false
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+
+# Keep your other choices
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakTemplateDeclarations: Yes
+
+BreakBeforeBinaryOperators: All
+AlignOperands: AlignAfterOperator

@@ -2,21 +2,21 @@
 #include <archive.h>
 #include <archive_entry.h>
 #include <filesystem>
-#include <functional>
+#include <fpdfview.h>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <stdexcept>
 #include <string>
 #include <vips/vips8>
-#include <fpdfview.h>
 
 #include "task.h"
 
-using Logger = const std::function<void(const std::string&)>&;
+using Logger = const std::function<void(const std::string &)> &;
 
 namespace fs = std::filesystem;
 
-vips::VImage load_pdf_page(const PageTask& task, Logger log) {
+vips::VImage load_pdf_page(const PageTask &task, Logger log) {
     FPDF_DOCUMENT doc = FPDF_LoadDocument(task.source_file.c_str(), nullptr);
     if (!doc) {
         throw std::runtime_error(
@@ -29,8 +29,7 @@ vips::VImage load_pdf_page(const PageTask& task, Logger log) {
     if (!page) {
         FPDF_CloseDocument(doc);
         throw std::runtime_error(
-            "PDFium: Failed to load page "
-            + std::to_string(task.page_number)
+            "PDFium: Failed to load page " + std::to_string(task.page_number)
         );
     }
 
@@ -39,7 +38,9 @@ vips::VImage load_pdf_page(const PageTask& task, Logger log) {
     auto width = static_cast<int>(width_pt * 1200.0 / 72.0);
     auto height = static_cast<int>(height_pt * 1200.0 / 72.0);
 
-    FPDF_BITMAP bitmap = FPDFBitmap_CreateEx(width, height, FPDFBitmap_BGR, nullptr, width * 3);
+    FPDF_BITMAP bitmap = FPDFBitmap_CreateEx(
+        width, height, FPDFBitmap_BGR, nullptr, width * 3
+    );
     if (!bitmap) {
         FPDF_ClosePage(page);
         FPDF_CloseDocument(doc);
@@ -53,15 +54,21 @@ vips::VImage load_pdf_page(const PageTask& task, Logger log) {
     FPDFBitmap_FillRect(bitmap, 0, 0, width, height, 0xFFFFFFFF);
 
     // Render page to bitmap.
-    auto render_flags = FPDF_REVERSE_BYTE_ORDER | FPDF_ANNOT | FPDF_NO_NATIVETEXT;
+    auto render_flags
+        = FPDF_REVERSE_BYTE_ORDER | FPDF_ANNOT | FPDF_NO_NATIVETEXT;
     FPDF_RenderPageBitmap(bitmap, page, 0, 0, width, height, 0, render_flags);
 
-    void* buffer = FPDFBitmap_GetBuffer(bitmap);
+    void *buffer = FPDFBitmap_GetBuffer(bitmap);
 
     // Create VImage by copying the buffer. The buffer is owned by the bitmap,
     // which is destroyed before the function returns, so we must copy.
     vips::VImage img = vips::VImage::new_from_memory_copy(
-        buffer, static_cast<size_t>(width) * height * 3, width, height, 3, VIPS_FORMAT_UCHAR
+        buffer,
+        static_cast<size_t>(width) * height * 3,
+        width,
+        height,
+        3,
+        VIPS_FORMAT_UCHAR
     );
 
     // Cleanup PDFium objects
@@ -72,14 +79,13 @@ vips::VImage load_pdf_page(const PageTask& task, Logger log) {
     return img;
 }
 
-vips::VImage load_archive_image(const PageTask& task, Logger log) {
+vips::VImage load_archive_image(const PageTask &task, Logger log) {
     auto archive = archive_read_new();
     archive_read_support_filter_all(archive);
     archive_read_support_format_all(archive);
 
-    auto archive_open = archive_read_open_filename(
-        archive, task.source_file.c_str(), 10240
-    );
+    auto archive_open
+        = archive_read_open_filename(archive, task.source_file.c_str(), 10240);
 
     if (archive_open != ARCHIVE_OK) {
         std::string err = archive_error_string(archive);
@@ -87,7 +93,7 @@ vips::VImage load_archive_image(const PageTask& task, Logger log) {
         throw std::runtime_error("LibArchive: Could not open file: " + err);
     }
 
-    struct archive_entry* entry;
+    struct archive_entry *entry;
     std::vector<char> buffer;
 
     while (archive_read_next_header(archive, &entry) == ARCHIVE_OK) {
@@ -115,7 +121,7 @@ vips::VImage load_archive_image(const PageTask& task, Logger log) {
 void process_vimage(
     vips::VImage img,
     const fs::path &output_dir,
-    const std::string& base_name,
+    const std::string &base_name,
     Logger log
 ) {
     try {
@@ -153,27 +159,21 @@ void process_vimage(
         vips::VImage final_img = vips::VImage::new_from_file(png_path.c_str());
         final_img.webpsave(
             output_path.c_str(),
-            vips::VImage::option()
-                ->set("lossless", true)
-                ->set("effort", 4)
+            vips::VImage::option()->set("lossless", true)->set("effort", 4)
         );
 
         fs::remove(png_path);
     }
     catch (const vips::VError &e) {
-        log(
-            "  -> VIPS Error processing in-memory image "
-            + base_name
-            + ": "
-            + e.what()
-        );
+        log("  -> VIPS Error processing in-memory image " + base_name + ": "
+            + e.what());
     }
 }
 
 void process_image_file(
-    const fs::path& input_path,
-    const fs::path& output_dir,
-    const std::string& base_name,
+    const fs::path &input_path,
+    const fs::path &output_dir,
+    const std::string &base_name,
     Logger log
 ) {
     try {
@@ -181,38 +181,31 @@ void process_image_file(
         auto img = vips::VImage::new_from_file(input_path.c_str());
         process_vimage(img, output_dir, base_name, log);
     }
-    catch (const vips::VError& e) {
-        log(
-            "  -> VIPS Error loading file " + input_path.filename().string()
-            + ": " + e.what()
-        );
+    catch (const vips::VError &e) {
+        log("  -> VIPS Error loading file " + input_path.filename().string()
+            + ": " + e.what());
     }
 }
 
 void handle_archive(
-    const fs::path& archive_path,
-    const fs::path& output_dir,
-    Logger log
+    const fs::path &archive_path, const fs::path &output_dir, Logger log
 ) {
     log("Processing Archive: " + archive_path.filename().string());
     auto temp_extract_dir = fs::temp_directory_path() / archive_path.stem();
     fs::create_directories(temp_extract_dir);
 
     auto archive = archive_read_new();
-    struct archive_entry* entry;
+    struct archive_entry *entry;
 
     archive_read_support_filter_all(archive);
     archive_read_support_format_all(archive);
 
-    auto archive_open = archive_read_open_filename(
-        archive, archive_path.c_str(), 10240
-    );
+    auto archive_open
+        = archive_read_open_filename(archive, archive_path.c_str(), 10240);
 
     if (archive_open != ARCHIVE_OK) {
-        log(
-            "Error: libarchive could not open file: "
-            + std::string(archive_error_string(archive))
-        );
+        log("Error: libarchive could not open file: "
+            + std::string(archive_error_string(archive)));
         archive_read_free(archive);
         return;
     }
@@ -234,13 +227,12 @@ void handle_archive(
         size_t size;
         int64_t offset;
         while (true) {
-            auto archive_read = archive_read_data_block(
-                archive, &buff, &size, &offset
-            );
+            auto archive_read
+                = archive_read_data_block(archive, &buff, &size, &offset);
             if (archive_read != ARCHIVE_OK) {
                 break;
             }
-            out_file.write(static_cast<const char*>(buff), size);
+            out_file.write(static_cast<const char *>(buff), size);
         }
     }
 

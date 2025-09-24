@@ -19,8 +19,8 @@
 #include <QSpinBox>
 #include <QTextEdit>
 #include <QTimer>
-#include <QVector>
 #include <QVBoxLayout>
+#include <QVector>
 #include <archive.h>
 #include <archive_entry.h>
 #include <chrono>
@@ -32,7 +32,7 @@
 
 namespace fs = std::filesystem;
 
-Window::Window(QWidget* parent) : QMainWindow(parent), eta_recent_intervals(5) {
+Window::Window(QWidget *parent) : QMainWindow(parent), eta_recent_intervals(5) {
     // Timer
     this->timer = new QTimer(this);
     connect(this->timer, &QTimer::timeout, this, &Window::update_time_labels);
@@ -63,9 +63,10 @@ void Window::update_time_labels() {
     auto start_time = this->start_time.value();
 
     auto now = std::chrono::system_clock::now();
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>
-        (now.time_since_epoch())
-        .count();
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                  now.time_since_epoch()
+    )
+                  .count();
 
     auto elapsed = ms - start_time;
     auto elapsed_str = "Elapsed: " + time_to_str(elapsed);
@@ -78,20 +79,20 @@ void Window::update_time_labels() {
         auto total = this->progress_bar->maximum();
         auto per_unit = static_cast<double>(elapsed) / value;
         auto remaining = static_cast<double>(total - value) * per_unit;
-        auto eta_overall_str = "ETA (overall): " + time_to_str(static_cast<int64_t>(remaining));
+        auto eta_overall_str
+            = "ETA (overall): " + time_to_str(static_cast<int64_t>(remaining));
         this->eta_overall_label->setText(
             QString::fromStdString(eta_overall_str)
         );
     }
 
     // Recent ETA
-    if (
-        this->last_eta_recent_time.has_value()
+    if (this->last_eta_recent_time.has_value()
         && ms - this->last_eta_recent_time.value() >= 1000
-        && this->images_since_last_eta_recent > 0
-    ) {
+        && this->images_since_last_eta_recent > 0) {
         auto interval = ms - this->last_eta_recent_time.value();
-        auto speed = static_cast<double>(this->images_since_last_eta_recent) / static_cast<double>(interval);
+        auto speed = static_cast<double>(this->images_since_last_eta_recent)
+                   / static_cast<double>(interval);
         auto total_remaining = this->progress_bar->maximum() - value;
         auto remaining = static_cast<double>(total_remaining) / speed;
 
@@ -105,7 +106,8 @@ void Window::update_time_labels() {
         auto dq = this->eta_recent_intervals.dq;
         auto sum = std::accumulate(dq.begin(), dq.end(), 0LL);
         auto avg_eta = static_cast<double>(sum) / dq.size();
-        auto eta_recent_str = "ETA (recent): " + time_to_str(static_cast<int64_t>(avg_eta));
+        auto eta_recent_str
+            = "ETA (recent): " + time_to_str(static_cast<int64_t>(avg_eta));
         this->eta_recent_label->setText(QString::fromStdString(eta_recent_str));
     }
 }
@@ -120,7 +122,7 @@ void Window::setup_ui() {
     this->main_layout->addWidget(log_group);
 }
 
-QGroupBox* Window::create_io_group() {
+QGroupBox *Window::create_io_group() {
     auto io_group = new QGroupBox();
     auto io_layout = new QVBoxLayout(io_group);
     auto file_buttons_layout = new QHBoxLayout();
@@ -154,7 +156,7 @@ QGroupBox* Window::create_io_group() {
     return io_group;
 }
 
-QGroupBox* Window::create_settings_group() {
+QGroupBox *Window::create_settings_group() {
     auto settings_group = new QGroupBox("Processing parameters");
     this->settings_layout = new QFormLayout(settings_group);
 
@@ -167,7 +169,7 @@ QGroupBox* Window::create_settings_group() {
     return settings_group;
 }
 
-QGroupBox* Window::create_log_group() {
+QGroupBox *Window::create_log_group() {
     auto log_group = new QGroupBox();
     auto log_layout = new QVBoxLayout(log_group);
 
@@ -246,7 +248,7 @@ void Window::add_display_presets_widget() {
     }
     display_menu->addSeparator();
 
-    for (const auto& [brand, model] : DISPLAY_PRESETS) {
+    for (const auto &[brand, model] : DISPLAY_PRESETS) {
         if (!model.has_value()) {
             continue;
         }
@@ -257,7 +259,7 @@ void Window::add_display_presets_widget() {
             continue;
         }
 
-        for (const auto& [model_name, _] : *model) {
+        for (const auto &[model_name, _] : *model) {
             auto model_name_qstr = QString::fromStdString(model_name);
             auto model_action = brand_menu->addAction(model_name_qstr);
             if (!model_action) {
@@ -265,7 +267,9 @@ void Window::add_display_presets_widget() {
             }
 
             connect(
-                model_action, &QAction::triggered, this,
+                model_action,
+                &QAction::triggered,
+                this,
                 [this, brand, model_name]() {
                     this->set_display_preset(brand, model_name);
                 }
@@ -316,9 +320,9 @@ void Window::add_scaling_widgets() {
     resampler_layout->setContentsMargins(0, 0, 0, 0);
     resampler_layout->setSpacing(4);
     this->resampler_combo_box = new QComboBox();
-    this->resampler_combo_box->addItems({
-        "Lanczos 3", "Magic Kernel Sharp 2021"
-    });
+    this->resampler_combo_box->addItems(
+        {"Lanczos 3", "Magic Kernel Sharp 2021"}
+    );
     this->resampler_combo_box->setCurrentText("Magic Kernel Sharp 2021");
 
     // Add resampler widgets.
@@ -363,7 +367,7 @@ void Window::on_add_files_clicked() {
         }
     }
 
-    for (const QString& file : files) {
+    for (const QString &file : files) {
         if (!existing_paths.contains(file)) {
             auto item = new QListWidgetItem(QFileInfo(file).fileName());
             item->setData(Qt::UserRole, file);
@@ -426,7 +430,7 @@ void Window::on_start_button_clicked() {
     QCoreApplication::processEvents();
 
     QVector<PageTask> tasks;
-    for (const QString& file_qstr : input_file_paths) {
+    for (const QString &file_qstr : input_file_paths) {
         fs::path source_file(file_qstr.toStdString());
         std::string extension = source_file.extension().string();
         std::transform(
@@ -435,11 +439,15 @@ void Window::on_start_button_clicked() {
 
         try {
             if (extension == ".pdf") {
-                FPDF_DOCUMENT doc = FPDF_LoadDocument(source_file.c_str(), nullptr);
+                FPDF_DOCUMENT doc
+                    = FPDF_LoadDocument(source_file.c_str(), nullptr);
                 if (!doc) {
                     log_output->append(
-                        QString("Error: Cannot open PDF document %1. Error code: %2")
-                            .arg(file_qstr).arg(FPDF_GetLastError())
+                        QString(
+                            "Error: Cannot open PDF document %1. Error code: %2"
+                        )
+                            .arg(file_qstr)
+                            .arg(FPDF_GetLastError())
                     );
                     continue;
                 }
@@ -451,7 +459,15 @@ void Window::on_start_button_clicked() {
                     task.output_dir = output_dir;
                     task.page_number = i;
                     // TODO: Fix this abomination.
-                    task.output_base_name = QString("%1_page_%2").arg(QString::fromStdString(source_file.stem().string())).arg(i + 1, 4, 10, QChar('0')).toStdString();
+                    task.output_base_name
+                        = QString("%1_page_%2")
+                              .arg(
+                                  QString::fromStdString(
+                                      source_file.stem().string()
+                                  )
+                              )
+                              .arg(i + 1, 4, 10, QChar('0'))
+                              .toStdString();
                     task_queue.enqueue(task);
                 }
                 FPDF_CloseDocument(doc);
@@ -462,13 +478,13 @@ void Window::on_start_button_clicked() {
                 archive_read_support_format_all(archive);
                 archive_read_open_filename(archive, source_file.c_str(), 10240);
 
-                struct archive_entry* entry;
+                struct archive_entry *entry;
                 int i = 0;
-                //while (archive_read_next_header(archive, &entry) == ARCHIVE_OK) {
+                // while (archive_read_next_header(archive, &entry) ==
+                // ARCHIVE_OK) {
                 while (true) {
-                    auto archive_read = archive_read_next_header(
-                        archive, &entry
-                    );
+                    auto archive_read
+                        = archive_read_next_header(archive, &entry);
                     if (archive_read != ARCHIVE_OK) {
                         break;
                     }
@@ -481,7 +497,15 @@ void Window::on_start_button_clicked() {
                     task.output_dir = output_dir;
                     task.path_in_archive = archive_entry_pathname(entry);
                     // TODO: Fix this abomination.
-                    task.output_base_name = QString("%1_page_%2").arg(QString::fromStdString(source_file.stem().string())).arg(i + 1, 4, 10, QChar('0')).toStdString();
+                    task.output_base_name
+                        = QString("%1_page_%2")
+                              .arg(
+                                  QString::fromStdString(
+                                      source_file.stem().string()
+                                  )
+                              )
+                              .arg(i + 1, 4, 10, QChar('0'))
+                              .toStdString();
                     task_queue.enqueue(task);
                     i += 1;
                 }
@@ -489,11 +513,9 @@ void Window::on_start_button_clicked() {
                 archive_read_free(archive);
             }
         }
-        catch (const std::exception& e) {
-            log_output->append(
-                QString("Error discovering tasks in %1: %2")
-                    .arg(file_qstr, e.what())
-            );
+        catch (const std::exception &e) {
+            log_output->append(QString("Error discovering tasks in %1: %2")
+                                   .arg(file_qstr, e.what()));
         }
     }
 
@@ -508,14 +530,15 @@ void Window::on_start_button_clicked() {
     this->progress_bar->setValue(0);
     this->progress_bar->setMaximum(total_files_to_process);
     this->progress_bar->setFormat("%p % (%v / %m pages)");
-    log_output->append(
-        QString("Found %1 pages. Starting processing...")
-            .arg(total_files_to_process)
-    );
+    log_output->append(QString("Found %1 pages. Starting processing...")
+                           .arg(total_files_to_process));
 
     // Timer
     auto now = std::chrono::system_clock::now();
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                  now.time_since_epoch()
+    )
+                  .count();
     start_time = ms;
     last_eta_recent_time = ms;
     images_since_last_eta_recent = 0;
@@ -531,14 +554,15 @@ void Window::on_start_button_clicked() {
 }
 
 void Window::on_cancel_button_clicked() {
-    if (is_processing_cancelled) return;
+    if (is_processing_cancelled)
+        return;
 
     is_processing_cancelled = true;
     log_output->append("\n🛑 Cancelling processing...");
 
     task_queue.clear();
 
-    for (QProcess* p : running_processes) {
+    for (QProcess *p : running_processes) {
         p->kill();
     }
     running_processes.clear();
@@ -550,37 +574,55 @@ void Window::on_cancel_button_clicked() {
 }
 
 void Window::start_next_task() {
-    if (task_queue.isEmpty() || running_processes.size() >= max_concurrent_jobs || is_processing_cancelled) {
+    if (task_queue.isEmpty() || running_processes.size() >= max_concurrent_jobs
+        || is_processing_cancelled) {
         return;
     }
 
     PageTask task = task_queue.dequeue();
 
-    QProcess* process = new QProcess(this);
+    QProcess *process = new QProcess(this);
     running_processes.append(process);
 
-    connect(process, &QProcess::readyReadStandardOutput, this, &Window::on_worker_output);
-    connect(process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, &Window::on_worker_finished);
+    connect(
+        process,
+        &QProcess::readyReadStandardOutput,
+        this,
+        &Window::on_worker_output
+    );
+    connect(
+        process,
+        QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+        this,
+        &Window::on_worker_finished
+    );
 
-    QString program = QCoreApplication::applicationDirPath() + "/comicpress-worker";
+    QString program
+        = QCoreApplication::applicationDirPath() + "/comicpress-worker";
     QStringList arguments;
     arguments << QString::fromStdString(task.source_file.string())
               << QString::fromStdString(task.output_dir.string())
               << QString::fromStdString(task.output_base_name)
               << QString::number(task.page_number)
-              << (task.path_in_archive.empty() ? "NULL" : QString::fromStdString(task.path_in_archive));
+              << (task.path_in_archive.empty()
+                      ? "NULL"
+                      : QString::fromStdString(task.path_in_archive));
 
     process->start(program, arguments);
 }
 
 void Window::on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus) {
-    QProcess* process = qobject_cast<QProcess*>(sender());
-    if (!process) return;
+    QProcess *process = qobject_cast<QProcess *>(sender());
+    if (!process)
+        return;
 
     running_processes.removeAll(process);
 
     if (exitStatus == QProcess::CrashExit || exitCode != 0) {
-        log_output->append(QString("Worker process failed or crashed. Exit code: %1").arg(exitCode));
+        log_output->append(
+            QString("Worker process failed or crashed. Exit code: %1")
+                .arg(exitCode)
+        );
     }
 
     handle_task_finished();
@@ -606,7 +648,7 @@ void Window::on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus) {
 }
 
 void Window::on_worker_output() {
-    QProcess* process = qobject_cast<QProcess*>(sender());
+    QProcess *process = qobject_cast<QProcess *>(sender());
     if (process) {
         // Read line by line to prevent partial messages
         while (process->canReadLine()) {
@@ -615,7 +657,7 @@ void Window::on_worker_output() {
     }
 }
 
-void Window::handle_log_message(const QString& message) {
+void Window::handle_log_message(const QString &message) {
     log_output->append(message);
 }
 
@@ -625,7 +667,9 @@ void Window::handle_task_finished() {
     progress_bar->setValue(files_processed);
 }
 
-QWidget* Window::create_widget_with_info(QWidget* main_widget, const char* tooltip_text) {
+QWidget *Window::create_widget_with_info(
+    QWidget *main_widget, const char *tooltip_text
+) {
     auto container = new QWidget();
     auto layout = new QHBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -633,8 +677,11 @@ QWidget* Window::create_widget_with_info(QWidget* main_widget, const char* toolt
 
     auto info_icon_label = new QLabel();
     if (auto style = this->style()) {
-        auto icon = style->standardIcon(QStyle::StandardPixmap::SP_MessageBoxInformation);
-        std::string formatted_tooltip = "<p>" + std::string(tooltip_text) + "</p>";
+        auto icon = style->standardIcon(
+            QStyle::StandardPixmap::SP_MessageBoxInformation
+        );
+        std::string formatted_tooltip
+            = "<p>" + std::string(tooltip_text) + "</p>";
         info_icon_label->setPixmap(icon.pixmap(16, 16));
         info_icon_label->setToolTip(QString::fromStdString(formatted_tooltip));
         layout->addWidget(info_icon_label);
@@ -644,21 +691,43 @@ QWidget* Window::create_widget_with_info(QWidget* main_widget, const char* toolt
 }
 
 void Window::connect_signals() {
-    connect(this->add_files_button, &QPushButton::clicked, this, &Window::on_add_files_clicked);
-    connect(this->enable_image_scaling_check_box, &QCheckBox::checkStateChanged, this, &Window::on_enable_image_scaling_changed);
-    connect(this->start_button, &QPushButton::clicked, this, &Window::on_start_button_clicked);
-    connect(this->cancel_button, &QPushButton::clicked, this, &Window::on_cancel_button_clicked);
+    connect(
+        this->add_files_button,
+        &QPushButton::clicked,
+        this,
+        &Window::on_add_files_clicked
+    );
+    connect(
+        this->enable_image_scaling_check_box,
+        &QCheckBox::checkStateChanged,
+        this,
+        &Window::on_enable_image_scaling_changed
+    );
+    connect(
+        this->start_button,
+        &QPushButton::clicked,
+        this,
+        &Window::on_start_button_clicked
+    );
+    connect(
+        this->cancel_button,
+        &QPushButton::clicked,
+        this,
+        &Window::on_cancel_button_clicked
+    );
 }
 
 void Window::set_display_preset(std::string brand, std::string model) {
     this->display_preset.brand = brand;
     this->display_preset.model = model;
-    QString text = model.empty() ? QString::fromStdString(brand) : QString::fromStdString(brand + " " + model);
+    QString text = model.empty() ? QString::fromStdString(brand)
+                                 : QString::fromStdString(brand + " " + model);
     this->display_preset_button->setText(text);
     this->on_display_preset_changed();
 }
 
-Window::~Window() {}
+Window::~Window() {
+}
 
 std::string time_to_str(int64_t millis) {
     int seconds = static_cast<int>(millis / 1000);
@@ -676,10 +745,8 @@ std::string time_to_str(int64_t millis) {
         oss << m << " min " << std::setw(2) << std::setfill('0') << s << " s";
     }
     else {
-        oss << h << " h "
-            << std::setw(2) << std::setfill('0') << m << " min "
-            << std::setw(2) << std::setfill('0') << s << " s"
-        ;
+        oss << h << " h " << std::setw(2) << std::setfill('0') << m << " min "
+            << std::setw(2) << std::setfill('0') << s << " s";
     }
 
     return oss.str();

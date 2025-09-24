@@ -1,4 +1,4 @@
-static const char* PDF_TOOLTIP = R"(
+static const char *PDF_TOOLTIP = R"(
     Sets the rendering resolution for PDF files. Higher values produce better
     quality but use more memory and take longer to process. Values higher than
     the target display’s pixel density still result in higher perceived quality

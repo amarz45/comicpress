@@ -4,7 +4,7 @@
 
 #include "window.h"
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     // PDFium is needed here to discover the number of pages in PDF files.
     FPDF_InitLibrary();
 

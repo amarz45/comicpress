@@ -164,7 +164,7 @@ QGroupBox *Window::create_settings_group() {
     this->add_contrast_widget();
     this->add_display_presets_widget();
     this->add_scaling_widgets();
-    this->add_parallel_jobs_widget();
+    this->add_parallel_workers_widget();
 
     return settings_group;
 }
@@ -341,12 +341,12 @@ void Window::add_scaling_widgets() {
     this->settings_layout->addRow(scaling_widget);
 }
 
-void Window::add_parallel_jobs_widget() {
-    this->jobs_spin_box = new QSpinBox();
+void Window::add_parallel_workers_widget() {
+    this->workers_spin_box = new QSpinBox();
     auto threads = std::thread::hardware_concurrency();
-    this->jobs_spin_box->setRange(1, threads);
-    this->jobs_spin_box->setValue(threads);
-    this->settings_layout->addRow("Parallel jobs", this->jobs_spin_box);
+    this->workers_spin_box->setRange(1, threads);
+    this->workers_spin_box->setValue(threads);
+    this->settings_layout->addRow("Parallel workers", this->workers_spin_box);
 }
 
 void Window::on_add_files_clicked() {
@@ -418,7 +418,7 @@ void Window::on_start_button_clicked() {
     running_processes.clear();
     is_processing_cancelled = false;
     files_processed = 0;
-    max_concurrent_jobs = jobs_spin_box->value();
+    max_concurrent_workers = workers_spin_box->value();
 
     fs::path output_dir = fs::path(output_dir_field->text().toStdString());
     fs::create_directories(output_dir);
@@ -548,7 +548,7 @@ void Window::on_start_button_clicked() {
     eta_recent_label->setText("ETA (recent): –");
     timer->start(1000);
 
-    for (int i = 0; i < max_concurrent_jobs; ++i) {
+    for (int i = 0; i < max_concurrent_workers; ++i) {
         start_next_task();
     }
 }
@@ -574,7 +574,8 @@ void Window::on_cancel_button_clicked() {
 }
 
 void Window::start_next_task() {
-    if (task_queue.isEmpty() || running_processes.size() >= max_concurrent_jobs
+    if (task_queue.isEmpty()
+        || running_processes.size() >= max_concurrent_workers
         || is_processing_cancelled) {
         return;
     }

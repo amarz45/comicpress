@@ -105,7 +105,7 @@ class Window : public QMainWindow {
     QSpinBox *width_spin_box;
     QSpinBox *height_spin_box;
     QComboBox *resampler_combo_box;
-    QSpinBox *jobs_spin_box;
+    QSpinBox *workers_spin_box;
 
     // Progress
     QProgressBar *progress_bar;
@@ -119,7 +119,7 @@ class Window : public QMainWindow {
     // Process Management
     QQueue<PageTask> task_queue;
     QList<QProcess *> running_processes;
-    int max_concurrent_jobs;
+    int max_concurrent_workers;
     bool is_processing_cancelled;
 
     // Timer
@@ -136,7 +136,7 @@ class Window : public QMainWindow {
     void add_contrast_widget();
     void add_display_presets_widget();
     void add_scaling_widgets();
-    void add_parallel_jobs_widget();
+    void add_parallel_workers_widget();
 
     // UI updates
     void on_add_files_clicked();

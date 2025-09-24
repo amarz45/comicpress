@@ -1,7 +1,7 @@
-#include "window.h"
-#include "display_presets.h"
-#include "task.h"
-#include "ui_constants.h"
+#include "window.hpp"
+#include "display_presets.hpp"
+#include "task.hpp"
+#include "ui_constants.hpp"
 #include <QAction>
 #include <QCheckBox>
 #include <QComboBox>

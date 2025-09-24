@@ -17,7 +17,7 @@ endif
 qt6 = import('qt6')
 
 qt_processed_files = qt6.preprocess(
-    moc_headers: ['src/window.h']
+    moc_headers: ['src/window.hpp']
 )
 
 # Sources and dependencies for the processing logic, shared by the worker.

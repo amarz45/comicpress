@@ -2,7 +2,7 @@
 #include <QWidget>
 #include <fpdfview.h>
 
-#include "window.h"
+#include "window.hpp"
 
 int main(int argc, char **argv) {
     // PDFium is needed here to discover the number of pages in PDF files.

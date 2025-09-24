@@ -21,7 +21,7 @@
 #include <string>
 
 #include "qpushbutton.h"
-#include "task.h"
+#include "task.hpp"
 
 class BoundedDeque {
     size_t max_size;

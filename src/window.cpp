@@ -2,6 +2,7 @@
 #include "include/display_presets.hpp"
 #include "include/task.hpp"
 #include "include/ui_constants.hpp"
+#include "qboxlayout.h"
 #include <QAction>
 #include <QCheckBox>
 #include <QComboBox>
@@ -32,6 +33,66 @@
 #include <vips/resample.h>
 
 namespace fs = std::filesystem;
+
+QHBoxLayout *create_container_layout(QWidget *container) {
+    auto layout = new QHBoxLayout(container);
+    layout->setContentsMargins(40, 0, 0, 0);
+    layout->setSpacing(10);
+    return layout;
+}
+
+QComboBox *create_combo_box(
+    QHBoxLayout *layout,
+    QWidget *widget,
+    QStringList items,
+    QString current_text
+) {
+    layout->addWidget(widget);
+    auto combo_box = new QComboBox();
+    combo_box->addItems(items);
+    combo_box->setCurrentText(current_text);
+    layout->addWidget(combo_box);
+    return combo_box;
+}
+
+QDoubleSpinBox *create_double_spin_box(
+    QHBoxLayout *layout,
+    QWidget *widget,
+    double lower,
+    double upper,
+    double step_size,
+    double value
+) {
+    layout->addWidget(widget);
+    auto spin_box = new QDoubleSpinBox();
+    spin_box->setRange(lower, upper);
+    spin_box->setSingleStep(step_size);
+    spin_box->setValue(value);
+    layout->addWidget(spin_box);
+    return spin_box;
+}
+
+QSpinBox *create_spin_box(int lower, int upper, int step_size, int value) {
+    auto spin_box = new QSpinBox();
+    spin_box->setRange(lower, upper);
+    spin_box->setSingleStep(step_size);
+    spin_box->setValue(value);
+    return spin_box;
+}
+
+QSpinBox *create_spin_box_with_label(
+    QHBoxLayout *layout,
+    QWidget *widget,
+    int lower,
+    int upper,
+    int step_size,
+    int value
+) {
+    layout->addWidget(widget);
+    auto spin_box = create_spin_box(lower, upper, step_size, value);
+    layout->addWidget(spin_box);
+    return spin_box;
+}
 
 Window::Window(QWidget *parent) : QMainWindow(parent), eta_recent_intervals(5) {
     // Timer
@@ -208,10 +269,7 @@ QGroupBox *Window::create_log_group() {
 }
 
 void Window::add_pdf_pixel_density_widget() {
-    this->pdf_pixel_density_spin_box = new QSpinBox();
-    this->pdf_pixel_density_spin_box->setRange(300, 4'800);
-    this->pdf_pixel_density_spin_box->setValue(1'200);
-    this->pdf_pixel_density_spin_box->setSingleStep(300);
+    this->pdf_pixel_density_spin_box = create_spin_box(300, 4'800, 300, 1'200);
 
     auto pdf_pixel_density_widget = this->create_widget_with_info(
         new QLabel("PDF pixel density (PPI)"), PDF_TOOLTIP, true
@@ -285,21 +343,15 @@ void Window::add_scaling_widgets() {
     ));
 
     this->scaling_options_container = new QWidget();
-    auto scaling_layout = new QHBoxLayout(this->scaling_options_container);
-    scaling_layout->setContentsMargins(40, 0, 0, 0);
-    scaling_layout->setSpacing(10);
+    auto scaling_layout
+        = create_container_layout(this->scaling_options_container);
 
-    // Width
-    scaling_layout->addWidget(new QLabel("Width"));
-    this->width_spin_box = new QSpinBox();
-    this->width_spin_box->setRange(100, 4'000);
-    scaling_layout->addWidget(this->width_spin_box);
-
-    // Height
-    scaling_layout->addWidget(new QLabel("Height"));
-    this->height_spin_box = new QSpinBox();
-    this->height_spin_box->setRange(100, 4'000);
-    scaling_layout->addWidget(this->height_spin_box);
+    this->width_spin_box = create_spin_box_with_label(
+        scaling_layout, new QLabel("Width"), 100, 4'000, 100, 1440
+    );
+    this->height_spin_box = create_spin_box_with_label(
+        scaling_layout, new QLabel("Height"), 100, 4'000, 100, 1920
+    );
 
     // Resampler
     auto resampler_label_with_info = this->create_widget_with_info(
@@ -307,10 +359,9 @@ void Window::add_scaling_widgets() {
         "Select the algorithm used for resizing images.",
         false
     );
-    scaling_layout->addWidget(resampler_label_with_info);
-
-    this->resampler_combo_box = new QComboBox();
-    this->resampler_combo_box->addItems(
+    this->resampler_combo_box = create_combo_box(
+        scaling_layout,
+        resampler_label_with_info,
         {"Bicubic interpolation",
          "Bilinear interpolation",
          "Lanczos 2",
@@ -318,13 +369,11 @@ void Window::add_scaling_widgets() {
          "Magic Kernel Sharp 2013",
          "Magic Kernel Sharp 2021",
          "Mitchell",
-         "Nearest Neighbour"}
+         "Nearest neighbour"},
+        "Magic Kernel Sharp 2021"
     );
-    this->resampler_combo_box->setCurrentText("Magic Kernel Sharp 2021");
-    scaling_layout->addWidget(this->resampler_combo_box);
 
     scaling_layout->addStretch();
-
     this->settings_layout->addRow(this->scaling_options_container);
 }
 
@@ -337,24 +386,17 @@ void Window::add_quantization_widgets() {
 
     this->quantization_options_container = new QWidget();
     auto quantization_layout
-        = new QHBoxLayout(this->quantization_options_container);
-    quantization_layout->setContentsMargins(40, 0, 0, 0);
-    quantization_layout->setSpacing(10);
+        = create_container_layout(this->quantization_options_container);
 
-    // Bit depth
-    quantization_layout->addWidget(new QLabel("Bit depth"));
-    this->bit_depth_combo_box = new QComboBox();
-    this->bit_depth_combo_box->addItems({"1", "2", "4", "8", "16"});
-    this->bit_depth_combo_box->setCurrentText("4");
-    quantization_layout->addWidget(this->bit_depth_combo_box);
-
-    // Dithering
-    quantization_layout->addWidget(new QLabel("Dithering"));
-    this->dithering_spin_box = new QDoubleSpinBox();
-    this->dithering_spin_box->setRange(0.0, 1.0);
-    this->dithering_spin_box->setSingleStep(0.1);
-    this->dithering_spin_box->setValue(1.0);
-    quantization_layout->addWidget(this->dithering_spin_box);
+    this->bit_depth_combo_box = create_combo_box(
+        quantization_layout,
+        new QLabel("Bit depth"),
+        {"1", "2", "4", "8", "16"},
+        "4"
+    );
+    this->dithering_spin_box = create_double_spin_box(
+        quantization_layout, new QLabel("Dithering"), 0.0, 1.0, 0.1, 1.0
+    );
 
     quantization_layout->addStretch();
 

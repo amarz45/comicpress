@@ -106,6 +106,10 @@ class Window : public QMainWindow {
     QSpinBox *width_spin_box;
     QSpinBox *height_spin_box;
     QComboBox *resampler_combo_box;
+    QCheckBox *enable_image_quantization_check_box;
+    QWidget *quantization_options_container;
+    QComboBox *bit_depth_combo_box;
+    QDoubleSpinBox *dithering_spin_box;
     QSpinBox *workers_spin_box;
 
     // Progress
@@ -137,12 +141,14 @@ class Window : public QMainWindow {
     void add_contrast_widget();
     void add_display_presets_widget();
     void add_scaling_widgets();
+    void add_quantization_widgets();
     void add_parallel_workers_widget();
 
     // UI updates
     void on_add_files_clicked();
     void on_display_preset_changed();
     void on_enable_image_scaling_changed(int state);
+    void on_enable_image_quantization_changed(int state);
 
     // Helper methods
     QWidget *create_widget_with_info(

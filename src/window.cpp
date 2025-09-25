@@ -165,6 +165,7 @@ QGroupBox *Window::create_settings_group() {
     this->add_contrast_widget();
     this->add_display_presets_widget();
     this->add_scaling_widgets();
+    this->add_quantization_widgets();
     this->add_parallel_workers_widget();
 
     return settings_group;
@@ -327,6 +328,39 @@ void Window::add_scaling_widgets() {
     this->settings_layout->addRow(this->scaling_options_container);
 }
 
+void Window::add_quantization_widgets() {
+    this->enable_image_quantization_check_box = new QCheckBox("Quantize pages");
+    this->enable_image_quantization_check_box->setChecked(true);
+    this->settings_layout->addRow(this->create_widget_with_info(
+        this->enable_image_quantization_check_box, "Lorem ipsum", true
+    ));
+
+    this->quantization_options_container = new QWidget();
+    auto quantization_layout
+        = new QHBoxLayout(this->quantization_options_container);
+    quantization_layout->setContentsMargins(40, 0, 0, 0);
+    quantization_layout->setSpacing(10);
+
+    // Bit depth
+    quantization_layout->addWidget(new QLabel("Bit depth"));
+    this->bit_depth_combo_box = new QComboBox();
+    this->bit_depth_combo_box->addItems({"1", "2", "4", "8", "16"});
+    this->bit_depth_combo_box->setCurrentText("4");
+    quantization_layout->addWidget(this->bit_depth_combo_box);
+
+    // Dithering
+    quantization_layout->addWidget(new QLabel("Dithering"));
+    this->dithering_spin_box = new QDoubleSpinBox();
+    this->dithering_spin_box->setRange(0.0, 1.0);
+    this->dithering_spin_box->setSingleStep(0.1);
+    this->dithering_spin_box->setValue(1.0);
+    quantization_layout->addWidget(this->dithering_spin_box);
+
+    quantization_layout->addStretch();
+
+    this->settings_layout->addRow(this->quantization_options_container);
+}
+
 void Window::add_parallel_workers_widget() {
     this->workers_spin_box = new QSpinBox();
     auto threads = std::thread::hardware_concurrency();
@@ -380,6 +414,11 @@ void Window::on_display_preset_changed() {
 void Window::on_enable_image_scaling_changed(int state) {
     bool is_checked = state == Qt::Checked;
     this->scaling_options_container->setVisible(is_checked);
+}
+
+void Window::on_enable_image_quantization_changed(int state) {
+    bool is_checked = state == Qt::Checked;
+    this->quantization_options_container->setVisible(is_checked);
 }
 
 void Window::on_start_button_clicked() {
@@ -485,7 +524,9 @@ void Window::on_start_button_clicked() {
                     else {
                         task.page_resampler = VIPS_KERNEL_NEAREST;
                     }
-                    task.quantize_pages = true;
+                    task.quantize_pages
+                        = this->enable_image_quantization_check_box
+                              ->isChecked();
                     task.bit_depth = 4;
                     task.dither = 1.0;
                     task.image_format = "WebP";
@@ -745,6 +786,12 @@ void Window::connect_signals() {
         &QCheckBox::checkStateChanged,
         this,
         &Window::on_enable_image_scaling_changed
+    );
+    connect(
+        this->enable_image_quantization_check_box,
+        &QCheckBox::checkStateChanged,
+        this,
+        &Window::on_enable_image_quantization_changed
     );
     connect(
         this->start_button,

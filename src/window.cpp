@@ -148,7 +148,7 @@ QGroupBox *Window::create_io_group() {
     auto output_layout = new QHBoxLayout();
     this->output_dir_field = new QLineEdit(".");
     this->browse_output_button = new QPushButton("Browse");
-    output_layout->addWidget(new QLabel("Output directory"));
+    output_layout->addWidget(new QLabel("Output folder"));
     output_layout->addWidget(this->output_dir_field);
     output_layout->addWidget(this->browse_output_button);
 
@@ -446,7 +446,7 @@ void Window::on_start_button_clicked() {
     fs::path output_dir = fs::path(output_dir_field->text().toStdString());
     fs::create_directories(output_dir);
     log_output->append(
-        "Output directory: " + QString::fromStdString(output_dir.string())
+        "Output folder: " + QString::fromStdString(output_dir.string())
     );
 
     log_output->append("Discovering pages in all files...");

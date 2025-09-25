@@ -102,6 +102,7 @@ class Window : public QMainWindow {
     QCheckBox *contrast_check_box;
     QPushButton *display_preset_button;
     QCheckBox *enable_image_scaling_check_box;
+    QWidget *scaling_options_container;
     QSpinBox *width_spin_box;
     QSpinBox *height_spin_box;
     QComboBox *resampler_combo_box;
@@ -145,7 +146,7 @@ class Window : public QMainWindow {
 
     // Helper methods
     QWidget *
-    create_widget_with_info(QWidget *main_widget, const char *tooltip_text);
+    create_widget_with_info(QWidget *main_widget, const char *tooltip_text, bool add_stretch);
     void connect_signals();
     void set_display_preset(std::string brand, std::string model);
 

@@ -213,7 +213,7 @@ void Window::add_pdf_pixel_density_widget() {
     this->pdf_pixel_density_spin_box->setSingleStep(300);
 
     auto pdf_pixel_density_widget = this->create_widget_with_info(
-        new QLabel("PDF pixel density (PPI)"), PDF_TOOLTIP
+        new QLabel("PDF pixel density (PPI)"), PDF_TOOLTIP, true
     );
 
     this->settings_layout->addRow(
@@ -225,7 +225,7 @@ void Window::add_contrast_widget() {
     this->contrast_check_box = new QCheckBox("Stretch contrast");
     this->contrast_check_box->setChecked(true);
     auto contrast_widget = this->create_widget_with_info(
-        this->contrast_check_box, "Lorem ipsum"
+        this->contrast_check_box, "Lorem ipsum", true
     );
     this->settings_layout->addRow(contrast_widget);
 }
@@ -278,41 +278,36 @@ void Window::add_display_presets_widget() {
 }
 
 void Window::add_scaling_widgets() {
-    auto scaling_widget = new QWidget();
-    auto scaling_layout = new QHBoxLayout(scaling_widget);
-    scaling_layout->setContentsMargins(0, 0, 0, 0);
-    scaling_layout->setSpacing(20);
-
     this->enable_image_scaling_check_box = new QCheckBox("Scale pages");
-    auto enable_image_scaling_label_widget = this->create_widget_with_info(
-        this->enable_image_scaling_check_box, "Lorem ipsum"
-    );
+    this->settings_layout->addRow(this->create_widget_with_info(
+        this->enable_image_scaling_check_box, "Lorem ipsum", true
+    ));
+
+    this->scaling_options_container = new QWidget();
+    auto scaling_layout = new QHBoxLayout(this->scaling_options_container);
+    scaling_layout->setContentsMargins(40, 0, 0, 0);
+    scaling_layout->setSpacing(10);
 
     // Width
+    scaling_layout->addWidget(new QLabel("Width"));
     this->width_spin_box = new QSpinBox();
     this->width_spin_box->setRange(100, 4'000);
-    auto width_container = new QWidget();
-    auto width_layout = new QHBoxLayout(width_container);
-    width_layout->setContentsMargins(0, 0, 0, 0);
-    width_layout->setSpacing(4);
-    width_layout->addWidget(new QLabel("Width"));
-    width_layout->addWidget(this->width_spin_box);
+    scaling_layout->addWidget(this->width_spin_box);
 
     // Height
+    scaling_layout->addWidget(new QLabel("Height"));
     this->height_spin_box = new QSpinBox();
     this->height_spin_box->setRange(100, 4'000);
-    auto height_container = new QWidget();
-    auto height_layout = new QHBoxLayout(height_container);
-    height_layout->setContentsMargins(0, 0, 0, 0);
-    height_layout->setSpacing(4);
-    height_layout->addWidget(new QLabel("Height"));
-    height_layout->addWidget(this->height_spin_box);
+    scaling_layout->addWidget(this->height_spin_box);
 
     // Resampler
-    auto resampler_widget = new QWidget();
-    auto resampler_layout = new QHBoxLayout(resampler_widget);
-    resampler_layout->setContentsMargins(0, 0, 0, 0);
-    resampler_layout->setSpacing(4);
+    auto resampler_label_with_info = this->create_widget_with_info(
+        new QLabel("Resampler"),
+        "Select the algorithm used for resizing images.",
+        false
+    );
+    scaling_layout->addWidget(resampler_label_with_info);
+
     this->resampler_combo_box = new QComboBox();
     this->resampler_combo_box->addItems(
         {"Bicubic interpolation",
@@ -325,20 +320,11 @@ void Window::add_scaling_widgets() {
          "Nearest Neighbour"}
     );
     this->resampler_combo_box->setCurrentText("Magic Kernel Sharp 2021");
+    scaling_layout->addWidget(this->resampler_combo_box);
 
-    // Add resampler widgets.
-    auto resampler_label_widget = this->create_widget_with_info(
-        new QLabel("Resampling filter"), "Lorem"
-    );
-    resampler_layout->addWidget(resampler_label_widget);
-    resampler_layout->addWidget(this->resampler_combo_box);
+    scaling_layout->addStretch();
 
-    scaling_layout->addWidget(enable_image_scaling_label_widget);
-    scaling_layout->addWidget(width_container);
-    scaling_layout->addWidget(height_container);
-    scaling_layout->addWidget(resampler_widget);
-
-    this->settings_layout->addRow(scaling_widget);
+    this->settings_layout->addRow(this->scaling_options_container);
 }
 
 void Window::add_parallel_workers_widget() {
@@ -392,10 +378,8 @@ void Window::on_display_preset_changed() {
 }
 
 void Window::on_enable_image_scaling_changed(int state) {
-    auto enabled = state == Qt::Checked;
-    this->width_spin_box->setEnabled(enabled);
-    this->height_spin_box->setEnabled(enabled);
-    this->resampler_combo_box->setEnabled(enabled);
+    bool is_checked = state == Qt::Checked;
+    this->scaling_options_container->setVisible(is_checked);
 }
 
 void Window::on_start_button_clicked() {
@@ -721,7 +705,7 @@ void Window::handle_task_finished() {
 }
 
 QWidget *Window::create_widget_with_info(
-    QWidget *main_widget, const char *tooltip_text
+    QWidget *main_widget, const char *tooltip_text, bool add_stretch
 ) {
     auto container = new QWidget();
     auto layout = new QHBoxLayout(container);
@@ -739,8 +723,13 @@ QWidget *Window::create_widget_with_info(
         info_icon_label->setToolTip(QString::fromStdString(formatted_tooltip));
         layout->addWidget(info_icon_label);
     }
+
     layout->addWidget(main_widget);
-    layout->addStretch();
+
+    if (add_stretch) {
+        layout->addStretch();
+    }
+
     return container;
 }
 

@@ -41,16 +41,21 @@ QHBoxLayout *create_container_layout(QWidget *container) {
     return layout;
 }
 
-QComboBox *create_combo_box(
+QComboBox *create_combo_box(QStringList items, QString current_text) {
+    auto combo_box = new QComboBox();
+    combo_box->addItems(items);
+    combo_box->setCurrentText(current_text);
+    return combo_box;
+}
+
+QComboBox *create_combo_box_with_layout(
     QHBoxLayout *layout,
     QWidget *widget,
     QStringList items,
     QString current_text
 ) {
     layout->addWidget(widget);
-    auto combo_box = new QComboBox();
-    combo_box->addItems(items);
-    combo_box->setCurrentText(current_text);
+    auto combo_box = create_combo_box(items, current_text);
     layout->addWidget(combo_box);
     return combo_box;
 }
@@ -227,6 +232,7 @@ QGroupBox *Window::create_settings_group() {
     this->add_display_presets_widget();
     this->add_scaling_widgets();
     this->add_quantization_widgets();
+    this->add_image_format_widgets();
     this->add_parallel_workers_widget();
 
     return settings_group;
@@ -359,7 +365,7 @@ void Window::add_scaling_widgets() {
         "Select the algorithm used for resizing images.",
         false
     );
-    this->resampler_combo_box = create_combo_box(
+    this->resampler_combo_box = create_combo_box_with_layout(
         scaling_layout,
         resampler_label_with_info,
         {"Bicubic interpolation",
@@ -388,7 +394,7 @@ void Window::add_quantization_widgets() {
     auto quantization_layout
         = create_container_layout(this->quantization_options_container);
 
-    this->bit_depth_combo_box = create_combo_box(
+    this->bit_depth_combo_box = create_combo_box_with_layout(
         quantization_layout,
         new QLabel("Bit depth"),
         {"1", "2", "4", "8", "16"},
@@ -401,6 +407,17 @@ void Window::add_quantization_widgets() {
     quantization_layout->addStretch();
 
     this->settings_layout->addRow(this->quantization_options_container);
+}
+
+void Window::add_image_format_widgets() {
+    this->image_format_combo_box
+        = create_combo_box({"AVIF", "JPEG", "JPEG XL", "PNG", "WebP"}, "PNG");
+    auto image_format_label = this->create_widget_with_info(
+        new QLabel("Image format"), "Lorem ipsum", true
+    );
+    this->settings_layout->addRow(
+        image_format_label, this->image_format_combo_box
+    );
 }
 
 void Window::add_parallel_workers_widget() {
@@ -571,7 +588,8 @@ void Window::on_start_button_clicked() {
                               ->isChecked();
                     task.bit_depth = 4;
                     task.dither = 1.0;
-                    task.image_format = "WebP";
+                    task.image_format
+                        = image_format_combo_box->currentText().toStdString();
                     task.is_lossy = false;
                     task.quality_type_is_distance = true;
                     task.compression_effort = 4;

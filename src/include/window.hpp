@@ -110,6 +110,7 @@ class Window : public QMainWindow {
     QWidget *quantization_options_container;
     QComboBox *bit_depth_combo_box;
     QDoubleSpinBox *dithering_spin_box;
+    QComboBox *image_format_combo_box;
     QSpinBox *workers_spin_box;
 
     // Progress
@@ -142,6 +143,7 @@ class Window : public QMainWindow {
     void add_display_presets_widget();
     void add_scaling_widgets();
     void add_quantization_widgets();
+    void add_image_format_widgets();
     void add_parallel_workers_widget();
 
     // UI updates

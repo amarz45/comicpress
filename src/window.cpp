@@ -222,18 +222,11 @@ void Window::add_pdf_pixel_density_widget() {
 }
 
 void Window::add_contrast_widget() {
-    auto contrast_widget = new QWidget();
-    auto contrast_layout = new QHBoxLayout(contrast_widget);
-    contrast_layout->setContentsMargins(0, 0, 0, 0);
-    contrast_layout->setSpacing(20);
-
     this->contrast_check_box = new QCheckBox("Stretch contrast");
     this->contrast_check_box->setChecked(true);
-    contrast_widget = this->create_widget_with_info(
+    auto contrast_widget = this->create_widget_with_info(
         this->contrast_check_box, "Lorem ipsum"
     );
-
-    contrast_layout->addStretch();
     this->settings_layout->addRow(contrast_widget);
 }
 
@@ -344,7 +337,6 @@ void Window::add_scaling_widgets() {
     scaling_layout->addWidget(width_container);
     scaling_layout->addWidget(height_container);
     scaling_layout->addWidget(resampler_widget);
-    scaling_layout->addStretch();
 
     this->settings_layout->addRow(scaling_widget);
 }
@@ -748,6 +740,7 @@ QWidget *Window::create_widget_with_info(
         layout->addWidget(info_icon_label);
     }
     layout->addWidget(main_widget);
+    layout->addStretch();
     return container;
 }
 

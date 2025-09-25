@@ -29,6 +29,7 @@
 #include <numeric>
 #include <sstream>
 #include <thread>
+#include <vips/resample.h>
 
 namespace fs = std::filesystem;
 
@@ -321,7 +322,14 @@ void Window::add_scaling_widgets() {
     resampler_layout->setSpacing(4);
     this->resampler_combo_box = new QComboBox();
     this->resampler_combo_box->addItems(
-        {"Lanczos 3", "Magic Kernel Sharp 2021"}
+        {"Bicubic interpolation",
+         "Bilinear interpolation",
+         "Lanczos 2",
+         "Lanczos 3",
+         "Magic Kernel Sharp 2013",
+         "Magic Kernel Sharp 2021",
+         "Mitchell",
+         "Nearest Neighbour"}
     );
     this->resampler_combo_box->setCurrentText("Magic Kernel Sharp 2021");
 
@@ -468,6 +476,46 @@ void Window::on_start_button_clicked() {
                               )
                               .arg(i + 1, 4, 10, QChar('0'))
                               .toStdString();
+                    task.pdf_pixel_density
+                        = this->pdf_pixel_density_spin_box->value();
+                    // TODO: Replace placeholders.
+                    task.stretch_page_contrast = true;
+                    task.scale_pages
+                        = this->enable_image_scaling_check_box->isChecked();
+                    task.page_width = this->width_spin_box->value();
+                    task.page_height = this->height_spin_box->value();
+                    auto resampler = this->resampler_combo_box->currentText();
+                    if (resampler == "Bicubic interpolation") {
+                        task.page_resampler = VIPS_KERNEL_CUBIC;
+                    }
+                    else if (resampler == "Bilinear interpolation") {
+                        task.page_resampler = VIPS_KERNEL_LINEAR;
+                    }
+                    else if (resampler == "Lanczos 2") {
+                        task.page_resampler = VIPS_KERNEL_LANCZOS2;
+                    }
+                    else if (resampler == "Lanczos 3") {
+                        task.page_resampler = VIPS_KERNEL_LANCZOS3;
+                    }
+                    else if (resampler == "Magic Kernel Sharp 2013") {
+                        task.page_resampler = VIPS_KERNEL_MKS2013;
+                    }
+                    else if (resampler == "Magic Kernel Sharp 2021") {
+                        task.page_resampler = VIPS_KERNEL_MKS2021;
+                    }
+                    else if (resampler == "Mitchell") {
+                        task.page_resampler = VIPS_KERNEL_MITCHELL;
+                    }
+                    else {
+                        task.page_resampler = VIPS_KERNEL_NEAREST;
+                    }
+                    task.quantize_pages = true;
+                    task.bit_depth = 4;
+                    task.dither = 1.0;
+                    task.image_format = "WebP";
+                    task.is_lossy = false;
+                    task.quality_type_is_distance = true;
+                    task.compression_effort = 4;
                     task_queue.enqueue(task);
                 }
                 FPDF_CloseDocument(doc);
@@ -607,7 +655,19 @@ void Window::start_next_task() {
               << QString::number(task.page_number)
               << (task.path_in_archive.empty()
                       ? "NULL"
-                      : QString::fromStdString(task.path_in_archive));
+                      : QString::fromStdString(task.path_in_archive))
+              << QString::number(task.pdf_pixel_density)
+              << QString::number(task.stretch_page_contrast)
+              << QString::number(task.scale_pages)
+              << QString::number(task.page_width)
+              << QString::number(task.page_height)
+              << QString::number(task.page_resampler)
+              << QString::number(task.quantize_pages)
+              << QString::number(task.bit_depth) << QString::number(task.dither)
+              << QString::fromStdString(task.image_format)
+              << QString::number(task.is_lossy)
+              << QString::number(task.quality_type_is_distance)
+              << QString::number(task.compression_effort);
 
     process->start(program, arguments);
 }

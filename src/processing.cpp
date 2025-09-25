@@ -3,9 +3,7 @@
 #include <archive_entry.h>
 #include <filesystem>
 #include <fpdfview.h>
-#include <fstream>
 #include <functional>
-#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <vips/vips8>
@@ -35,8 +33,9 @@ vips::VImage load_pdf_page(const PageTask &task, Logger log) {
 
     auto width_pt = FPDF_GetPageWidth(page);
     auto height_pt = FPDF_GetPageHeight(page);
-    auto width = static_cast<int>(width_pt * 1200.0 / 72.0);
-    auto height = static_cast<int>(height_pt * 1200.0 / 72.0);
+    auto scale = task.pdf_pixel_density / 72.0;
+    auto width = static_cast<int>(width_pt * scale);
+    auto height = static_cast<int>(height_pt * scale);
 
     FPDF_BITMAP bitmap = FPDFBitmap_CreateEx(
         width, height, FPDFBitmap_BGR, nullptr, width * 3
@@ -118,137 +117,66 @@ vips::VImage load_archive_image(const PageTask &task, Logger log) {
     return vips::VImage::new_from_buffer(buffer.data(), buffer.size(), "");
 }
 
-void process_vimage(
-    vips::VImage img,
-    const fs::path &output_dir,
-    const std::string &base_name,
-    Logger log
-) {
+void process_vimage(vips::VImage img, PageTask task, Logger log) {
     try {
-        auto png_path = output_dir / (base_name + ".png");
-        auto output_path = output_dir / (base_name + ".webp");
+        auto png_path = task.output_dir / (task.output_base_name + ".png");
+        auto output_path = task.output_dir / (task.output_base_name + ".webp");
 
         log("Processing in-memory page -> " + output_path.filename().string());
 
         img = img.colourspace(VIPS_INTERPRETATION_B_W);
 
-        auto low = img.min();
-        auto high = img.max();
+        if (task.stretch_page_contrast) {
+            auto min = img.min();
+            auto max = img.max();
 
-        if (high != low) {
-            auto scale = 255.0 / (high - low);
-            auto offset = -low * scale;
-            img = img.linear(scale, offset);
+            if (min != max) {
+                auto scale = 255.0 / (max - min);
+                auto offset = -min * scale;
+                img = img.linear(scale, offset);
+            }
         }
 
-        double scale = std::min(1440.0 / img.width(), 1920.0 / img.height());
-        img = img.resize(
-            scale, vips::VImage::option()->set("kernel", VIPS_KERNEL_MKS2021)
-        );
+        if (task.scale_pages) {
+            auto width_ratio = (double)task.page_width / (double)img.width();
+            auto height_ratio = (double)task.page_height / (double)img.height();
+            double scale = std::min(width_ratio, height_ratio);
+            img = img.resize(
+                scale,
+                vips::VImage::option()->set("kernel", task.page_resampler)
+            );
+        }
 
-        img.pngsave(
-            png_path.c_str(),
-            vips::VImage::option()
-                ->set("compression", 0)
-                ->set("palette", true)
-                ->set("bitdepth", 4)
-                ->set("dither", 1.0)
-                ->set("effort", 10)
-        );
+        if (task.quantize_pages) {
+            img.pngsave(
+                png_path.c_str(),
+                vips::VImage::option()
+                    ->set("compression", 0)
+                    ->set("palette", true)
+                    ->set("bitdepth", task.bit_depth)
+                    ->set("dither", task.dither)
+                    ->set("effort", 10)
+            );
+        }
+        else {
+            img.pngsave(
+                png_path.c_str(), vips::VImage::option()->set("compression", 0)
+            );
+        }
 
         vips::VImage final_img = vips::VImage::new_from_file(png_path.c_str());
+
         final_img.webpsave(
             output_path.c_str(),
-            vips::VImage::option()->set("lossless", true)->set("effort", 4)
+            vips::VImage::option()
+                ->set("lossless", !task.is_lossy)
+                ->set("effort", task.compression_effort)
         );
 
         fs::remove(png_path);
     }
     catch (const vips::VError &e) {
-        log("  -> VIPS Error processing in-memory image " + base_name + ": "
-            + e.what());
+        log("  -> VIPS Error processing in-memory image "
+            + task.output_base_name + ": " + e.what());
     }
-}
-
-void process_image_file(
-    const fs::path &input_path,
-    const fs::path &output_dir,
-    const std::string &base_name,
-    Logger log
-) {
-    try {
-        log("Processing " + input_path.filename().string());
-        auto img = vips::VImage::new_from_file(input_path.c_str());
-        process_vimage(img, output_dir, base_name, log);
-    }
-    catch (const vips::VError &e) {
-        log("  -> VIPS Error loading file " + input_path.filename().string()
-            + ": " + e.what());
-    }
-}
-
-void handle_archive(
-    const fs::path &archive_path, const fs::path &output_dir, Logger log
-) {
-    log("Processing Archive: " + archive_path.filename().string());
-    auto temp_extract_dir = fs::temp_directory_path() / archive_path.stem();
-    fs::create_directories(temp_extract_dir);
-
-    auto archive = archive_read_new();
-    struct archive_entry *entry;
-
-    archive_read_support_filter_all(archive);
-    archive_read_support_format_all(archive);
-
-    auto archive_open
-        = archive_read_open_filename(archive, archive_path.c_str(), 10240);
-
-    if (archive_open != ARCHIVE_OK) {
-        log("Error: libarchive could not open file: "
-            + std::string(archive_error_string(archive)));
-        archive_read_free(archive);
-        return;
-    }
-
-    while (archive_read_next_header(archive, &entry) == ARCHIVE_OK) {
-        if (archive_entry_filetype(entry) != AE_IFREG) {
-            continue;
-        }
-
-        auto dest_path = temp_extract_dir / archive_entry_pathname(entry);
-        fs::create_directories(dest_path.parent_path());
-
-        std::ofstream out_file(dest_path, std::ios::binary);
-        if (!out_file) {
-            continue;
-        }
-
-        const void *buff;
-        size_t size;
-        int64_t offset;
-        while (true) {
-            auto archive_read
-                = archive_read_data_block(archive, &buff, &size, &offset);
-            if (archive_read != ARCHIVE_OK) {
-                break;
-            }
-            out_file.write(static_cast<const char *>(buff), size);
-        }
-    }
-
-    archive_read_close(archive);
-    archive_read_free(archive);
-
-    auto iter = fs::recursive_directory_iterator(temp_extract_dir);
-
-    for (const auto &dir_entry : iter) {
-        if (!dir_entry.is_regular_file()) {
-            continue;
-        }
-        process_image_file(
-            dir_entry.path(), output_dir, dir_entry.path().stem().string(), log
-        );
-    }
-
-    fs::remove_all(temp_extract_dir);
 }

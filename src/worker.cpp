@@ -10,10 +10,10 @@
 // as command-line arguments, performs the processing, and prints logs to
 // standard output for the main application to capture.
 int main(int argc, char *argv[]) {
-    if (argc < 6) {
-        std::cerr << "Worker error: Insufficient arguments." << std::endl;
-        return 1;
-    }
+    // if (argc < 7) {
+    //     std::cerr << "Worker error: Insufficient arguments." << std::endl;
+    //     return 1;
+    // }
 
     // Initialize libraries required for processing.
     if (VIPS_INIT(argv[0])) {
@@ -41,6 +41,89 @@ int main(int argc, char *argv[]) {
         task.path_in_archive = path_in_archive_str;
     }
 
+    try {
+        task.pdf_pixel_density = std::stoi(argv[6]);
+    }
+    catch (const std::exception &e) {
+        std::cerr << "Worker error: " << e.what() << "\n";
+        return 1;
+    }
+
+    task.stretch_page_contrast = argv[7][0] == '1';
+    task.scale_pages = argv[8][0] == '1';
+
+    try {
+        task.page_width = std::stoi(argv[9]);
+    }
+    catch (const std::exception &e) {
+        std::cerr << "Worker error: " << e.what() << "\n";
+        return 1;
+    }
+
+    try {
+        task.page_height = std::stoi(argv[10]);
+    }
+    catch (const std::exception &e) {
+        std::cerr << "Worker error: " << e.what() << "\n";
+        return 1;
+    }
+
+    auto resampler = std::string(argv[11]);
+    if (resampler == "Bicubic interpolation") {
+        task.page_resampler = VIPS_KERNEL_CUBIC;
+    }
+    else if (resampler == "Bilinear interpolation") {
+        task.page_resampler = VIPS_KERNEL_LINEAR;
+    }
+    else if (resampler == "Lanczos 2") {
+        task.page_resampler = VIPS_KERNEL_LANCZOS2;
+    }
+    else if (resampler == "Lanczos 3") {
+        task.page_resampler = VIPS_KERNEL_LANCZOS3;
+    }
+    else if (resampler == "Magic Kernel Sharp 2013") {
+        task.page_resampler = VIPS_KERNEL_MKS2013;
+    }
+    else if (resampler == "Magic Kernel Sharp 2021") {
+        task.page_resampler = VIPS_KERNEL_MKS2021;
+    }
+    else if (resampler == "Mitchell") {
+        task.page_resampler = VIPS_KERNEL_MITCHELL;
+    }
+    else {
+        task.page_resampler = VIPS_KERNEL_NEAREST;
+    }
+
+    task.quantize_pages = argv[12][0] == '1';
+
+    try {
+        task.bit_depth = std::stoi(argv[13]);
+    }
+    catch (const std::exception &e) {
+        std::cerr << "Worker error: " << e.what() << "\n";
+        return 1;
+    }
+
+    try {
+        task.dither = std::stof(argv[14]);
+    }
+    catch (const std::exception &e) {
+        std::cerr << "Worker error: " << e.what() << "\n";
+        return 1;
+    }
+
+    task.image_format = argv[15];
+    task.is_lossy = argv[16][0] == '1';
+    task.quality_type_is_distance = argv[17][0] == '1';
+
+    try {
+        task.compression_effort = std::stoi(argv[18]);
+    }
+    catch (const std::exception &e) {
+        std::cerr << "Worker error: " << e.what() << "\n";
+        return 1;
+    }
+
     // A simple logger that prints to standard output.
     auto logger = [](const std::string &msg) { std::cout << msg << std::endl; };
 
@@ -59,7 +142,7 @@ int main(int argc, char *argv[]) {
             );
             return 1;
         }
-        process_vimage(image, task.output_dir, task.output_base_name, logger);
+        process_vimage(image, task, logger);
     }
     catch (const std::exception &e) {
         logger(

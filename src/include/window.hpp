@@ -145,8 +145,9 @@ class Window : public QMainWindow {
     void on_enable_image_scaling_changed(int state);
 
     // Helper methods
-    QWidget *
-    create_widget_with_info(QWidget *main_widget, const char *tooltip_text, bool add_stretch);
+    QWidget *create_widget_with_info(
+        QWidget *main_widget, const char *tooltip_text, bool add_stretch
+    );
     void connect_signals();
     void set_display_preset(std::string brand, std::string model);
 

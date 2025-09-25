@@ -283,7 +283,7 @@ void Window::add_scaling_widgets() {
     scaling_layout->setContentsMargins(0, 0, 0, 0);
     scaling_layout->setSpacing(20);
 
-    this->enable_image_scaling_check_box = new QCheckBox("Scale images");
+    this->enable_image_scaling_check_box = new QCheckBox("Scale pages");
     auto enable_image_scaling_label_widget = this->create_widget_with_info(
         this->enable_image_scaling_check_box, "Lorem ipsum"
     );

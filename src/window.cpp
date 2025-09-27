@@ -553,7 +553,8 @@ void Window::on_start_button_clicked() {
                     task.pdf_pixel_density
                         = this->pdf_pixel_density_spin_box->value();
                     // TODO: Replace placeholders.
-                    task.stretch_page_contrast = true;
+                    task.stretch_page_contrast
+                        = this->contrast_check_box->isChecked();
                     task.scale_pages
                         = this->enable_image_scaling_check_box->isChecked();
                     task.page_width = this->width_spin_box->value();

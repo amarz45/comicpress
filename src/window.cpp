@@ -418,6 +418,18 @@ void Window::add_image_format_widgets() {
     this->settings_layout->addRow(
         image_format_label, this->image_format_combo_box
     );
+
+    this->image_format_options_container = new QWidget();
+    auto image_format_layout
+        = create_container_layout(this->image_format_options_container);
+
+    this->image_compression_spin_box = create_spin_box_with_label(
+        image_format_layout, new QLabel("Compression effort"), 0, 9, 1, 6
+    );
+
+    image_format_layout->addStretch();
+
+    this->settings_layout->addRow(this->image_format_options_container);
 }
 
 void Window::add_parallel_workers_widget() {
@@ -478,6 +490,33 @@ void Window::on_enable_image_scaling_changed(int state) {
 void Window::on_enable_image_quantization_changed(int state) {
     bool is_checked = state == Qt::Checked;
     this->quantization_options_container->setVisible(is_checked);
+}
+
+void Window::on_image_format_changed() {
+    auto img_format = this->image_format_combo_box->currentText();
+    if (img_format == "AVIF") {
+        this->image_compression_spin_box->setRange(0, 9);
+        this->image_compression_spin_box->setValue(4);
+        this->image_format_options_container->setVisible(true);
+    }
+    else if (img_format == "JPEG") {
+        this->image_format_options_container->setVisible(false);
+    }
+    else if (img_format == "JPEG XL") {
+        this->image_compression_spin_box->setRange(1, 9);
+        this->image_compression_spin_box->setValue(7);
+        this->image_format_options_container->setVisible(true);
+    }
+    else if (img_format == "PNG") {
+        this->image_compression_spin_box->setRange(0, 9);
+        this->image_compression_spin_box->setValue(6);
+        this->image_format_options_container->setVisible(true);
+    }
+    else if (img_format == "WebP") {
+        this->image_compression_spin_box->setRange(0, 6);
+        this->image_compression_spin_box->setValue(4);
+        this->image_format_options_container->setVisible(true);
+    }
 }
 
 void Window::on_start_button_clicked() {
@@ -593,7 +632,8 @@ void Window::on_start_button_clicked() {
                         = image_format_combo_box->currentText().toStdString();
                     task.is_lossy = false;
                     task.quality_type_is_distance = true;
-                    task.compression_effort = 4;
+                    task.compression_effort
+                        = this->image_compression_spin_box->value();
                     task_queue.enqueue(task);
                 }
                 FPDF_CloseDocument(doc);
@@ -853,6 +893,12 @@ void Window::connect_signals() {
         &QCheckBox::checkStateChanged,
         this,
         &Window::on_enable_image_quantization_changed
+    );
+    connect(
+        this->image_format_combo_box,
+        &QComboBox::currentTextChanged,
+        this,
+        &Window::on_image_format_changed
     );
     connect(
         this->start_button,

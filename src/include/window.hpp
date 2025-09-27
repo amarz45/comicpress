@@ -111,6 +111,8 @@ class Window : public QMainWindow {
     QComboBox *bit_depth_combo_box;
     QDoubleSpinBox *dithering_spin_box;
     QComboBox *image_format_combo_box;
+    QWidget *image_format_options_container;
+    QSpinBox *image_compression_spin_box;
     QSpinBox *workers_spin_box;
 
     // Progress
@@ -151,6 +153,7 @@ class Window : public QMainWindow {
     void on_display_preset_changed();
     void on_enable_image_scaling_changed(int state);
     void on_enable_image_quantization_changed(int state);
+    void on_image_format_changed();
 
     // Helper methods
     QWidget *create_widget_with_info(

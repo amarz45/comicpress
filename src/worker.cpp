@@ -129,18 +129,11 @@ int main(int argc, char *argv[]) {
 
     try {
         vips::VImage image;
-        if (task.page_number != -1) {
-            image = load_pdf_page(task, logger);
-        }
-        else if (!task.path_in_archive.empty()) {
+        if (!task.path_in_archive.empty()) {
             image = load_archive_image(task, logger);
         }
         else {
-            logger(
-                "Worker error: Invalid task arguments for "
-                + task.source_file.string()
-            );
-            return 1;
+            image = load_pdf_page(task, logger);
         }
         process_vimage(image, task, logger);
     }

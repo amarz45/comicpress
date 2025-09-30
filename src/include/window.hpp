@@ -156,6 +156,7 @@ class Window : public QMainWindow {
     void on_image_format_changed();
 
     // Helper methods
+    PageTask create_task(fs::path source_file, fs::path output_dir, int page_num);
     QWidget *create_widget_with_info(
         QWidget *main_widget, const char *tooltip_text, bool add_stretch
     );

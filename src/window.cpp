@@ -575,65 +575,7 @@ void Window::on_start_button_clicked() {
 
                 auto page_count = FPDF_GetPageCount(doc);
                 for (int i = 0; i < page_count; i += 1) {
-                    PageTask task;
-                    task.source_file = source_file;
-                    task.output_dir = output_dir;
-                    task.page_number = i;
-                    // TODO: Fix this abomination.
-                    task.output_base_name
-                        = QString("%1_page_%2")
-                              .arg(
-                                  QString::fromStdString(
-                                      source_file.stem().string()
-                                  )
-                              )
-                              .arg(i + 1, 4, 10, QChar('0'))
-                              .toStdString();
-                    task.pdf_pixel_density
-                        = this->pdf_pixel_density_spin_box->value();
-                    // TODO: Replace placeholders.
-                    task.stretch_page_contrast
-                        = this->contrast_check_box->isChecked();
-                    task.scale_pages
-                        = this->enable_image_scaling_check_box->isChecked();
-                    task.page_width = this->width_spin_box->value();
-                    task.page_height = this->height_spin_box->value();
-                    auto resampler = this->resampler_combo_box->currentText();
-                    if (resampler == "Bicubic interpolation") {
-                        task.page_resampler = VIPS_KERNEL_CUBIC;
-                    }
-                    else if (resampler == "Bilinear interpolation") {
-                        task.page_resampler = VIPS_KERNEL_LINEAR;
-                    }
-                    else if (resampler == "Lanczos 2") {
-                        task.page_resampler = VIPS_KERNEL_LANCZOS2;
-                    }
-                    else if (resampler == "Lanczos 3") {
-                        task.page_resampler = VIPS_KERNEL_LANCZOS3;
-                    }
-                    else if (resampler == "Magic Kernel Sharp 2013") {
-                        task.page_resampler = VIPS_KERNEL_MKS2013;
-                    }
-                    else if (resampler == "Magic Kernel Sharp 2021") {
-                        task.page_resampler = VIPS_KERNEL_MKS2021;
-                    }
-                    else if (resampler == "Mitchell") {
-                        task.page_resampler = VIPS_KERNEL_MITCHELL;
-                    }
-                    else {
-                        task.page_resampler = VIPS_KERNEL_NEAREST;
-                    }
-                    task.quantize_pages
-                        = this->enable_image_quantization_check_box
-                              ->isChecked();
-                    task.bit_depth = 4;
-                    task.dither = 1.0;
-                    task.image_format
-                        = image_format_combo_box->currentText().toStdString();
-                    task.is_lossy = false;
-                    task.quality_type_is_distance = true;
-                    task.compression_effort
-                        = this->image_compression_spin_box->value();
+                    auto task = this->create_task(source_file, output_dir, i);
                     task_queue.enqueue(task);
                 }
                 FPDF_CloseDocument(doc);
@@ -658,20 +600,8 @@ void Window::on_start_button_clicked() {
                         continue;
                     }
 
-                    PageTask task;
-                    task.source_file = source_file;
-                    task.output_dir = output_dir;
+                    auto task = this->create_task(source_file, output_dir, i);
                     task.path_in_archive = archive_entry_pathname(entry);
-                    // TODO: Fix this abomination.
-                    task.output_base_name
-                        = QString("%1_page_%2")
-                              .arg(
-                                  QString::fromStdString(
-                                      source_file.stem().string()
-                                  )
-                              )
-                              .arg(i + 1, 4, 10, QChar('0'))
-                              .toStdString();
                     task_queue.enqueue(task);
                     i += 1;
                 }
@@ -844,6 +774,69 @@ void Window::handle_task_finished() {
     files_processed++;
     images_since_last_eta_recent++;
     progress_bar->setValue(files_processed);
+}
+
+PageTask Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
+    PageTask task;
+    task.source_file = source_file;
+    task.output_dir = output_dir;
+    task.page_number = page_num;
+    // TODO: Fix this abomination.
+    task.output_base_name
+        = QString("%1_page_%2")
+              .arg(
+                  QString::fromStdString(
+                      source_file.stem().string()
+                  )
+              )
+              .arg(page_num + 1, 4, 10, QChar('0'))
+              .toStdString();
+    task.pdf_pixel_density
+        = this->pdf_pixel_density_spin_box->value();
+    // TODO: Replace placeholders.
+    task.stretch_page_contrast
+        = this->contrast_check_box->isChecked();
+    task.scale_pages
+        = this->enable_image_scaling_check_box->isChecked();
+    task.page_width = this->width_spin_box->value();
+    task.page_height = this->height_spin_box->value();
+    auto resampler = this->resampler_combo_box->currentText();
+    if (resampler == "Bicubic interpolation") {
+        task.page_resampler = VIPS_KERNEL_CUBIC;
+    }
+    else if (resampler == "Bilinear interpolation") {
+        task.page_resampler = VIPS_KERNEL_LINEAR;
+    }
+    else if (resampler == "Lanczos 2") {
+        task.page_resampler = VIPS_KERNEL_LANCZOS2;
+    }
+    else if (resampler == "Lanczos 3") {
+        task.page_resampler = VIPS_KERNEL_LANCZOS3;
+    }
+    else if (resampler == "Magic Kernel Sharp 2013") {
+        task.page_resampler = VIPS_KERNEL_MKS2013;
+    }
+    else if (resampler == "Magic Kernel Sharp 2021") {
+        task.page_resampler = VIPS_KERNEL_MKS2021;
+    }
+    else if (resampler == "Mitchell") {
+        task.page_resampler = VIPS_KERNEL_MITCHELL;
+    }
+    else {
+        task.page_resampler = VIPS_KERNEL_NEAREST;
+    }
+    task.quantize_pages
+        = this->enable_image_quantization_check_box
+              ->isChecked();
+    task.bit_depth = 4;
+    task.dither = 1.0;
+    task.image_format
+        = image_format_combo_box->currentText().toStdString();
+    task.is_lossy = false;
+    task.quality_type_is_distance = true;
+    task.compression_effort
+        = this->image_compression_spin_box->value();
+    return task;
 }
 
 QWidget *Window::create_widget_with_info(

@@ -1,5 +1,13 @@
 project('comicpress', 'cpp')
 
+add_project_arguments(
+  '-Wall',
+  '-Wextra',
+  '-Wpedantic',
+  '-Werror',
+  language: 'cpp'
+)
+
 cpp = meson.get_compiler('cpp')
 
 vips_dep = dependency('vips-cpp')

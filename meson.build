@@ -8,6 +8,7 @@ project('comicpress', 'cpp',
 
 if get_option('buildtype') == 'release'
     add_project_arguments('-flto', language: 'cpp')
+    add_project_link_arguments('-flto', language: 'cpp')
 endif
 
 cpp = meson.get_compiler('cpp')

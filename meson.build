@@ -1,11 +1,8 @@
-project('comicpress', 'cpp')
-
-add_project_arguments(
-  '-Wall',
-  '-Wextra',
-  '-Wpedantic',
-  '-Werror',
-  language: 'cpp'
+project('comicpress', 'cpp',
+    default_options : [
+        'warning_level=3',
+        'werror=true'
+    ]
 )
 
 cpp = meson.get_compiler('cpp')

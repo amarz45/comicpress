@@ -784,7 +784,7 @@ Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
     task.page_number = page_num;
     // TODO: Fix this abomination.
     task.output_base_name
-        = QString("%1_page_%2")
+        = QString("%1 %2")
               .arg(QString::fromStdString(source_file.stem().string()))
               .arg(page_num + 1, 4, 10, QChar('0'))
               .toStdString();

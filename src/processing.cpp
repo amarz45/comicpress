@@ -127,6 +127,7 @@ void process_vimage(vips::VImage img, PageTask task, Logger log) {
             img.width(), img.height(), task.page_width, task.page_height
         );
         if (image_should_rotate) {
+            img = remove_uniform_middle_columns(img);
             img = img.rotate(90.0);
         }
 
@@ -236,6 +237,41 @@ vips::VImage get_vips_img_from_pdf_page(
     return img;
 }
 
+vips::VImage remove_uniform_middle_columns(const vips::VImage &img) {
+    int width = img.width();
+    int height = img.height();
+    int mid = width / 2;
+
+    int left_bound = mid;
+    int right_bound = mid + 1;
+
+    // Find the left edge of the uniform spine
+    while (left_bound >= 0 && is_uniform_column(img, left_bound)) {
+        left_bound -= 1;
+    }
+
+    // Find the right edge of the uniform spine
+    while (right_bound < width && is_uniform_column(img, right_bound)) {
+        right_bound += 1;
+    }
+
+    // If no uniform columns were found in the middle, there's nothing to
+    // remove.
+    if (left_bound == mid && right_bound == mid + 1) {
+        return img.copy();
+    }
+
+    // Extract the part to the left of the spine.
+    vips::VImage left_part = img.extract_area(0, 0, left_bound + 1, height);
+
+    // Extract the part to the right of the spine.
+    vips::VImage right_part
+        = img.extract_area(right_bound, 0, width - right_bound, height);
+
+    // Join the two parts horizontally to form the final image.
+    return left_part.join(right_part, VIPS_DIRECTION_HORIZONTAL);
+}
+
 bool is_preview_greyscale(FPDF_DOCUMENT doc, FPDF_PAGE page, int page_number) {
     auto render_flags = FPDF_ANNOT | FPDF_NO_NATIVETEXT;
     auto preview_img = get_vips_img_from_pdf_page(
@@ -267,4 +303,9 @@ bool should_image_rotate(
     auto rotated_diff = std::abs(display_aspect - rotated_image_aspect);
 
     return rotated_diff < original_diff;
+}
+
+bool is_uniform_column(const vips::VImage &img, int col) {
+    vips::VImage column = img.extract_area(col, 0, 1, img.height());
+    return column.max() - column.min() < img.max() - img.min();
 }

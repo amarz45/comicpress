@@ -19,6 +19,7 @@ vips::VImage get_vips_img_from_pdf_page(
     double ppi,
     unsigned int render_flags
 );
+vips::VImage remove_uniform_middle_columns(const vips::VImage &img);
 bool is_preview_greyscale(FPDF_DOCUMENT doc, FPDF_PAGE page, int page_number);
 bool is_greyscale(vips::VImage img, int threshold);
 bool should_image_rotate(
@@ -27,5 +28,6 @@ bool should_image_rotate(
     double display_width,
     double display_height
 );
+bool is_uniform_column(const vips::VImage &img, int col);
 
 void process_vimage(vips::VImage img, PageTask task, Logger log);

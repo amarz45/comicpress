@@ -8,8 +8,8 @@
 
 using Logger = const std::function<void(const std::string &)> &;
 
-vips::VImage load_pdf_page(const PageTask &task, Logger log);
-vips::VImage load_archive_image(const PageTask &task, Logger log);
+vips::VImage load_pdf_page(const PageTask &task);
+vips::VImage load_archive_image(const PageTask &task);
 vips::VImage get_vips_img_from_pdf_page(
     FPDF_DOCUMENT doc,
     FPDF_PAGE page,

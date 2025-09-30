@@ -9,7 +9,7 @@
 // This is the main entry point for the worker executable. It takes task details
 // as command-line arguments, performs the processing, and prints logs to
 // standard output for the main application to capture.
-int main(int argc, char *argv[]) {
+int main(int, char *argv[]) {
     // if (argc < 7) {
     //     std::cerr << "Worker error: Insufficient arguments." << std::endl;
     //     return 1;
@@ -130,10 +130,10 @@ int main(int argc, char *argv[]) {
     try {
         vips::VImage image;
         if (!task.path_in_archive.empty()) {
-            image = load_archive_image(task, logger);
+            image = load_archive_image(task);
         }
         else {
-            image = load_pdf_page(task, logger);
+            image = load_pdf_page(task);
         }
         process_vimage(image, task, logger);
     }

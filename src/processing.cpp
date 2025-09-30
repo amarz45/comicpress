@@ -15,7 +15,7 @@ using Logger = const std::function<void(const std::string &)> &;
 
 namespace fs = std::filesystem;
 
-vips::VImage load_pdf_page(const PageTask &task, Logger log) {
+vips::VImage load_pdf_page(const PageTask &task) {
     FPDF_DOCUMENT doc = FPDF_LoadDocument(task.source_file.c_str(), nullptr);
     if (!doc) {
         throw std::runtime_error(
@@ -71,7 +71,7 @@ vips::VImage load_pdf_page(const PageTask &task, Logger log) {
     return img;
 }
 
-vips::VImage load_archive_image(const PageTask &task, Logger log) {
+vips::VImage load_archive_image(const PageTask &task) {
     auto archive = archive_read_new();
     archive_read_support_filter_all(archive);
     archive_read_support_format_all(archive);

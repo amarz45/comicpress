@@ -107,7 +107,8 @@ vips::VImage load_archive_image(const PageTask &task, Logger log) {
         );
     }
 
-    vips::VImage img = vips::VImage::new_from_buffer(buffer.data(), buffer.size(), "");
+    vips::VImage img
+        = vips::VImage::new_from_buffer(buffer.data(), buffer.size(), "");
     img = img.copy_memory();
 
     return img;

@@ -776,7 +776,8 @@ void Window::handle_task_finished() {
     progress_bar->setValue(files_processed);
 }
 
-PageTask Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
+PageTask
+Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
     PageTask task;
     task.source_file = source_file;
     task.output_dir = output_dir;
@@ -784,20 +785,13 @@ PageTask Window::create_task(fs::path source_file, fs::path output_dir, int page
     // TODO: Fix this abomination.
     task.output_base_name
         = QString("%1_page_%2")
-              .arg(
-                  QString::fromStdString(
-                      source_file.stem().string()
-                  )
-              )
+              .arg(QString::fromStdString(source_file.stem().string()))
               .arg(page_num + 1, 4, 10, QChar('0'))
               .toStdString();
-    task.pdf_pixel_density
-        = this->pdf_pixel_density_spin_box->value();
+    task.pdf_pixel_density = this->pdf_pixel_density_spin_box->value();
     // TODO: Replace placeholders.
-    task.stretch_page_contrast
-        = this->contrast_check_box->isChecked();
-    task.scale_pages
-        = this->enable_image_scaling_check_box->isChecked();
+    task.stretch_page_contrast = this->contrast_check_box->isChecked();
+    task.scale_pages = this->enable_image_scaling_check_box->isChecked();
     task.page_width = this->width_spin_box->value();
     task.page_height = this->height_spin_box->value();
     auto resampler = this->resampler_combo_box->currentText();
@@ -826,16 +820,13 @@ PageTask Window::create_task(fs::path source_file, fs::path output_dir, int page
         task.page_resampler = VIPS_KERNEL_NEAREST;
     }
     task.quantize_pages
-        = this->enable_image_quantization_check_box
-              ->isChecked();
+        = this->enable_image_quantization_check_box->isChecked();
     task.bit_depth = 4;
     task.dither = 1.0;
-    task.image_format
-        = image_format_combo_box->currentText().toStdString();
+    task.image_format = image_format_combo_box->currentText().toStdString();
     task.is_lossy = false;
     task.quality_type_is_distance = true;
-    task.compression_effort
-        = this->image_compression_spin_box->value();
+    task.compression_effort = this->image_compression_spin_box->value();
     return task;
 }
 

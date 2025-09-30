@@ -21,5 +21,11 @@ vips::VImage get_vips_img_from_pdf_page(
 );
 bool is_preview_greyscale(FPDF_DOCUMENT doc, FPDF_PAGE page, int page_number);
 bool is_greyscale(vips::VImage img, int threshold);
+bool should_image_rotate(
+    double image_width,
+    double image_height,
+    double display_width,
+    double display_height
+);
 
 void process_vimage(vips::VImage img, PageTask task, Logger log);

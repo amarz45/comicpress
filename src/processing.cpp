@@ -123,6 +123,13 @@ void process_vimage(vips::VImage img, PageTask task, Logger log) {
 
         img = img.colourspace(VIPS_INTERPRETATION_B_W);
 
+        auto image_should_rotate = should_image_rotate(
+            img.width(), img.height(), task.page_width, task.page_height
+        );
+        if (image_should_rotate) {
+            img = img.rotate(90.0);
+        }
+
         if (task.stretch_page_contrast) {
             auto min = img.min();
             auto max = img.max();
@@ -244,4 +251,20 @@ bool is_greyscale(vips::VImage img, int threshold) {
     // Convert to LCh colourspace. The second band is Chroma.
     auto chroma = img.colourspace(VIPS_INTERPRETATION_LCH)[1];
     return chroma.max() <= threshold;
+}
+
+bool should_image_rotate(
+    double image_width,
+    double image_height,
+    double display_width,
+    double display_height
+) {
+    auto image_aspect = image_width / image_height;
+    auto rotated_image_aspect = image_height / image_width;
+    auto display_aspect = display_width / display_height;
+
+    auto original_diff = std::abs(display_aspect - image_aspect);
+    auto rotated_diff = std::abs(display_aspect - rotated_image_aspect);
+
+    return rotated_diff < original_diff;
 }

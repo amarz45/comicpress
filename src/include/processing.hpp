@@ -28,6 +28,6 @@ bool should_image_rotate(
     double display_width,
     double display_height
 );
-bool is_uniform_column(const vips::VImage &img, int col);
+bool is_uniform_column(const vips::VImage &img, int col, double threshold);
 
 void process_vimage(vips::VImage img, PageTask task, Logger log);

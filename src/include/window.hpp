@@ -8,6 +8,7 @@
 #include <QLineEdit>
 #include <QListWidget>
 #include <QMainWindow>
+#include <QMap>
 #include <QProcess>
 #include <QProgressBar>
 #include <QPushButton>
@@ -127,6 +128,8 @@ class Window : public QMainWindow {
     // Process Management
     QQueue<PageTask> task_queue;
     QList<QProcess *> running_processes;
+    QMap<QProcess *, PageTask> running_tasks;
+    QMap<QString, int> archive_task_counts;
     int max_concurrent_workers;
     bool is_processing_cancelled;
 
@@ -163,6 +166,7 @@ class Window : public QMainWindow {
     );
     void connect_signals();
     void set_display_preset(std::string brand, std::string model);
+    void create_archive(const QString &source_archive_path);
 
     int total_files_to_process;
     int files_processed;

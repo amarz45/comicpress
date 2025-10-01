@@ -7,12 +7,14 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QCoreApplication>
+#include <QDir>
 #include <QFileDialog>
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
+#include <QMap>
 #include <QMenu>
 #include <QProcess>
 #include <QProgressBar>
@@ -26,6 +28,7 @@
 #include <archive_entry.h>
 #include <chrono>
 #include <fpdfview.h>
+#include <fstream>
 #include <iomanip>
 #include <numeric>
 #include <sstream>
@@ -537,6 +540,8 @@ void Window::on_start_button_clicked() {
     log_output->clear();
     task_queue.clear();
     running_processes.clear();
+    running_tasks.clear();
+    archive_task_counts.clear();
     is_processing_cancelled = false;
     files_processed = 0;
     max_concurrent_workers = workers_spin_box->value();
@@ -581,27 +586,54 @@ void Window::on_start_button_clicked() {
                 FPDF_CloseDocument(doc);
             }
             else if (extension == ".cbz" || extension == ".cbr") {
+                auto temp_archive_dir
+                    = fs::temp_directory_path() / source_file.stem();
+                fs::create_directories(temp_archive_dir);
+
                 auto archive = archive_read_new();
                 archive_read_support_filter_all(archive);
                 archive_read_support_format_all(archive);
                 archive_read_open_filename(archive, source_file.c_str(), 10240);
 
+                int page_count = 0;
                 struct archive_entry *entry;
-                int i = 0;
-                // while (archive_read_next_header(archive, &entry) ==
-                // ARCHIVE_OK) {
-                while (true) {
-                    auto archive_read
-                        = archive_read_next_header(archive, &entry);
-                    if (archive_read != ARCHIVE_OK) {
-                        break;
+                while (archive_read_next_header(archive, &entry)
+                       == ARCHIVE_OK) {
+                    if (archive_entry_filetype(entry) == AE_IFREG) {
+                        page_count += 1;
                     }
+                }
+                archive_read_close(archive);
+                archive_read_free(archive);
+
+                archive_task_counts[file_qstr] = page_count;
+                if (page_count == 0) {
+                    log_output->append(
+                        "Archive " + file_qstr + " contains no files."
+                    );
+                    continue;
+                }
+
+                archive = archive_read_new();
+                archive_read_support_filter_all(archive);
+                archive_read_support_format_all(archive);
+                archive_read_open_filename(archive, source_file.c_str(), 10240);
+
+                int i = 0;
+                while (archive_read_next_header(archive, &entry)
+                       == ARCHIVE_OK) {
                     if (archive_entry_filetype(entry) != AE_IFREG) {
                         continue;
                     }
 
-                    auto task = this->create_task(source_file, output_dir, i);
+                    auto task
+                        = this->create_task(source_file, temp_archive_dir, i);
                     task.path_in_archive = archive_entry_pathname(entry);
+
+                    fs::path entry_path(task.path_in_archive);
+                    task.output_base_name
+                        = entry_path.replace_extension("").string();
+
                     task_queue.enqueue(task);
                     i += 1;
                 }
@@ -662,6 +694,7 @@ void Window::on_cancel_button_clicked() {
         p->kill();
     }
     running_processes.clear();
+    running_tasks.clear();
 
     timer->stop();
     start_button->setEnabled(true);
@@ -680,6 +713,7 @@ void Window::start_next_task() {
 
     QProcess *process = new QProcess(this);
     running_processes.append(process);
+    running_tasks.insert(process, task);
 
     connect(
         process,
@@ -726,6 +760,11 @@ void Window::on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus) {
         return;
 
     running_processes.removeAll(process);
+    if (!running_tasks.contains(process)) {
+        process->deleteLater();
+        return;
+    }
+    PageTask finished_task = running_tasks.take(process);
 
     if (exitStatus == QProcess::CrashExit || exitCode != 0) {
         log_output->append(
@@ -735,6 +774,16 @@ void Window::on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus) {
     }
 
     handle_task_finished();
+
+    QString source_qstr
+        = QString::fromStdString(finished_task.source_file.string());
+    if (archive_task_counts.contains(source_qstr)) {
+        archive_task_counts[source_qstr] -= 1;
+        if (archive_task_counts[source_qstr] == 0) {
+            archive_task_counts.remove(source_qstr);
+            create_archive(source_qstr);
+        }
+    }
 
     if (is_processing_cancelled) {
         if (running_processes.isEmpty()) {
@@ -905,6 +954,71 @@ void Window::set_display_preset(std::string brand, std::string model) {
                                  : QString::fromStdString(brand + " " + model);
     this->display_preset_button->setText(text);
     this->on_display_preset_changed();
+}
+
+void Window::create_archive(const QString &source_archive_path) {
+    auto source_path = fs::path(source_archive_path.toStdString());
+    auto temp_dir = fs::temp_directory_path() / source_path.stem();
+    auto final_output_path = fs::path(output_dir_field->text().toStdString())
+                           / source_path.filename();
+
+    log_output->append(
+        "\n📦 Archiving " + QString::fromStdString(final_output_path.string())
+    );
+    QCoreApplication::processEvents();
+
+    auto a = archive_write_new();
+    archive_write_set_format_zip(a);
+    archive_write_open_filename(a, final_output_path.c_str());
+
+    try {
+        for (const auto &dir_entry :
+             fs::recursive_directory_iterator(temp_dir)) {
+            if (dir_entry.is_regular_file()) {
+                const fs::path &path = dir_entry.path();
+                fs::path relative_path = fs::relative(path, temp_dir);
+
+                struct archive_entry *entry = archive_entry_new();
+                archive_entry_set_pathname(entry, relative_path.c_str());
+                archive_entry_set_size(entry, fs::file_size(path));
+                archive_entry_set_filetype(entry, AE_IFREG);
+                archive_entry_set_perm(entry, 0644);
+                archive_write_header(a, entry);
+
+                std::ifstream file_stream(path, std::ios::binary);
+                char buffer[8192];
+                while (file_stream.good()) {
+                    file_stream.read(buffer, sizeof(buffer));
+                    archive_write_data(
+                        a, buffer, static_cast<size_t>(file_stream.gcount())
+                    );
+                }
+
+                archive_entry_free(entry);
+            }
+        }
+    }
+    catch (const std::exception &e) {
+        log_output->append(QString("Error during archiving: %1").arg(e.what()));
+    }
+
+    archive_write_close(a);
+    archive_write_free(a);
+
+    try {
+        fs::remove_all(temp_dir);
+    }
+    catch (const std::exception &e) {
+        log_output->append(
+            QString("Error cleaning up temp directory %1: %2")
+                .arg(QString::fromStdString(temp_dir.string()), e.what())
+        );
+    }
+
+    log_output->append(
+        "✅ Finished archiving "
+        + QString::fromStdString(final_output_path.string())
+    );
 }
 
 Window::~Window() {

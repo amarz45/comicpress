@@ -118,6 +118,7 @@ void process_vimage(vips::VImage img, PageTask task, Logger log) {
     try {
         auto png_path = task.output_dir / (task.output_base_name + ".png");
         auto output_path = task.output_dir / (task.output_base_name + ".webp");
+        fs::create_directories(output_path.parent_path());
 
         log("Processing in-memory page -> " + output_path.filename().string());
 

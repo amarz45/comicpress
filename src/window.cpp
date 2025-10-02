@@ -143,11 +143,11 @@ void Window::update_time_labels() {
     auto elapsed_str = "Elapsed: " + time_to_str(elapsed);
     this->elapsed_label->setText(QString::fromStdString(elapsed_str));
 
-    auto value = this->progress_bar->value();
+    auto value = this->pages_processed;
 
     // Overall ETA
     if (value > 0) {
-        auto total = this->progress_bar->maximum();
+        auto total = this->total_pages;
         auto per_unit = static_cast<double>(elapsed) / value;
         auto remaining = static_cast<double>(total - value) * per_unit;
         auto eta_overall_str
@@ -164,7 +164,7 @@ void Window::update_time_labels() {
         auto interval = ms - this->last_eta_recent_time.value();
         auto speed = static_cast<double>(this->images_since_last_eta_recent)
                    / static_cast<double>(interval);
-        auto total_remaining = this->progress_bar->maximum() - value;
+        auto total_remaining = this->total_pages - value;
         auto remaining = static_cast<double>(total_remaining) / speed;
 
         this->eta_recent_intervals.push_front(static_cast<int64_t>(remaining));
@@ -230,6 +230,12 @@ QGroupBox *Window::create_io_group() {
 
     io_layout->addWidget(new QLabel("Input files"));
     io_layout->addWidget(file_list);
+
+    this->progress_bars_group = new QGroupBox("File progress");
+    this->progress_bars_layout = new QVBoxLayout(this->progress_bars_group);
+    this->progress_bars_group->setVisible(false);
+    io_layout->addWidget(this->progress_bars_group);
+
     io_layout->addLayout(file_buttons_layout);
 
     auto output_layout = new QHBoxLayout();
@@ -263,11 +269,6 @@ QGroupBox *Window::create_log_group() {
     auto log_group = new QGroupBox();
     auto log_layout = new QVBoxLayout(log_group);
 
-    this->progress_bar = new QProgressBar();
-    this->progress_bar->setValue(0);
-    this->progress_bar->setTextVisible(true);
-    this->progress_bar->setFormat("%p %");
-
     auto time_layout = new QHBoxLayout();
     this->elapsed_label = new QLabel("Elapsed: –");
     this->eta_overall_label = new QLabel("ETA (overall): –");
@@ -275,6 +276,11 @@ QGroupBox *Window::create_log_group() {
     time_layout->addWidget(this->elapsed_label);
     time_layout->addWidget(this->eta_overall_label);
     time_layout->addWidget(this->eta_recent_label);
+
+    this->progress_bar = new QProgressBar();
+    this->progress_bar->setVisible(false);
+    this->progress_bar->setTextVisible(true);
+    this->progress_bar->setFormat("%p % (%v / %m pages)");
 
     this->log_output = new QTextEdit();
     this->log_output->setVisible(false);
@@ -288,8 +294,8 @@ QGroupBox *Window::create_log_group() {
     action_layout->addWidget(this->start_button);
     action_layout->addWidget(this->cancel_button);
 
-    log_layout->addWidget(this->progress_bar);
     log_layout->addLayout(time_layout);
+    log_layout->addWidget(this->progress_bar);
     log_layout->addWidget(this->log_output);
     log_layout->addLayout(action_layout);
 
@@ -602,9 +608,16 @@ void Window::on_start_button_clicked() {
     running_processes.clear();
     running_tasks.clear();
     archive_task_counts.clear();
+    this->pages_processed_per_archive.clear();
+    this->active_file_widgets.clear();
+    this->active_progress_bars.clear();
     is_processing_cancelled = false;
-    files_processed = 0;
+    pages_processed = 0;
+    total_pages = 0;
     max_concurrent_workers = workers_spin_box->value();
+
+    this->progress_bar->setValue(0);
+    this->progress_bar->setVisible(true);
 
     fs::path output_dir = fs::path(output_dir_field->text().toStdString());
     fs::create_directories(output_dir);
@@ -647,6 +660,8 @@ void Window::on_start_button_clicked() {
                     = fs::temp_directory_path() / source_file.stem();
                 fs::create_directories(temp_archive_dir);
                 archive_task_counts[file_qstr] = page_count;
+                this->total_pages += page_count;
+                this->pages_processed_per_archive[file_qstr] = 0;
 
                 for (int i = 0; i < page_count; i += 1) {
                     auto task
@@ -677,6 +692,8 @@ void Window::on_start_button_clicked() {
                 archive_read_free(archive);
 
                 archive_task_counts[file_qstr] = page_count;
+                this->total_pages += page_count;
+                this->pages_processed_per_archive[file_qstr] = 0;
                 if (page_count == 0) {
                     log_output->append(
                         "Archive " + file_qstr + " contains no files."
@@ -721,13 +738,11 @@ void Window::on_start_button_clicked() {
         log_output->append("No pages found to process.");
         start_button->setEnabled(true);
         cancel_button->setEnabled(false);
+        this->progress_bar->setVisible(false);
         return;
     }
 
-    total_files_to_process = task_queue.count();
-    this->progress_bar->setValue(0);
-    this->progress_bar->setMaximum(total_files_to_process);
-    this->progress_bar->setFormat("%p % (%v / %m pages)");
+    this->progress_bar->setMaximum(total_pages);
 
     // Timer
     auto now = std::chrono::system_clock::now();
@@ -763,6 +778,18 @@ void Window::on_cancel_button_clicked() {
     running_processes.clear();
     running_tasks.clear();
 
+    for (QWidget *widget : this->active_file_widgets.values()) {
+        this->progress_bars_layout->removeWidget(widget);
+        delete widget;
+    }
+    this->active_file_widgets.clear();
+    this->active_progress_bars.clear();
+    this->pages_processed_per_archive.clear();
+    this->progress_bars_group->setVisible(false);
+
+    this->progress_bar->setVisible(false);
+    this->progress_bar->setValue(0);
+
     timer->stop();
     start_button->setEnabled(true);
     cancel_button->setEnabled(false);
@@ -776,6 +803,28 @@ void Window::start_next_task() {
     }
 
     PageTask task = task_queue.dequeue();
+    QString source_qstr = QString::fromStdString(task.source_file.string());
+
+    if (!this->active_progress_bars.contains(source_qstr)) {
+        this->progress_bars_group->setVisible(true);
+
+        auto widget = new QWidget();
+        auto layout = new QHBoxLayout(widget);
+        layout->setContentsMargins(5, 2, 5, 2);
+        auto label = new QLabel(QFileInfo(source_qstr).fileName());
+        auto progressBar = new QProgressBar();
+        progressBar->setMaximum(this->archive_task_counts.value(source_qstr));
+        progressBar->setValue(0);
+        progressBar->setTextVisible(true);
+        progressBar->setFormat("%p % (%v / %m pages)");
+
+        layout->addWidget(label);
+        layout->addWidget(progressBar);
+
+        this->progress_bars_layout->addWidget(widget);
+        this->active_file_widgets.insert(source_qstr, widget);
+        this->active_progress_bars.insert(source_qstr, progressBar);
+    }
 
     QProcess *process = new QProcess(this);
     running_processes.append(process);
@@ -843,11 +892,33 @@ void Window::on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus) {
 
     QString source_qstr
         = QString::fromStdString(finished_task.source_file.string());
+
+    if (this->pages_processed_per_archive.contains(source_qstr)) {
+        this->pages_processed_per_archive[source_qstr]++;
+        if (this->active_progress_bars.contains(source_qstr)) {
+            auto progressBar = this->active_progress_bars.value(source_qstr);
+            progressBar->setValue(
+                this->pages_processed_per_archive.value(source_qstr)
+            );
+        }
+    }
+
     if (archive_task_counts.contains(source_qstr)) {
         archive_task_counts[source_qstr] -= 1;
         if (archive_task_counts[source_qstr] == 0) {
             archive_task_counts.remove(source_qstr);
             create_archive(source_qstr);
+
+            if (this->active_file_widgets.contains(source_qstr)) {
+                auto widget = this->active_file_widgets.take(source_qstr);
+                this->progress_bars_layout->removeWidget(widget);
+                delete widget;
+                this->active_progress_bars.remove(source_qstr);
+
+                if (this->active_file_widgets.isEmpty()) {
+                    this->progress_bars_group->setVisible(false);
+                }
+            }
         }
     }
 
@@ -857,7 +928,7 @@ void Window::on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus) {
         }
     }
     else {
-        if (files_processed == total_files_to_process) {
+        if (pages_processed == total_pages) {
             timer->stop();
             start_button->setEnabled(true);
             cancel_button->setEnabled(false);
@@ -885,9 +956,9 @@ void Window::handle_log_message(const QString &message) {
 }
 
 void Window::handle_task_finished() {
-    files_processed++;
+    pages_processed++;
     images_since_last_eta_recent++;
-    progress_bar->setValue(files_processed);
+    this->progress_bar->setValue(pages_processed);
 }
 
 PageTask

@@ -44,11 +44,6 @@ class BoundedDeque {
         }
         dq.push_front(val);
     }
-
-    // void print() {
-    //     for (int x : dq) std::cout << x << " ";
-    //     std::cout << "\n";
-    // }
 };
 
 struct DisplayPreset {
@@ -95,6 +90,8 @@ class Window : public QMainWindow {
     QPushButton *clear_all_button;
     QLineEdit *output_dir_field;
     QPushButton *browse_output_button;
+    QGroupBox *progress_bars_group;
+    QVBoxLayout *progress_bars_layout;
 
     // Settings
     QVBoxLayout *settings_layout;
@@ -116,10 +113,10 @@ class Window : public QMainWindow {
     QSpinBox *workers_spin_box;
 
     // Progress
-    QProgressBar *progress_bar;
     QLabel *elapsed_label;
     QLabel *eta_overall_label;
     QLabel *eta_recent_label;
+    QProgressBar *progress_bar;
     QTextEdit *log_output;
     QPushButton *start_button;
     QPushButton *cancel_button;
@@ -129,6 +126,9 @@ class Window : public QMainWindow {
     QList<QProcess *> running_processes;
     QMap<QProcess *, PageTask> running_tasks;
     QMap<QString, int> archive_task_counts;
+    QMap<QString, int> pages_processed_per_archive;
+    QMap<QString, QWidget *> active_file_widgets;
+    QMap<QString, QProgressBar *> active_progress_bars;
     int max_concurrent_workers;
     bool is_processing_cancelled;
 
@@ -167,8 +167,8 @@ class Window : public QMainWindow {
     void set_display_preset(std::string brand, std::string model);
     void create_archive(const QString &source_archive_path);
 
-    int total_files_to_process;
-    int files_processed;
+    int total_pages;
+    int pages_processed;
 };
 
 std::string time_to_str(int64_t milliseconds);

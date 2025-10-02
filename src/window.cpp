@@ -276,6 +276,15 @@ void Window::setup_ui() {
     auto settings_group = this->create_settings_group();
     auto log_group = this->create_log_group();
 
+    auto action_group = new QWidget();
+    auto action_layout = new QHBoxLayout(action_group);
+    this->start_button = new QPushButton("Start");
+    this->cancel_button = new QPushButton("Cancel");
+    this->cancel_button->setEnabled(false);
+    action_layout->addStretch();
+    action_layout->addWidget(this->start_button);
+    action_layout->addWidget(this->cancel_button);
+
     this->main_layout = new QVBoxLayout(content_widget);
     this->main_layout->setContentsMargins(0, 0, 0, 0);
 
@@ -285,6 +294,7 @@ void Window::setup_ui() {
     this->main_layout->addItem(
         new QSpacerItem(1000, 0, QSizePolicy::Preferred, QSizePolicy::Fixed)
     );
+    this->main_layout->addWidget(action_group);
 
     container_layout->addStretch(1);
     container_layout->addWidget(content_widget);
@@ -370,18 +380,9 @@ QGroupBox *Window::create_log_group() {
     this->log_output->setVisible(false);
     this->log_output->setReadOnly(true);
 
-    auto action_layout = new QHBoxLayout();
-    this->start_button = new QPushButton("Start");
-    this->cancel_button = new QPushButton("Cancel");
-    this->cancel_button->setEnabled(false);
-    action_layout->addStretch();
-    action_layout->addWidget(this->start_button);
-    action_layout->addWidget(this->cancel_button);
-
     log_layout->addLayout(time_layout);
     log_layout->addWidget(this->progress_bar);
     log_layout->addWidget(this->log_output);
-    log_layout->addLayout(action_layout);
 
     return log_group;
 }

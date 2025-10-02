@@ -162,6 +162,7 @@ class Window : public QMainWindow {
     create_task(fs::path source_file, fs::path output_dir, int page_num);
     QWidget *
     create_widget_with_info(QWidget *main_widget, const char *tooltip_text);
+    void adjust_file_list_height();
     void connect_signals();
     void set_display_preset(std::string brand, std::string model);
     void create_archive(const QString &source_archive_path);

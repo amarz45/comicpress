@@ -210,6 +210,8 @@ QGroupBox *Window::create_io_group() {
     auto file_buttons_layout = new QHBoxLayout();
 
     this->file_list = new QListWidget();
+    this->file_list->setVisible(false);
+    this->file_list->setMaximumHeight(200);
 
     this->add_files_button = new QPushButton("Add files");
     this->remove_selected_button = new QPushButton("Remove selected");
@@ -519,6 +521,8 @@ void Window::on_add_files_clicked() {
             file_list->addItem(item);
         }
     }
+
+    this->adjust_file_list_height();
 }
 
 void Window::on_display_preset_changed() {
@@ -957,6 +961,36 @@ QWidget *Window::create_widget_with_info(
     layout->addWidget(main_widget);
 
     return container;
+}
+
+void Window::adjust_file_list_height() {
+    int count = this->file_list->count();
+    if (count == 0) {
+        this->file_list->setVisible(false);
+        this->remove_selected_button->setEnabled(false);
+        this->clear_all_button->setEnabled(false);
+        return;
+    }
+
+    this->file_list->setVisible(true);
+    this->remove_selected_button->setEnabled(true);
+    this->clear_all_button->setEnabled(true);
+
+    // Calculate minimal height: row height * count + frame borders (approx,
+    // ignores potential horizontal scrollbar)
+    int rowHeight
+        = this->file_list->sizeHintForRow(0); // Height of a single row/item
+    int contentHeight = count * rowHeight + 2 * this->file_list->frameWidth();
+
+    // Cap at maximum height
+    int maxHeight = this->file_list->maximumHeight();
+    if (contentHeight > maxHeight) {
+        contentHeight = maxHeight;
+    }
+
+    this->file_list->setFixedHeight(
+        contentHeight
+    ); // Set exact height (will add vertical scrollbar if content exceeds this)
 }
 
 void Window::connect_signals() {

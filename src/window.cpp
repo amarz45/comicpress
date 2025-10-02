@@ -113,9 +113,8 @@ Window::Window(QWidget *parent) : QMainWindow(parent), eta_recent_intervals(5) {
     this->is_processing_cancelled = false;
 
     this->setWindowTitle("Comicpress");
-    central_widget = new QWidget(this);
+    this->central_widget = new QWidget(this);
     this->setCentralWidget(central_widget);
-    main_layout = new QVBoxLayout(central_widget);
 
     this->setup_ui();
     this->on_display_preset_changed();
@@ -183,13 +182,26 @@ void Window::update_time_labels() {
 }
 
 void Window::setup_ui() {
+    auto container_layout = new QHBoxLayout(this->central_widget);
+    auto content_widget = new QWidget();
+
     auto io_group = this->create_io_group();
     auto settings_group = this->create_settings_group();
     auto log_group = this->create_log_group();
 
+    this->main_layout = new QVBoxLayout(content_widget);
+    this->main_layout->setContentsMargins(0, 0, 0, 0);
+
     this->main_layout->addWidget(io_group);
     this->main_layout->addWidget(settings_group);
     this->main_layout->addWidget(log_group);
+    this->main_layout->addItem(
+        new QSpacerItem(1000, 0, QSizePolicy::Preferred, QSizePolicy::Fixed)
+    );
+
+    container_layout->addStretch(1);
+    container_layout->addWidget(content_widget);
+    container_layout->addStretch(1);
 }
 
 QGroupBox *Window::create_io_group() {

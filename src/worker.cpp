@@ -68,30 +68,12 @@ int main(int, char *argv[]) {
         return 1;
     }
 
-    auto resampler = std::string(argv[11]);
-    if (resampler == "Bicubic interpolation") {
-        task.page_resampler = VIPS_KERNEL_CUBIC;
+    try {
+        task.page_resampler = (VipsKernel) std::stoi(argv[11]);
     }
-    else if (resampler == "Bilinear interpolation") {
-        task.page_resampler = VIPS_KERNEL_LINEAR;
-    }
-    else if (resampler == "Lanczos 2") {
-        task.page_resampler = VIPS_KERNEL_LANCZOS2;
-    }
-    else if (resampler == "Lanczos 3") {
-        task.page_resampler = VIPS_KERNEL_LANCZOS3;
-    }
-    else if (resampler == "Magic Kernel Sharp 2013") {
-        task.page_resampler = VIPS_KERNEL_MKS2013;
-    }
-    else if (resampler == "Magic Kernel Sharp 2021") {
-        task.page_resampler = VIPS_KERNEL_MKS2021;
-    }
-    else if (resampler == "Mitchell") {
-        task.page_resampler = VIPS_KERNEL_MITCHELL;
-    }
-    else {
-        task.page_resampler = VIPS_KERNEL_NEAREST;
+    catch (const std::exception &e) {
+        std::cerr << "Worker error: " << e.what() << "\n";
+        return 1;
     }
 
     task.quantize_pages = argv[12][0] == '1';

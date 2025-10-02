@@ -221,6 +221,7 @@ QGroupBox *Window::create_io_group() {
     file_buttons_layout->addWidget(this->add_files_button);
     file_buttons_layout->addWidget(this->remove_selected_button);
     file_buttons_layout->addWidget(this->clear_all_button);
+    file_buttons_layout->addStretch();
 
     io_layout->addWidget(new QLabel("Input files"));
     io_layout->addWidget(file_list);
@@ -278,6 +279,7 @@ QGroupBox *Window::create_log_group() {
     this->start_button = new QPushButton("Start");
     this->cancel_button = new QPushButton("Cancel");
     this->cancel_button->setEnabled(false);
+    action_layout->addStretch();
     action_layout->addWidget(this->start_button);
     action_layout->addWidget(this->cancel_button);
 

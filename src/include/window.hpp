@@ -155,7 +155,8 @@ class Window : public QMainWindow {
     void setup_ui();
     QGroupBox *create_io_group();
     QGroupBox *create_settings_group();
-    QGroupBox *create_log_group();
+    void create_log_group();
+    QGroupBox *log_group;
 
     // Settings group
     void add_pdf_pixel_density_widget();

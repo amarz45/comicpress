@@ -274,7 +274,7 @@ void Window::setup_ui() {
 
     auto io_group = this->create_io_group();
     auto settings_group = this->create_settings_group();
-    auto log_group = this->create_log_group();
+    this->create_log_group();
 
     auto action_group = new QWidget();
     auto action_layout = new QHBoxLayout(action_group);
@@ -359,8 +359,9 @@ QGroupBox *Window::create_settings_group() {
     return settings_group;
 }
 
-QGroupBox *Window::create_log_group() {
-    auto log_group = new QGroupBox();
+void Window::create_log_group() {
+    log_group = new QGroupBox();
+    log_group->setVisible(false);
     auto log_layout = new QVBoxLayout(log_group);
 
     auto time_layout = new QHBoxLayout();
@@ -383,8 +384,6 @@ QGroupBox *Window::create_log_group() {
     log_layout->addLayout(time_layout);
     log_layout->addWidget(this->progress_bar);
     log_layout->addWidget(this->log_output);
-
-    return log_group;
 }
 
 void Window::add_pdf_pixel_density_widget() {
@@ -705,6 +704,7 @@ void Window::on_start_button_clicked() {
     max_concurrent_workers = workers_spin_box->value();
 
     this->progress_bar->setValue(0);
+    this->log_group->setVisible(true);
     this->progress_bar->setVisible(true);
 
     fs::path output_dir = fs::path(output_dir_field->text().toStdString());

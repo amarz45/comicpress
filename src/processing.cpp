@@ -360,6 +360,5 @@ bool should_image_rotate(
 
 bool is_uniform_column(const vips::VImage &img, int col, double threshold) {
     vips::VImage column = img.extract_area(col, 0, 1, img.height());
-    auto threshold_capped = std::min(threshold, img.max() - img.min());
-    return column.max() - column.min() < threshold_capped;
+    return column.max() - column.min() < threshold;
 }

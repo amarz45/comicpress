@@ -587,8 +587,6 @@ void Window::on_image_format_changed() {
 }
 
 void Window::on_start_button_clicked() {
-    this->log_output->setVisible(true);
-
     QStringList input_file_paths;
     for (int i = 0; i < file_list->count(); i += 1) {
         input_file_paths.append(
@@ -597,6 +595,7 @@ void Window::on_start_button_clicked() {
     }
 
     if (input_file_paths.isEmpty()) {
+        this->log_output->setVisible(true);
         log_output->append("No input files selected.");
         return;
     }
@@ -637,6 +636,7 @@ void Window::on_start_button_clicked() {
                 FPDF_DOCUMENT doc
                     = FPDF_LoadDocument(source_file.c_str(), nullptr);
                 if (!doc) {
+                    log_output->setVisible(true);
                     log_output->append(
                         QString(
                             "Error: Cannot open PDF document %1. Error code: %2"
@@ -649,6 +649,7 @@ void Window::on_start_button_clicked() {
 
                 auto page_count = FPDF_GetPageCount(doc);
                 if (page_count == 0) {
+                    log_output->setVisible(true);
                     log_output->append(
                         "PDF " + file_qstr + " contains no pages."
                     );
@@ -695,6 +696,7 @@ void Window::on_start_button_clicked() {
                 this->total_pages += page_count;
                 this->pages_processed_per_archive[file_qstr] = 0;
                 if (page_count == 0) {
+                    log_output->setVisible(true);
                     log_output->append(
                         "Archive " + file_qstr + " contains no files."
                     );
@@ -729,12 +731,14 @@ void Window::on_start_button_clicked() {
             }
         }
         catch (const std::exception &e) {
+            log_output->setVisible(true);
             log_output->append(QString("Error discovering tasks in %1: %2")
                                    .arg(file_qstr, e.what()));
         }
     }
 
     if (task_queue.isEmpty()) {
+        log_output->setVisible(true);
         log_output->append("No pages found to process.");
         start_button->setEnabled(true);
         cancel_button->setEnabled(false);
@@ -882,6 +886,7 @@ void Window::on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus) {
     PageTask finished_task = running_tasks.take(process);
 
     if (exitStatus == QProcess::CrashExit || exitCode != 0) {
+        log_output->setVisible(true);
         log_output->append(
             QString("Worker process failed or crashed. Exit code: %1")
                 .arg(exitCode)
@@ -924,6 +929,7 @@ void Window::on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus) {
 
     if (is_processing_cancelled) {
         if (running_processes.isEmpty()) {
+            log_output->setVisible(true);
             log_output->append("All running tasks have been cancelled.");
         }
     }
@@ -946,12 +952,14 @@ void Window::on_worker_output() {
     if (process) {
         // Read line by line to prevent partial messages
         while (process->canReadLine()) {
+            log_output->setVisible(true);
             log_output->append(process->readLine().trimmed());
         }
     }
 }
 
 void Window::handle_log_message(const QString &message) {
+    log_output->setVisible(true);
     log_output->append(message);
 }
 
@@ -1129,9 +1137,6 @@ void Window::create_archive(const QString &source_archive_path) {
     auto final_output_path
         = fs::path(output_dir_field->text().toStdString()) / final_filename;
 
-    auto creating_file_message
-        = "📦 Creating file <code>" + final_output_path.string() + "</code>";
-    log_output->append(QString::fromStdString(creating_file_message));
     QCoreApplication::processEvents();
 
     auto a = archive_write_new();
@@ -1166,6 +1171,7 @@ void Window::create_archive(const QString &source_archive_path) {
         }
     }
     catch (const std::exception &e) {
+        log_output->setVisible(true);
         log_output->append(QString("Error during archiving: %1").arg(e.what()));
     }
 
@@ -1176,22 +1182,12 @@ void Window::create_archive(const QString &source_archive_path) {
         fs::remove_all(temp_dir);
     }
     catch (const std::exception &e) {
+        log_output->setVisible(true);
         log_output->append(
             QString("Error cleaning up temp directory %1: %2")
                 .arg(QString::fromStdString(temp_dir.string()), e.what())
         );
     }
-
-    // Remove previous line.
-    QTextCursor cursor = log_output->textCursor();
-    cursor.movePosition(QTextCursor::End);
-    cursor.movePosition(QTextCursor::StartOfBlock, QTextCursor::KeepAnchor);
-    cursor.removeSelectedText();
-    cursor.deletePreviousChar();
-
-    auto created_file_message
-        = "✓ Created file <code>" + final_output_path.string() + "</code>";
-    log_output->append(QString::fromStdString(created_file_message));
 }
 
 Window::~Window() {

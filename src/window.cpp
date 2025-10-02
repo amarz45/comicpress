@@ -635,8 +635,22 @@ void Window::on_start_button_clicked() {
                 }
 
                 auto page_count = FPDF_GetPageCount(doc);
+                if (page_count == 0) {
+                    log_output->append(
+                        "PDF " + file_qstr + " contains no pages."
+                    );
+                    FPDF_CloseDocument(doc);
+                    continue;
+                }
+
+                auto temp_archive_dir
+                    = fs::temp_directory_path() / source_file.stem();
+                fs::create_directories(temp_archive_dir);
+                archive_task_counts[file_qstr] = page_count;
+
                 for (int i = 0; i < page_count; i += 1) {
-                    auto task = this->create_task(source_file, output_dir, i);
+                    auto task
+                        = this->create_task(source_file, temp_archive_dir, i);
                     task_queue.enqueue(task);
                 }
                 FPDF_CloseDocument(doc);
@@ -1040,8 +1054,9 @@ void Window::set_display_preset(std::string brand, std::string model) {
 void Window::create_archive(const QString &source_archive_path) {
     auto source_path = fs::path(source_archive_path.toStdString());
     auto temp_dir = fs::temp_directory_path() / source_path.stem();
-    auto final_output_path = fs::path(output_dir_field->text().toStdString())
-                           / source_path.filename();
+    auto final_filename = source_path.filename().replace_extension(".cbz");
+    auto final_output_path
+        = fs::path(output_dir_field->text().toStdString()) / final_filename;
 
     auto creating_file_message
         = "📦 Creating file <code>" + final_output_path.string() + "</code>";

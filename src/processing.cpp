@@ -120,8 +120,6 @@ void process_vimage(vips::VImage img, PageTask task, Logger log) {
         auto output_path = task.output_dir / (task.output_base_name + ".webp");
         fs::create_directories(output_path.parent_path());
 
-        log("Processing in-memory page -> " + output_path.filename().string());
-
         img = img.colourspace(VIPS_INTERPRETATION_B_W);
 
         auto image_should_rotate = should_image_rotate(

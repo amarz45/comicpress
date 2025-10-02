@@ -603,9 +603,6 @@ void Window::on_start_button_clicked() {
 
     fs::path output_dir = fs::path(output_dir_field->text().toStdString());
     fs::create_directories(output_dir);
-    log_output->append(
-        "Output folder: " + QString::fromStdString(output_dir.string())
-    );
 
     log_output->append("Discovering pages in all files...");
     QCoreApplication::processEvents();

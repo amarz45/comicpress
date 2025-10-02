@@ -310,7 +310,7 @@ void Window::add_contrast_widget() {
     this->contrast_check_box = new QCheckBox("Stretch contrast");
     this->contrast_check_box->setChecked(true);
     auto contrast_widget = this->create_widget_with_info(
-        this->contrast_check_box, "Lorem ipsum"
+        this->contrast_check_box, CONTRAST_TOOLTIP
     );
 
     auto layout = new QHBoxLayout();
@@ -389,8 +389,7 @@ void Window::add_scaling_widgets() {
 
     // Resampler
     auto resampler_label_with_info = this->create_widget_with_info(
-        new QLabel("Resampler"),
-        "Select the algorithm used for resizing images."
+        new QLabel("Resampler"), RESAMPLER_TOOLTIP
     );
     this->resampler_combo_box = create_combo_box_with_layout(
         scaling_layout,
@@ -410,7 +409,7 @@ void Window::add_scaling_widgets() {
 
     auto layout = new QHBoxLayout();
     layout->addWidget(this->create_widget_with_info(
-        this->enable_image_scaling_check_box, "Lorem ipsum"
+        this->enable_image_scaling_check_box, SCALE_TOOLTIP
     ));
     layout->addStretch();
 
@@ -426,21 +425,25 @@ void Window::add_quantization_widgets() {
     auto quantization_layout
         = create_container_layout(this->quantization_options_container);
 
+    auto bit_depth_label = this->create_widget_with_info(
+        new QLabel("Bit depth"), BIT_DEPTH_TOOLTIP
+    );
     this->bit_depth_combo_box = create_combo_box_with_layout(
-        quantization_layout,
-        new QLabel("Bit depth"),
-        {"1", "2", "4", "8", "16"},
-        "4"
+        quantization_layout, bit_depth_label, {"1", "2", "4", "8", "16"}, "4"
+    );
+
+    auto dithering_label = this->create_widget_with_info(
+        new QLabel("Dithering"), DITHERING_TOOLTIP
     );
     this->dithering_spin_box = create_double_spin_box(
-        quantization_layout, new QLabel("Dithering"), 0.0, 1.0, 0.1, 1.0
+        quantization_layout, dithering_label, 0.0, 1.0, 0.1, 1.0
     );
 
     quantization_layout->addStretch();
 
     auto layout = new QHBoxLayout();
     layout->addWidget(this->create_widget_with_info(
-        this->enable_image_quantization_check_box, "Lorem ipsum"
+        this->enable_image_quantization_check_box, QUANTIZE_TOOLTIP
     ));
     layout->addStretch();
 
@@ -452,7 +455,7 @@ void Window::add_image_format_widgets() {
     this->image_format_combo_box
         = create_combo_box({"AVIF", "JPEG", "JPEG XL", "PNG", "WebP"}, "PNG");
     auto image_format_label = this->create_widget_with_info(
-        new QLabel("Image format"), "Lorem ipsum"
+        new QLabel("Image format"), IMG_FORMAT_TOOLTIP
     );
 
     this->image_format_options_container = new QWidget();

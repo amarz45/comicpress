@@ -347,10 +347,12 @@ void Window::add_display_presets_widget() {
         }
     }
 
+    auto label
+        = this->create_widget_with_info(new QLabel("Display preset"), "");
     this->display_preset_button->setMenu(display_menu);
 
     auto layout = new QHBoxLayout();
-    layout->addWidget(new QLabel("Display preset"));
+    layout->addWidget(label);
     layout->addWidget(this->display_preset_button);
     layout->addStretch();
 
@@ -459,13 +461,16 @@ void Window::add_image_format_widgets() {
 }
 
 void Window::add_parallel_workers_widget() {
+    auto label
+        = this->create_widget_with_info(new QLabel("Parallel workers"), "");
+
     this->workers_spin_box = new QSpinBox();
     auto threads = std::thread::hardware_concurrency();
     this->workers_spin_box->setRange(1, threads);
     this->workers_spin_box->setValue(threads);
 
     auto layout = new QHBoxLayout();
-    layout->addWidget(new QLabel("Parallel workers"));
+    layout->addWidget(label);
     layout->addWidget(this->workers_spin_box);
     layout->addStretch();
 
@@ -916,18 +921,22 @@ QWidget *Window::create_widget_with_info(
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(5);
 
-    auto info_icon_label = new QLabel();
-    if (auto style = this->style()) {
+    auto has_tooltip = tooltip_text && strlen(tooltip_text) > 0;
+
+    auto info_area = new QLabel();
+    info_area->setFixedSize(16, 16);
+
+    auto style = this->style();
+    if (has_tooltip && style) {
         auto icon = style->standardIcon(
             QStyle::StandardPixmap::SP_MessageBoxInformation
         );
-        std::string formatted_tooltip
-            = "<p>" + std::string(tooltip_text) + "</p>";
-        info_icon_label->setPixmap(icon.pixmap(16, 16));
-        info_icon_label->setToolTip(QString::fromStdString(formatted_tooltip));
-        layout->addWidget(info_icon_label);
+        auto formatted_tooltip = "<p>" + std::string(tooltip_text) + "</p>";
+        info_area->setPixmap(icon.pixmap(16, 16));
+        info_area->setToolTip(QString::fromStdString(formatted_tooltip));
     }
 
+    layout->addWidget(info_area);
     layout->addWidget(main_widget);
 
     return container;

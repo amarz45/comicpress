@@ -1039,7 +1039,7 @@ void Window::create_archive(const QString &source_archive_path) {
                            / source_path.filename();
 
     log_output->append(
-        "📦 Archiving " + QString::fromStdString(final_output_path.string())
+        "📦 Creating file " + QString::fromStdString(final_output_path.string())
     );
     QCoreApplication::processEvents();
 

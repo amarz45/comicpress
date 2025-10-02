@@ -228,7 +228,7 @@ QGroupBox *Window::create_io_group() {
 
 QGroupBox *Window::create_settings_group() {
     auto settings_group = new QGroupBox("Processing parameters");
-    this->settings_layout = new QFormLayout(settings_group);
+    this->settings_layout = new QVBoxLayout(settings_group);
 
     this->add_pdf_pixel_density_widget();
     this->add_contrast_widget();
@@ -281,21 +281,29 @@ void Window::add_pdf_pixel_density_widget() {
     this->pdf_pixel_density_spin_box = create_spin_box(300, 4'800, 300, 1'200);
 
     auto pdf_pixel_density_widget = this->create_widget_with_info(
-        new QLabel("PDF pixel density (PPI)"), PDF_TOOLTIP, true
+        new QLabel("PDF pixel density (PPI)"), PDF_TOOLTIP
     );
 
-    this->settings_layout->addRow(
-        pdf_pixel_density_widget, this->pdf_pixel_density_spin_box
-    );
+    auto layout = new QHBoxLayout();
+    layout->addWidget(pdf_pixel_density_widget);
+    layout->addWidget(this->pdf_pixel_density_spin_box);
+    layout->addStretch();
+
+    this->settings_layout->addLayout(layout);
 }
 
 void Window::add_contrast_widget() {
     this->contrast_check_box = new QCheckBox("Stretch contrast");
     this->contrast_check_box->setChecked(true);
     auto contrast_widget = this->create_widget_with_info(
-        this->contrast_check_box, "Lorem ipsum", true
+        this->contrast_check_box, "Lorem ipsum"
     );
-    this->settings_layout->addRow(contrast_widget);
+
+    auto layout = new QHBoxLayout();
+    layout->addWidget(contrast_widget);
+    layout->addStretch();
+
+    this->settings_layout->addLayout(layout);
 }
 
 void Window::add_display_presets_widget() {
@@ -340,16 +348,17 @@ void Window::add_display_presets_widget() {
     }
 
     this->display_preset_button->setMenu(display_menu);
-    this->settings_layout->addRow(
-        "Display preset", this->display_preset_button
-    );
+
+    auto layout = new QHBoxLayout();
+    layout->addWidget(new QLabel("Display preset"));
+    layout->addWidget(this->display_preset_button);
+    layout->addStretch();
+
+    this->settings_layout->addLayout(layout);
 }
 
 void Window::add_scaling_widgets() {
     this->enable_image_scaling_check_box = new QCheckBox("Scale pages");
-    this->settings_layout->addRow(this->create_widget_with_info(
-        this->enable_image_scaling_check_box, "Lorem ipsum", true
-    ));
 
     this->scaling_options_container = new QWidget();
     auto scaling_layout
@@ -365,8 +374,7 @@ void Window::add_scaling_widgets() {
     // Resampler
     auto resampler_label_with_info = this->create_widget_with_info(
         new QLabel("Resampler"),
-        "Select the algorithm used for resizing images.",
-        false
+        "Select the algorithm used for resizing images."
     );
     this->resampler_combo_box = create_combo_box_with_layout(
         scaling_layout,
@@ -383,15 +391,20 @@ void Window::add_scaling_widgets() {
     );
 
     scaling_layout->addStretch();
-    this->settings_layout->addRow(this->scaling_options_container);
+
+    auto layout = new QHBoxLayout();
+    layout->addWidget(this->create_widget_with_info(
+        this->enable_image_scaling_check_box, "Lorem ipsum"
+    ));
+    layout->addStretch();
+
+    this->settings_layout->addLayout(layout);
+    this->settings_layout->addWidget(this->scaling_options_container);
 }
 
 void Window::add_quantization_widgets() {
     this->enable_image_quantization_check_box = new QCheckBox("Quantize pages");
     this->enable_image_quantization_check_box->setChecked(true);
-    this->settings_layout->addRow(this->create_widget_with_info(
-        this->enable_image_quantization_check_box, "Lorem ipsum", true
-    ));
 
     this->quantization_options_container = new QWidget();
     auto quantization_layout
@@ -409,17 +422,21 @@ void Window::add_quantization_widgets() {
 
     quantization_layout->addStretch();
 
-    this->settings_layout->addRow(this->quantization_options_container);
+    auto layout = new QHBoxLayout();
+    layout->addWidget(this->create_widget_with_info(
+        this->enable_image_quantization_check_box, "Lorem ipsum"
+    ));
+    layout->addStretch();
+
+    this->settings_layout->addLayout(layout);
+    this->settings_layout->addWidget(this->quantization_options_container);
 }
 
 void Window::add_image_format_widgets() {
     this->image_format_combo_box
         = create_combo_box({"AVIF", "JPEG", "JPEG XL", "PNG", "WebP"}, "PNG");
     auto image_format_label = this->create_widget_with_info(
-        new QLabel("Image format"), "Lorem ipsum", true
-    );
-    this->settings_layout->addRow(
-        image_format_label, this->image_format_combo_box
+        new QLabel("Image format"), "Lorem ipsum"
     );
 
     this->image_format_options_container = new QWidget();
@@ -432,7 +449,13 @@ void Window::add_image_format_widgets() {
 
     image_format_layout->addStretch();
 
-    this->settings_layout->addRow(this->image_format_options_container);
+    auto layout = new QHBoxLayout();
+    layout->addWidget(image_format_label);
+    layout->addWidget(image_format_combo_box);
+    layout->addStretch();
+
+    this->settings_layout->addLayout(layout);
+    this->settings_layout->addWidget(this->image_format_options_container);
 }
 
 void Window::add_parallel_workers_widget() {
@@ -440,7 +463,13 @@ void Window::add_parallel_workers_widget() {
     auto threads = std::thread::hardware_concurrency();
     this->workers_spin_box->setRange(1, threads);
     this->workers_spin_box->setValue(threads);
-    this->settings_layout->addRow("Parallel workers", this->workers_spin_box);
+
+    auto layout = new QHBoxLayout();
+    layout->addWidget(new QLabel("Parallel workers"));
+    layout->addWidget(this->workers_spin_box);
+    layout->addStretch();
+
+    this->settings_layout->addLayout(layout);
 }
 
 void Window::on_add_files_clicked() {
@@ -880,7 +909,7 @@ Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
 }
 
 QWidget *Window::create_widget_with_info(
-    QWidget *main_widget, const char *tooltip_text, bool add_stretch
+    QWidget *main_widget, const char *tooltip_text
 ) {
     auto container = new QWidget();
     auto layout = new QHBoxLayout(container);
@@ -900,10 +929,6 @@ QWidget *Window::create_widget_with_info(
     }
 
     layout->addWidget(main_widget);
-
-    if (add_stretch) {
-        layout->addStretch();
-    }
 
     return container;
 }

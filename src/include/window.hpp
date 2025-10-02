@@ -2,7 +2,6 @@
 
 #include <QCheckBox>
 #include <QComboBox>
-#include <QFormLayout>
 #include <QGroupBox>
 #include <QLabel>
 #include <QLineEdit>
@@ -98,7 +97,7 @@ class Window : public QMainWindow {
     QPushButton *browse_output_button;
 
     // Settings
-    QFormLayout *settings_layout;
+    QVBoxLayout *settings_layout;
     QSpinBox *pdf_pixel_density_spin_box;
     QCheckBox *contrast_check_box;
     QPushButton *display_preset_button;
@@ -161,9 +160,8 @@ class Window : public QMainWindow {
     // Helper methods
     PageTask
     create_task(fs::path source_file, fs::path output_dir, int page_num);
-    QWidget *create_widget_with_info(
-        QWidget *main_widget, const char *tooltip_text, bool add_stretch
-    );
+    QWidget *
+    create_widget_with_info(QWidget *main_widget, const char *tooltip_text);
     void connect_signals();
     void set_display_preset(std::string brand, std::string model);
     void create_archive(const QString &source_archive_path);

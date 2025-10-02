@@ -1039,7 +1039,7 @@ void Window::create_archive(const QString &source_archive_path) {
                            / source_path.filename();
 
     log_output->append(
-        "\n📦 Archiving " + QString::fromStdString(final_output_path.string())
+        "📦 Archiving " + QString::fromStdString(final_output_path.string())
     );
     QCoreApplication::processEvents();
 
@@ -1091,8 +1091,15 @@ void Window::create_archive(const QString &source_archive_path) {
         );
     }
 
+    // Remove previous line.
+    QTextCursor cursor = log_output->textCursor();
+    cursor.movePosition(QTextCursor::End);
+    cursor.movePosition(QTextCursor::StartOfBlock, QTextCursor::KeepAnchor);
+    cursor.removeSelectedText();
+    cursor.deletePreviousChar();
+
     log_output->append(
-        "✅ Finished archiving "
+        "✓ Created file "
         + QString::fromStdString(final_output_path.string())
     );
 }

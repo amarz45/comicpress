@@ -604,7 +604,6 @@ void Window::on_start_button_clicked() {
     fs::path output_dir = fs::path(output_dir_field->text().toStdString());
     fs::create_directories(output_dir);
 
-    log_output->append("Discovering pages in all files...");
     QCoreApplication::processEvents();
 
     QVector<PageTask> tasks;
@@ -710,8 +709,6 @@ void Window::on_start_button_clicked() {
     this->progress_bar->setValue(0);
     this->progress_bar->setMaximum(total_files_to_process);
     this->progress_bar->setFormat("%p % (%v / %m pages)");
-    log_output->append(QString("Found %1 pages. Starting processing...")
-                           .arg(total_files_to_process));
 
     // Timer
     auto now = std::chrono::system_clock::now();
@@ -738,7 +735,6 @@ void Window::on_cancel_button_clicked() {
         return;
 
     is_processing_cancelled = true;
-    log_output->append("\n🛑 Cancelling processing...");
 
     task_queue.clear();
 
@@ -751,7 +747,6 @@ void Window::on_cancel_button_clicked() {
     timer->stop();
     start_button->setEnabled(true);
     cancel_button->setEnabled(false);
-    log_output->append("Processing cancelled.");
 }
 
 void Window::start_next_task() {
@@ -844,7 +839,6 @@ void Window::on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus) {
     }
     else {
         if (files_processed == total_files_to_process) {
-            log_output->append("\n✅ All processing complete.");
             timer->stop();
             start_button->setEnabled(true);
             cancel_button->setEnabled(false);

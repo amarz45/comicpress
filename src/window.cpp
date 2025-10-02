@@ -3,6 +3,7 @@
 #include "include/task.hpp"
 #include "include/ui_constants.hpp"
 #include "qboxlayout.h"
+#include "qnamespace.h"
 #include <QAction>
 #include <QCheckBox>
 #include <QComboBox>
@@ -19,6 +20,7 @@
 #include <QProcess>
 #include <QProgressBar>
 #include <QPushButton>
+#include <QScroller>
 #include <QSpinBox>
 #include <QTextEdit>
 #include <QTimer>
@@ -184,6 +186,7 @@ void Window::update_time_labels() {
 void Window::setup_ui() {
     auto container_layout = new QHBoxLayout(this->central_widget);
     auto content_widget = new QWidget();
+    content_widget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
 
     auto io_group = this->create_io_group();
     auto settings_group = this->create_settings_group();
@@ -274,6 +277,7 @@ QGroupBox *Window::create_log_group() {
     time_layout->addWidget(this->eta_recent_label);
 
     this->log_output = new QTextEdit();
+    this->log_output->setVisible(false);
     this->log_output->setReadOnly(true);
 
     auto action_layout = new QHBoxLayout();
@@ -577,6 +581,8 @@ void Window::on_image_format_changed() {
 }
 
 void Window::on_start_button_clicked() {
+    this->log_output->setVisible(true);
+
     QStringList input_file_paths;
     for (int i = 0; i < file_list->count(); i += 1) {
         input_file_paths.append(

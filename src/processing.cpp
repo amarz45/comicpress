@@ -244,83 +244,82 @@ vips::VImage remove_uniform_middle_columns(const vips::VImage &img) {
     int height = img.height();
     int mid = width / 2;
 
-    // Determine the global range for capping
     double global_range = img.max() - img.min();
-
-    // Binary search to find the maximum threshold where the removed fraction <=
-    // max_fraction
-    double low = 0.0;
-    double high = global_range;
-    const int max_iter = 20; // Sufficient for high precision
-
-    for (int iter = 0; iter < max_iter; ++iter) {
-        double mid_th = (low + high) / 2.0;
-
-        int left_bound = mid;
-        while (left_bound >= 0 && is_uniform_column(img, left_bound, mid_th)) {
-            left_bound -= 1;
-        }
-
-        int right_bound = mid + 1;
-        while (right_bound < width
-               && is_uniform_column(img, right_bound, mid_th)) {
-            right_bound += 1;
-        }
-
-        int remove_width = right_bound - left_bound - 1;
-        double frac = static_cast<double>(remove_width) / width;
-
-        if (frac > max_fraction) {
-            high = mid_th; // Reduce threshold to remove less
-        }
-        else {
-            low = mid_th; // Try higher threshold to remove more
-        }
-    }
-
-    // Use the found threshold (low) to compute the final bounds
-    double threshold = low;
-
-    int left_bound = mid;
-    while (left_bound >= 0 && is_uniform_column(img, left_bound, threshold)) {
-        left_bound -= 1;
-    }
-
-    int right_bound = mid + 1;
-    while (right_bound < width
-           && is_uniform_column(img, right_bound, threshold)) {
-        right_bound += 1;
-    }
-
-    int remove_width = right_bound - left_bound - 1;
-
-    // If no uniform columns or removal would still exceed (edge case), return
-    // copy
-    if (remove_width <= 0
-        || static_cast<double>(remove_width) / width > max_fraction) {
+    if (global_range == 0) {
         return img.copy();
     }
 
-    // Compute widths for left and right parts
-    int left_width = left_bound + 1;
-    int right_width = width - right_bound;
+    // Helper lambda to find the bounds of the uniform middle section
+    auto get_uniform_bounds = [&](double threshold) {
+        int left = mid;
+        while (left >= 0 && is_uniform_column(img, left, threshold)) {
+            left -= 1;
+        }
 
-    // Handle cases where one part is empty
+        int right = mid + 1;
+        while (right < width && is_uniform_column(img, right, threshold)) {
+            right += 1;
+        }
+        return std::make_pair(left, right);
+    };
+
+    int best_left_bound = mid;
+    int best_right_bound = mid + 1;
+
+    // First, attempt with the highest possible threshold as you requested.
+    auto bounds_at_max = get_uniform_bounds(global_range);
+    int remove_width_at_max
+        = bounds_at_max.second - bounds_at_max.first - 1;
+    double frac_at_max = static_cast<double>(remove_width_at_max) / width;
+
+    if (frac_at_max <= max_fraction) {
+        // The max threshold is acceptable, so we use its results directly.
+        best_left_bound = bounds_at_max.first;
+        best_right_bound = bounds_at_max.second;
+    }
+    else {
+        // Max threshold was too aggressive. Fall back to binary search to find a
+        // smaller, acceptable threshold.
+        double low = 0.0;
+        double high = global_range;
+        const int max_iter = 20;
+
+        for (int iter = 0; iter < max_iter; ++iter) {
+            double mid_th = (low + high) / 2.0;
+            auto bounds = get_uniform_bounds(mid_th);
+            int remove_width = bounds.second - bounds.first - 1;
+            double frac = static_cast<double>(remove_width) / width;
+
+            if (frac > max_fraction) {
+                high = mid_th;
+            }
+            else {
+                low = mid_th;
+                best_left_bound = bounds.first;
+                best_right_bound = bounds.second;
+            }
+        }
+    }
+
+    int remove_width = best_right_bound - best_left_bound - 1;
+
+    if (remove_width <= 0) {
+        return img.copy();
+    }
+
+    int left_width = best_left_bound + 1;
+    int right_width = width - best_right_bound;
+
     if (left_width <= 0) {
-        return img.extract_area(right_bound, 0, right_width, height);
+        return img.extract_area(best_right_bound, 0, right_width, height);
     }
     else if (right_width <= 0) {
         return img.extract_area(0, 0, left_width, height);
     }
     else {
-        // Extract the part to the left of the spine
         vips::VImage left_part = img.extract_area(0, 0, left_width, height);
-
-        // Extract the part to the right of the spine
         vips::VImage right_part
-            = img.extract_area(right_bound, 0, right_width, height);
-
-        // Join the two parts horizontally to form the final image
+            = img.extract_area(best_right_bound, 0, right_width, height);
         return left_part.join(right_part, VIPS_DIRECTION_HORIZONTAL);
     }
 }

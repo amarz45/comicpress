@@ -46,6 +46,16 @@ class BoundedDeque {
     }
 };
 
+struct FileTimer {
+    std::optional<int64_t> start_time;
+    std::optional<int64_t> last_eta_recent_time;
+    int images_since_last_eta_recent = 0;
+    BoundedDeque eta_recent_intervals;
+
+    FileTimer() : eta_recent_intervals(5) {
+    }
+};
+
 struct DisplayPreset {
     std::string brand;
     std::string model;
@@ -129,11 +139,17 @@ class Window : public QMainWindow {
     QMap<QString, int> pages_processed_per_archive;
     QMap<QString, QWidget *> active_file_widgets;
     QMap<QString, QProgressBar *> active_progress_bars;
+    QMap<QString, QLabel *> file_elapsed_labels;
+    QMap<QString, QLabel *> file_eta_overall_labels;
+    QMap<QString, QLabel *> file_eta_recent_labels;
+    QMap<QString, FileTimer> file_timers;
     int max_concurrent_workers;
     bool is_processing_cancelled;
 
     // Timer
     void update_time_labels();
+    void update_overall_time_labels();
+    void update_file_time_labels(const QString &file);
 
     // UI setup
     void setup_ui();

@@ -127,6 +127,14 @@ Window::Window(QWidget *parent) : QMainWindow(parent), eta_recent_intervals(5) {
 }
 
 void Window::update_time_labels() {
+    this->update_overall_time_labels();
+
+    for (const QString &file : this->active_progress_bars.keys()) {
+        this->update_file_time_labels(file);
+    }
+}
+
+void Window::update_overall_time_labels() {
     if (!this->start_time.has_value()) {
         return;
     }
@@ -180,6 +188,82 @@ void Window::update_time_labels() {
         auto eta_recent_str
             = "ETA (recent): " + time_to_str(static_cast<int64_t>(avg_eta));
         this->eta_recent_label->setText(QString::fromStdString(eta_recent_str));
+    }
+}
+
+void Window::update_file_time_labels(const QString &file) {
+    if (!this->file_timers.contains(file)) {
+        return;
+    }
+
+    auto &file_timer = this->file_timers[file];
+
+    if (!file_timer.start_time.has_value()) {
+        return;
+    }
+
+    auto start_time = file_timer.start_time.value();
+
+    auto now = std::chrono::system_clock::now();
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                  now.time_since_epoch()
+    )
+                  .count();
+
+    auto elapsed = ms - start_time;
+    auto elapsed_str = "Elapsed: " + time_to_str(elapsed);
+    if (this->file_elapsed_labels.contains(file)) {
+        this->file_elapsed_labels[file]->setText(
+            QString::fromStdString(elapsed_str)
+        );
+    }
+
+    auto value = this->pages_processed_per_archive.value(file, 0);
+
+    // Overall ETA
+    if (value > 0) {
+        auto total = this->archive_task_counts.value(file, 0);
+        auto per_unit = static_cast<double>(elapsed) / value;
+        auto remaining = static_cast<double>(total - value) * per_unit;
+        auto eta_overall_str
+            = "ETA (overall): " + time_to_str(static_cast<int64_t>(remaining));
+        if (this->file_eta_overall_labels.contains(file)) {
+            this->file_eta_overall_labels[file]->setText(
+                QString::fromStdString(eta_overall_str)
+            );
+        }
+    }
+
+    // Recent ETA
+    if (file_timer.last_eta_recent_time.has_value()
+        && ms - file_timer.last_eta_recent_time.value() >= 1000
+        && file_timer.images_since_last_eta_recent > 0) {
+        auto interval = ms - file_timer.last_eta_recent_time.value();
+        auto speed
+            = static_cast<double>(file_timer.images_since_last_eta_recent)
+            / static_cast<double>(interval);
+        auto total_remaining = this->archive_task_counts.value(file, 0) - value;
+        auto remaining = static_cast<double>(total_remaining) / speed;
+
+        file_timer.eta_recent_intervals.push_front(
+            static_cast<int64_t>(remaining)
+        );
+
+        file_timer.last_eta_recent_time = ms;
+        file_timer.images_since_last_eta_recent = 0;
+    }
+
+    if (!file_timer.eta_recent_intervals.dq.empty()) {
+        auto dq = file_timer.eta_recent_intervals.dq;
+        auto sum = std::accumulate(dq.begin(), dq.end(), 0LL);
+        auto avg_eta = static_cast<double>(sum) / dq.size();
+        auto eta_recent_str
+            = "ETA (recent): " + time_to_str(static_cast<int64_t>(avg_eta));
+        if (this->file_eta_recent_labels.contains(file)) {
+            this->file_eta_recent_labels[file]->setText(
+                QString::fromStdString(eta_recent_str)
+            );
+        }
     }
 }
 
@@ -610,6 +694,10 @@ void Window::on_start_button_clicked() {
     this->pages_processed_per_archive.clear();
     this->active_file_widgets.clear();
     this->active_progress_bars.clear();
+    this->file_elapsed_labels.clear();
+    this->file_eta_overall_labels.clear();
+    this->file_eta_recent_labels.clear();
+    this->file_timers.clear();
     is_processing_cancelled = false;
     pages_processed = 0;
     total_pages = 0;
@@ -788,6 +876,10 @@ void Window::on_cancel_button_clicked() {
     }
     this->active_file_widgets.clear();
     this->active_progress_bars.clear();
+    this->file_elapsed_labels.clear();
+    this->file_eta_overall_labels.clear();
+    this->file_eta_recent_labels.clear();
+    this->file_timers.clear();
     this->pages_processed_per_archive.clear();
     this->progress_bars_group->setVisible(false);
 
@@ -813,8 +905,10 @@ void Window::start_next_task() {
         this->progress_bars_group->setVisible(true);
 
         auto widget = new QWidget();
-        auto layout = new QHBoxLayout(widget);
-        layout->setContentsMargins(5, 2, 5, 2);
+        auto vbox = new QVBoxLayout(widget);
+        vbox->setContentsMargins(5, 2, 5, 2);
+
+        auto progress_layout = new QHBoxLayout();
         auto label = new QLabel(QFileInfo(source_qstr).fileName());
         auto progressBar = new QProgressBar();
         progressBar->setMaximum(this->archive_task_counts.value(source_qstr));
@@ -822,12 +916,37 @@ void Window::start_next_task() {
         progressBar->setTextVisible(true);
         progressBar->setFormat("%p % (%v / %m pages)");
 
-        layout->addWidget(label);
-        layout->addWidget(progressBar);
+        progress_layout->addWidget(label);
+        progress_layout->addWidget(progressBar);
+
+        auto time_layout = new QHBoxLayout();
+        auto elapsed_label = new QLabel("Elapsed: –");
+        auto eta_overall_label = new QLabel("ETA (overall): –");
+        auto eta_recent_label = new QLabel("ETA (recent): –");
+        time_layout->addWidget(elapsed_label);
+        time_layout->addWidget(eta_overall_label);
+        time_layout->addWidget(eta_recent_label);
+
+        vbox->addLayout(progress_layout);
+        vbox->addLayout(time_layout);
 
         this->progress_bars_layout->addWidget(widget);
         this->active_file_widgets.insert(source_qstr, widget);
         this->active_progress_bars.insert(source_qstr, progressBar);
+        this->file_elapsed_labels.insert(source_qstr, elapsed_label);
+        this->file_eta_overall_labels.insert(source_qstr, eta_overall_label);
+        this->file_eta_recent_labels.insert(source_qstr, eta_recent_label);
+
+        auto now = std::chrono::system_clock::now();
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                      now.time_since_epoch()
+        )
+                      .count();
+        FileTimer file_timer;
+        file_timer.start_time = ms;
+        file_timer.last_eta_recent_time = ms;
+        file_timer.images_since_last_eta_recent = 0;
+        this->file_timers.insert(source_qstr, file_timer);
     }
 
     QProcess *process = new QProcess(this);
@@ -900,6 +1019,9 @@ void Window::on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus) {
 
     if (this->pages_processed_per_archive.contains(source_qstr)) {
         this->pages_processed_per_archive[source_qstr]++;
+        if (this->file_timers.contains(source_qstr)) {
+            this->file_timers[source_qstr].images_since_last_eta_recent++;
+        }
         if (this->active_progress_bars.contains(source_qstr)) {
             auto progressBar = this->active_progress_bars.value(source_qstr);
             progressBar->setValue(
@@ -919,6 +1041,10 @@ void Window::on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus) {
                 this->progress_bars_layout->removeWidget(widget);
                 delete widget;
                 this->active_progress_bars.remove(source_qstr);
+                this->file_elapsed_labels.remove(source_qstr);
+                this->file_eta_overall_labels.remove(source_qstr);
+                this->file_eta_recent_labels.remove(source_qstr);
+                this->file_timers.remove(source_qstr);
 
                 if (this->active_file_widgets.isEmpty()) {
                     this->progress_bars_group->setVisible(false);

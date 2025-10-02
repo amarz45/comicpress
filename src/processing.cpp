@@ -268,8 +268,7 @@ vips::VImage remove_uniform_middle_columns(const vips::VImage &img) {
 
     // First, attempt with the highest possible threshold as you requested.
     auto bounds_at_max = get_uniform_bounds(global_range);
-    int remove_width_at_max
-        = bounds_at_max.second - bounds_at_max.first - 1;
+    int remove_width_at_max = bounds_at_max.second - bounds_at_max.first - 1;
     double frac_at_max = static_cast<double>(remove_width_at_max) / width;
 
     if (frac_at_max <= max_fraction) {
@@ -278,8 +277,8 @@ vips::VImage remove_uniform_middle_columns(const vips::VImage &img) {
         best_right_bound = bounds_at_max.second;
     }
     else {
-        // Max threshold was too aggressive. Fall back to binary search to find a
-        // smaller, acceptable threshold.
+        // Max threshold was too aggressive. Fall back to binary search to find
+        // a smaller, acceptable threshold.
         double low = 0.0;
         double high = global_range;
         const int max_iter = 20;

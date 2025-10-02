@@ -69,7 +69,7 @@ int main(int, char *argv[]) {
     }
 
     try {
-        task.page_resampler = (VipsKernel) std::stoi(argv[11]);
+        task.page_resampler = (VipsKernel)std::stoi(argv[11]);
     }
     catch (const std::exception &e) {
         std::cerr << "Worker error: " << e.what() << "\n";

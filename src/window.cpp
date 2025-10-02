@@ -275,7 +275,6 @@ QGroupBox *Window::create_log_group() {
 
     this->log_output = new QTextEdit();
     this->log_output->setReadOnly(true);
-    this->log_output->setFontFamily("monospace");
 
     auto action_layout = new QHBoxLayout();
     this->start_button = new QPushButton("Start");
@@ -1038,9 +1037,9 @@ void Window::create_archive(const QString &source_archive_path) {
     auto final_output_path = fs::path(output_dir_field->text().toStdString())
                            / source_path.filename();
 
-    log_output->append(
-        "📦 Creating file " + QString::fromStdString(final_output_path.string())
-    );
+    auto creating_file_message
+        = "📦 Creating file <code>" + final_output_path.string() + "</code>";
+    log_output->append(QString::fromStdString(creating_file_message));
     QCoreApplication::processEvents();
 
     auto a = archive_write_new();
@@ -1098,10 +1097,9 @@ void Window::create_archive(const QString &source_archive_path) {
     cursor.removeSelectedText();
     cursor.deletePreviousChar();
 
-    log_output->append(
-        "✓ Created file "
-        + QString::fromStdString(final_output_path.string())
-    );
+    auto created_file_message
+        = "✓ Created file <code>" + final_output_path.string() + "</code>";
+    log_output->append(QString::fromStdString(created_file_message));
 }
 
 Window::~Window() {

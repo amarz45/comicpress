@@ -332,8 +332,8 @@ QGroupBox *Window::create_io_group() {
     file_buttons_layout->addWidget(this->clear_all_button);
     file_buttons_layout->addStretch();
 
-    io_layout->addWidget(file_list);
     io_layout->addLayout(file_buttons_layout);
+    io_layout->addWidget(file_list);
 
     auto output_layout = new QHBoxLayout();
     this->output_dir_field = new QLineEdit(".");

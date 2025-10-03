@@ -304,6 +304,7 @@ void Window::setup_ui() {
     this->main_layout->setContentsMargins(0, 0, 0, 0);
 
     this->main_layout->addWidget(tabs);
+    this->main_layout->addSpacing(20);
     this->main_layout->addWidget(this->progress_bars_group);
     this->main_layout->addWidget(log_group);
     this->main_layout->addItem(

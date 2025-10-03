@@ -81,6 +81,14 @@ class Window : public QMainWindow {
     void start_next_task();
     void on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus);
     void on_worker_output();
+    void on_add_files_clicked();
+    void on_remove_selected_clicked();
+    void on_clear_all_clicked();
+    void on_browse_output_clicked();
+    void on_display_preset_changed();
+    void on_enable_image_scaling_changed(int state);
+    void on_enable_image_quantization_changed(int state);
+    void on_image_format_changed();
 
   private:
     QWidget *central_widget;
@@ -169,19 +177,12 @@ class Window : public QMainWindow {
     void add_image_format_widgets();
     void add_parallel_workers_widget();
 
-    // UI updates
-    void on_add_files_clicked();
-    void on_display_preset_changed();
-    void on_enable_image_scaling_changed(int state);
-    void on_enable_image_quantization_changed(int state);
-    void on_image_format_changed();
-
     // Helper methods
     PageTask
     create_task(fs::path source_file, fs::path output_dir, int page_num);
     QWidget *
     create_widget_with_info(QWidget *main_widget, const char *tooltip_text);
-    void adjust_file_list_height();
+    void update_file_list_buttons();
     void connect_signals();
     void set_display_preset(std::string brand, std::string model);
     void create_archive(const QString &source_archive_path);

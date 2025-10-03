@@ -325,7 +325,7 @@ QGroupBox *Window::create_io_group() {
 
     this->file_list = new QListWidget();
     this->file_list->setFont(QFont("monospace"));
-    // this->file_list->setVisible(false);
+    this->file_list->setSelectionMode(QAbstractItemView::ExtendedSelection);
     this->file_list->setFixedHeight(300);
 
     this->add_files_button = new QPushButton("Add input files");
@@ -633,7 +633,30 @@ void Window::on_add_files_clicked() {
         }
     }
 
-    this->adjust_file_list_height();
+    this->update_file_list_buttons();
+}
+
+void Window::on_remove_selected_clicked() {
+    qDeleteAll(this->file_list->selectedItems());
+    this->update_file_list_buttons();
+}
+
+void Window::on_clear_all_clicked() {
+    this->file_list->clear();
+    this->update_file_list_buttons();
+}
+
+void Window::on_browse_output_clicked() {
+    QString dir = QFileDialog::getExistingDirectory(
+        this,
+        tr("Select output folder"),
+        this->output_dir_field->text(),
+        QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks
+    );
+
+    if (!dir.isEmpty()) {
+        this->output_dir_field->setText(dir);
+    }
 }
 
 void Window::on_display_preset_changed() {
@@ -1204,34 +1227,10 @@ QWidget *Window::create_widget_with_info(
     return container;
 }
 
-void Window::adjust_file_list_height() {
-    int count = this->file_list->count();
-    if (count == 0) {
-        this->file_list->setVisible(false);
-        this->remove_selected_button->setEnabled(false);
-        this->clear_all_button->setEnabled(false);
-        return;
-    }
-
-    this->file_list->setVisible(true);
-    this->remove_selected_button->setEnabled(true);
-    this->clear_all_button->setEnabled(true);
-
-    // Calculate minimal height: row height * count + frame borders (approx,
-    // ignores potential horizontal scrollbar)
-    int rowHeight
-        = this->file_list->sizeHintForRow(0); // Height of a single row/item
-    int contentHeight = count * rowHeight + 2 * this->file_list->frameWidth();
-
-    // Cap at maximum height
-    int maxHeight = this->file_list->maximumHeight();
-    if (contentHeight > maxHeight) {
-        contentHeight = maxHeight;
-    }
-
-    this->file_list->setFixedHeight(
-        contentHeight
-    ); // Set exact height (will add vertical scrollbar if content exceeds this)
+void Window::update_file_list_buttons() {
+    bool has_items = this->file_list->count() > 0;
+    this->remove_selected_button->setEnabled(has_items);
+    this->clear_all_button->setEnabled(has_items);
 }
 
 void Window::connect_signals() {
@@ -1240,6 +1239,24 @@ void Window::connect_signals() {
         &QPushButton::clicked,
         this,
         &Window::on_add_files_clicked
+    );
+    connect(
+        this->remove_selected_button,
+        &QPushButton::clicked,
+        this,
+        &Window::on_remove_selected_clicked
+    );
+    connect(
+        this->clear_all_button,
+        &QPushButton::clicked,
+        this,
+        &Window::on_clear_all_clicked
+    );
+    connect(
+        this->browse_output_button,
+        &QPushButton::clicked,
+        this,
+        &Window::on_browse_output_clicked
     );
     connect(
         this->enable_image_scaling_check_box,

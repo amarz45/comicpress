@@ -337,10 +337,9 @@ QGroupBox *Window::create_io_group() {
 
     auto output_layout = new QHBoxLayout();
     this->output_dir_field = new QLineEdit(".");
-    this->browse_output_button = new QPushButton("Browse");
-    output_layout->addWidget(new QLabel("Output folder"));
-    output_layout->addWidget(this->output_dir_field);
+    this->browse_output_button = new QPushButton("Browse output folder");
     output_layout->addWidget(this->browse_output_button);
+    output_layout->addWidget(this->output_dir_field);
 
     io_layout->addLayout(output_layout);
     io_layout->addStretch();

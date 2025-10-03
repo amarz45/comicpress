@@ -122,7 +122,7 @@ Window::Window(QWidget *parent) : QMainWindow(parent), eta_recent_intervals(5) {
     this->setCentralWidget(central_widget);
 
     this->setup_ui();
-    this->on_display_preset_changed();
+    this->on_display_preset_changed(true);
     this->on_enable_image_scaling_changed(
         this->enable_image_scaling_check_box->checkState()
     );
@@ -495,7 +495,7 @@ void Window::add_display_presets_widget() {
 
     if (auto custom_action = display_menu->addAction("Custom")) {
         connect(custom_action, &QAction::triggered, this, [this]() {
-            this->set_display_preset("Custom", "");
+            this->set_display_preset("Custom", "", true);
         });
     }
     display_menu->addSeparator();
@@ -523,7 +523,7 @@ void Window::add_display_presets_widget() {
                 &QAction::triggered,
                 this,
                 [this, brand, model_name]() {
-                    this->set_display_preset(brand, model_name);
+                    this->set_display_preset(brand, model_name, false);
                 }
             );
         }
@@ -719,13 +719,15 @@ void Window::on_double_page_spread_changed(const QString &text) {
     this->rotation_options_container->setVisible(should_show);
 }
 
-void Window::on_display_preset_changed() {
+void Window::on_display_preset_changed(bool first_time) {
     auto brand = this->display_preset.brand;
     auto model = this->display_preset.model;
     auto is_custom = model.length() == 0;
 
     this->enable_image_scaling_check_box->setEnabled(is_custom);
-    this->enable_image_scaling_check_box->setChecked(!is_custom);
+    if (!first_time) {
+        this->enable_image_scaling_check_box->setChecked(true);
+    }
 
     if (!is_custom) {
         auto display = DISPLAY_PRESETS.at(brand).value().at(model);
@@ -1359,13 +1361,15 @@ void Window::connect_signals() {
     );
 }
 
-void Window::set_display_preset(std::string brand, std::string model) {
+void Window::set_display_preset(
+    std::string brand, std::string model, bool first_time
+) {
     this->display_preset.brand = brand;
     this->display_preset.model = model;
     QString text = model.empty() ? QString::fromStdString(brand)
                                  : QString::fromStdString(brand + " " + model);
     this->display_preset_button->setText(text);
-    this->on_display_preset_changed();
+    this->on_display_preset_changed(first_time);
 }
 
 void Window::create_archive(const QString &source_archive_path) {

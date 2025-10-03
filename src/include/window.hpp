@@ -87,7 +87,7 @@ class Window : public QMainWindow {
     void on_clear_all_clicked();
     void on_browse_output_clicked();
     void on_double_page_spread_changed(const QString &text);
-    void on_display_preset_changed();
+    void on_display_preset_changed(bool first_time);
     void on_enable_image_scaling_changed(int state);
     void on_enable_image_quantization_changed(int state);
     void on_image_format_changed();
@@ -193,7 +193,8 @@ class Window : public QMainWindow {
     create_widget_with_info(QWidget *main_widget, const char *tooltip_text);
     void update_file_list_buttons();
     void connect_signals();
-    void set_display_preset(std::string brand, std::string model);
+    void
+    set_display_preset(std::string brand, std::string model, bool first_time);
     void create_archive(const QString &source_archive_path);
 
     int total_pages;

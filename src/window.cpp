@@ -386,8 +386,8 @@ void Window::create_log_group() {
     this->log_output->setVisible(false);
     this->log_output->setReadOnly(true);
 
-    log_layout->addLayout(time_layout);
     log_layout->addWidget(this->progress_bar);
+    log_layout->addLayout(time_layout);
     log_layout->addWidget(this->log_output);
 }
 

@@ -272,6 +272,7 @@ void Window::update_file_time_labels(const QString &file) {
 void Window::setup_ui() {
     auto container_layout = new QHBoxLayout(this->central_widget);
     auto content_widget = new QWidget();
+    container_layout->setAlignment(Qt::AlignTop);
     content_widget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
 
     auto io_group = this->create_io_group();

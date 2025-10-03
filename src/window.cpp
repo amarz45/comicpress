@@ -732,6 +732,9 @@ void Window::on_display_preset_changed() {
         this->width_spin_box->setValue(display.width);
         this->height_spin_box->setValue(display.height);
     }
+
+    this->width_spin_box->setEnabled(is_custom);
+    this->height_spin_box->setEnabled(is_custom);
 }
 
 void Window::on_enable_image_scaling_changed(int state) {

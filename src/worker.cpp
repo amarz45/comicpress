@@ -3,17 +3,56 @@
 
 #include <fpdfview.h>
 #include <iostream>
+#include <map>
+#include <stdexcept>
 #include <string>
 #include <vips/vips8>
+
+// Helper function to parse arguments with error handling and cleanup
+template <typename T>
+T parse_arg(const std::string &arg_str, const std::string &error_msg) {
+    try {
+        if constexpr (std::is_same_v<T, int>) {
+            return std::stoi(arg_str);
+        }
+        else if constexpr (std::is_same_v<T, float>) {
+            return std::stof(arg_str);
+        }
+        else {
+            static_assert(
+                std::is_same_v<T, int> || std::is_same_v<T, float>,
+                "Unsupported type for parse_arg"
+            );
+            throw std::invalid_argument("Unsupported type");
+        }
+    }
+    catch (const std::exception &e) {
+        std::cerr << "Worker error: " << error_msg << " - " << e.what() << "\n";
+        FPDF_DestroyLibrary();
+        vips_shutdown();
+        exit(1);
+    }
+}
 
 // This is the main entry point for the worker executable. It takes task details
 // as command-line arguments, performs the processing, and prints logs to
 // standard output for the main application to capture.
-int main(int, char *argv[]) {
-    // if (argc < 7) {
-    //     std::cerr << "Worker error: Insufficient arguments." << std::endl;
-    //     return 1;
-    // }
+int main(int argc, char *argv[]) {
+    // Expect program name + 18 pairs of (flag, value) = 37 arguments
+    if (argc != 37) {
+        std::cerr << "Worker error: Expected exactly 36 arguments (18 "
+                     "flag-value pairs) after program name."
+                  << std::endl;
+        return 1;
+    }
+
+    // Parse arguments into a map
+    std::map<std::string, std::string> args;
+    for (int i = 1; i < argc; i += 2) {
+        std::string flag = argv[i];
+        std::string value = argv[i + 1];
+        args[flag] = value;
+    }
 
     // Initialize libraries required for processing.
     if (VIPS_INIT(argv[0])) {
@@ -25,84 +64,69 @@ int main(int, char *argv[]) {
 
     // Reconstruct the PageTask from command-line arguments.
     PageTask task;
-    task.source_file = argv[1];
-    task.output_dir = argv[2];
-    task.output_base_name = argv[3];
     try {
-        task.page_number = std::stoi(argv[4]);
-    }
-    catch (const std::invalid_argument &e) {
-        std::cerr << "Worker error: Invalid page number format." << std::endl;
-        return 1;
-    }
+        task.source_file = args.at("-source_file");
+        task.output_dir = args.at("-output_dir");
+        task.output_base_name = args.at("-output_base_name");
 
-    std::string path_in_archive_str = argv[5];
-    if (path_in_archive_str != "NULL") {
-        task.path_in_archive = path_in_archive_str;
-    }
+        task.page_number = parse_arg<int>(
+            args.at("-page_number"), "Invalid page number format"
+        );
 
-    try {
-        task.pdf_pixel_density = std::stoi(argv[6]);
-    }
-    catch (const std::exception &e) {
-        std::cerr << "Worker error: " << e.what() << "\n";
-        return 1;
-    }
+        task.path_in_archive
+            = args.at("-path_in_archive"); // Can be empty string
 
-    task.stretch_page_contrast = argv[7][0] == '1';
-    task.scale_pages = argv[8][0] == '1';
+        task.pdf_pixel_density = parse_arg<int>(
+            args.at("-pdf_pixel_density"), "Invalid PDF pixel density"
+        );
 
-    try {
-        task.page_width = std::stoi(argv[9]);
-    }
-    catch (const std::exception &e) {
-        std::cerr << "Worker error: " << e.what() << "\n";
-        return 1;
-    }
+        task.stretch_page_contrast = parse_arg<int>(
+                                         args.at("-stretch_page_contrast"),
+                                         "Invalid stretch page contrast"
+                                     )
+                                  != 0;
+        task.scale_pages
+            = parse_arg<int>(args.at("-scale_pages"), "Invalid scale pages")
+           != 0;
 
-    try {
-        task.page_height = std::stoi(argv[10]);
-    }
-    catch (const std::exception &e) {
-        std::cerr << "Worker error: " << e.what() << "\n";
-        return 1;
-    }
+        task.page_width
+            = parse_arg<int>(args.at("-page_width"), "Invalid page width");
+        task.page_height
+            = parse_arg<int>(args.at("-page_height"), "Invalid page height");
+        task.page_resampler = static_cast<VipsKernel>(
+            parse_arg<int>(args.at("-page_resampler"), "Invalid page resampler")
+        );
 
-    try {
-        task.page_resampler = (VipsKernel)std::stoi(argv[11]);
-    }
-    catch (const std::exception &e) {
-        std::cerr << "Worker error: " << e.what() << "\n";
-        return 1;
-    }
+        task.quantize_pages
+            = parse_arg<int>(
+                  args.at("-quantize_pages"), "Invalid quantize pages"
+              )
+           != 0;
 
-    task.quantize_pages = argv[12][0] == '1';
+        task.bit_depth
+            = parse_arg<int>(args.at("-bit_depth"), "Invalid bit depth");
+        task.dither
+            = parse_arg<float>(args.at("-dither"), "Invalid dither value");
 
-    try {
-        task.bit_depth = std::stoi(argv[13]);
-    }
-    catch (const std::exception &e) {
-        std::cerr << "Worker error: " << e.what() << "\n";
-        return 1;
-    }
+        task.image_format = args.at("-image_format");
+        task.is_lossy
+            = parse_arg<int>(args.at("-is_lossy"), "Invalid is lossy") != 0;
+        task.quality_type_is_distance
+            = parse_arg<int>(
+                  args.at("-quality_type_is_distance"),
+                  "Invalid quality type is distance"
+              )
+           != 0;
 
-    try {
-        task.dither = std::stof(argv[14]);
+        task.compression_effort = parse_arg<int>(
+            args.at("-compression_effort"), "Invalid compression effort"
+        );
     }
-    catch (const std::exception &e) {
-        std::cerr << "Worker error: " << e.what() << "\n";
-        return 1;
-    }
-
-    task.image_format = argv[15];
-    task.is_lossy = argv[16][0] == '1';
-    task.quality_type_is_distance = argv[17][0] == '1';
-
-    try {
-        task.compression_effort = std::stoi(argv[18]);
-    }
-    catch (const std::exception &e) {
-        std::cerr << "Worker error: " << e.what() << "\n";
+    catch (const std::out_of_range &e) {
+        std::cerr << "Worker error: Missing required argument - " << e.what()
+                  << "\n";
+        FPDF_DestroyLibrary();
+        vips_shutdown();
         return 1;
     }
 

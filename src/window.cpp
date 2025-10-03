@@ -1082,24 +1082,30 @@ void Window::start_next_task() {
     QString program
         = QCoreApplication::applicationDirPath() + "/comicpress-worker";
     QStringList arguments;
-    arguments << QString::fromStdString(task.source_file.string())
+    arguments << "-source_file"
+              << QString::fromStdString(task.source_file.string())
+              << "-output_dir"
               << QString::fromStdString(task.output_dir.string())
-              << QString::fromStdString(task.output_base_name)
-              << QString::number(task.page_number)
-              << (task.path_in_archive.empty()
-                      ? "NULL"
-                      : QString::fromStdString(task.path_in_archive))
-              << QString::number(task.pdf_pixel_density)
-              << QString::number(task.stretch_page_contrast)
-              << QString::number(task.scale_pages)
-              << QString::number(task.page_width)
-              << QString::number(task.page_height)
-              << QString::number(task.page_resampler)
-              << QString::number(task.quantize_pages)
-              << QString::number(task.bit_depth) << QString::number(task.dither)
-              << QString::fromStdString(task.image_format)
-              << QString::number(task.is_lossy)
-              << QString::number(task.quality_type_is_distance)
+              << "-output_base_name"
+              << QString::fromStdString(task.output_base_name) << "-page_number"
+              << QString::number(task.page_number) << "-path_in_archive"
+              << QString::fromStdString(
+                     task.path_in_archive
+                 ) // Empty string if not set
+              << "-pdf_pixel_density" << QString::number(task.pdf_pixel_density)
+              << "-stretch_page_contrast"
+              << (task.stretch_page_contrast ? "1" : "0") << "-scale_pages"
+              << (task.scale_pages ? "1" : "0") << "-page_width"
+              << QString::number(task.page_width) << "-page_height"
+              << QString::number(task.page_height) << "-page_resampler"
+              << QString::number(static_cast<int>(task.page_resampler))
+              << "-quantize_pages" << (task.quantize_pages ? "1" : "0")
+              << "-bit_depth" << QString::number(task.bit_depth) << "-dither"
+              << QString::number(task.dither) << "-image_format"
+              << QString::fromStdString(task.image_format) << "-is_lossy"
+              << (task.is_lossy ? "1" : "0") << "-quality_type_is_distance"
+              << (task.quality_type_is_distance ? "1" : "0")
+              << "-compression_effort"
               << QString::number(task.compression_effort);
 
     process->start(program, arguments);

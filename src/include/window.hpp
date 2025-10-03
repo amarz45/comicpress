@@ -12,6 +12,7 @@
 #include <QProgressBar>
 #include <QPushButton>
 #include <QQueue>
+#include <QRadioButton>
 #include <QSpinBox>
 #include <QTabWidget>
 #include <QTextEdit>
@@ -85,6 +86,7 @@ class Window : public QMainWindow {
     void on_remove_selected_clicked();
     void on_clear_all_clicked();
     void on_browse_output_clicked();
+    void on_double_page_spread_changed(const QString &text);
     void on_display_preset_changed();
     void on_enable_image_scaling_changed(int state);
     void on_enable_image_quantization_changed(int state);
@@ -132,6 +134,9 @@ class Window : public QMainWindow {
     QWidget *image_format_options_container;
     QSpinBox *image_compression_spin_box;
     QSpinBox *workers_spin_box;
+    QWidget *rotation_options_container;
+    QRadioButton *clockwise_radio;
+    QRadioButton *counter_clockwise_radio;
 
     // Progress
     QLabel *elapsed_label;

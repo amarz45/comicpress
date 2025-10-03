@@ -20,6 +20,7 @@
 #include <QProcess>
 #include <QProgressBar>
 #include <QPushButton>
+#include <QRadioButton>
 #include <QScroller>
 #include <QSpinBox>
 #include <QStandardPaths>
@@ -124,6 +125,9 @@ Window::Window(QWidget *parent) : QMainWindow(parent), eta_recent_intervals(5) {
     this->on_display_preset_changed();
     this->on_enable_image_scaling_changed(
         this->enable_image_scaling_check_box->checkState()
+    );
+    this->on_double_page_spread_changed(
+        this->double_page_spread_combo_box->currentText()
     );
     this->connect_signals();
 }
@@ -429,12 +433,31 @@ void Window::add_double_page_spread_widget() {
         {"Rotate page", "Split into two pages", "Both", "None"}, "Rotate page"
     );
 
-    auto layout = new QHBoxLayout();
-    layout->addWidget(widget);
-    layout->addWidget(this->double_page_spread_combo_box);
-    layout->addStretch();
+    auto combo_layout = new QHBoxLayout();
+    combo_layout->addWidget(widget);
+    combo_layout->addWidget(this->double_page_spread_combo_box);
+    combo_layout->addStretch();
 
-    this->settings_layout->addLayout(layout);
+    // Rotation options
+    this->rotation_options_container = new QWidget();
+    auto rotation_layout
+        = create_container_layout(this->rotation_options_container);
+
+    auto rotation_label = new QLabel("Rotation direction");
+    rotation_layout->addWidget(rotation_label);
+
+    auto radio_group_layout = new QHBoxLayout();
+    this->clockwise_radio = new QRadioButton("Clockwise");
+    this->counter_clockwise_radio = new QRadioButton("Counter-clockwise");
+    this->clockwise_radio->setChecked(true);
+    radio_group_layout->addWidget(this->clockwise_radio);
+    radio_group_layout->addWidget(this->counter_clockwise_radio);
+    radio_group_layout->addStretch();
+
+    rotation_layout->addLayout(radio_group_layout);
+
+    this->settings_layout->addLayout(combo_layout);
+    this->settings_layout->addWidget(this->rotation_options_container);
 }
 
 void Window::add_remove_spine_widget() {
@@ -689,6 +712,11 @@ void Window::on_browse_output_clicked() {
     if (!dir.isEmpty()) {
         this->output_dir_field->setText(dir);
     }
+}
+
+void Window::on_double_page_spread_changed(const QString &text) {
+    bool should_show = (text == "Rotate page" || text == "Both");
+    this->rotation_options_container->setVisible(should_show);
 }
 
 void Window::on_display_preset_changed() {
@@ -1289,6 +1317,12 @@ void Window::connect_signals() {
         &QPushButton::clicked,
         this,
         &Window::on_browse_output_clicked
+    );
+    connect(
+        this->double_page_spread_combo_box,
+        &QComboBox::currentTextChanged,
+        this,
+        &Window::on_double_page_spread_changed
     );
     connect(
         this->enable_image_scaling_check_box,

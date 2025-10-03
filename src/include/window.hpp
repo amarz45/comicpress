@@ -137,6 +137,7 @@ class Window : public QMainWindow {
     QList<QProcess *> running_processes;
     QMap<QProcess *, PageTask> running_tasks;
     QMap<QString, int> archive_task_counts;
+    QMap<QString, int> total_pages_per_archive;
     QMap<QString, int> pages_processed_per_archive;
     QMap<QString, QWidget *> active_file_widgets;
     QMap<QString, QProgressBar *> active_progress_bars;

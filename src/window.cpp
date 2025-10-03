@@ -1,3 +1,4 @@
+// window.cpp
 #include "include/window.hpp"
 #include "include/display_presets.hpp"
 #include "include/task.hpp"
@@ -220,10 +221,10 @@ void Window::update_file_time_labels(const QString &file) {
     }
 
     auto value = this->pages_processed_per_archive.value(file, 0);
+    auto total = this->total_pages_per_archive.value(file, 0);
 
     // Overall ETA
     if (value > 0) {
-        auto total = this->archive_task_counts.value(file, 0);
         auto per_unit = static_cast<double>(elapsed) / value;
         auto remaining = static_cast<double>(total - value) * per_unit;
         auto eta_overall_str
@@ -243,7 +244,7 @@ void Window::update_file_time_labels(const QString &file) {
         auto speed
             = static_cast<double>(file_timer.images_since_last_eta_recent)
             / static_cast<double>(interval);
-        auto total_remaining = this->archive_task_counts.value(file, 0) - value;
+        auto total_remaining = total - value;
         auto remaining = static_cast<double>(total_remaining) / speed;
 
         file_timer.eta_recent_intervals.push_front(
@@ -695,6 +696,7 @@ void Window::on_start_button_clicked() {
     running_processes.clear();
     running_tasks.clear();
     archive_task_counts.clear();
+    this->total_pages_per_archive.clear();
     this->pages_processed_per_archive.clear();
     this->active_file_widgets.clear();
     this->active_progress_bars.clear();
@@ -754,6 +756,7 @@ void Window::on_start_button_clicked() {
                     = fs::temp_directory_path() / source_file.stem();
                 fs::create_directories(temp_archive_dir);
                 archive_task_counts[file_qstr] = page_count;
+                this->total_pages_per_archive[file_qstr] = page_count;
                 this->total_pages += page_count;
                 this->pages_processed_per_archive[file_qstr] = 0;
 
@@ -786,6 +789,7 @@ void Window::on_start_button_clicked() {
                 archive_read_free(archive);
 
                 archive_task_counts[file_qstr] = page_count;
+                this->total_pages_per_archive[file_qstr] = page_count;
                 this->total_pages += page_count;
                 this->pages_processed_per_archive[file_qstr] = 0;
                 if (page_count == 0) {
@@ -1051,6 +1055,7 @@ void Window::on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus) {
                 this->file_eta_overall_labels.remove(source_qstr);
                 this->file_eta_recent_labels.remove(source_qstr);
                 this->file_timers.remove(source_qstr);
+                this->total_pages_per_archive.remove(source_qstr);
 
                 if (this->active_file_widgets.isEmpty()) {
                     this->progress_bars_group->setVisible(false);

@@ -274,7 +274,7 @@ void Window::setup_ui() {
     container_layout->setContentsMargins(20, 20, 20, 20);
     auto content_widget = new QWidget();
     container_layout->setAlignment(Qt::AlignTop);
-    content_widget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
+    content_widget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 
     auto io_group = this->create_io_group();
     auto settings_group = this->create_settings_group();

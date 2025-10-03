@@ -364,6 +364,7 @@ QGroupBox *Window::create_settings_group() {
     this->add_image_format_widgets();
     this->add_parallel_workers_widget();
 
+    this->settings_layout->addStretch();
     return settings_group;
 }
 

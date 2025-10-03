@@ -376,6 +376,8 @@ void Window::create_log_group() {
     time_layout->addWidget(this->elapsed_label);
     time_layout->addWidget(this->eta_overall_label);
     time_layout->addWidget(this->eta_recent_label);
+    time_layout->addStretch();
+    time_layout->setSpacing(50);
 
     this->progress_bar = new QProgressBar();
     this->progress_bar->setVisible(false);
@@ -936,6 +938,8 @@ void Window::start_next_task() {
         time_layout->addWidget(elapsed_label);
         time_layout->addWidget(eta_overall_label);
         time_layout->addWidget(eta_recent_label);
+        time_layout->addStretch();
+        time_layout->setSpacing(50);
 
         vbox->addLayout(progress_layout);
         vbox->addLayout(time_layout);

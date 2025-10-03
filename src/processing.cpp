@@ -122,9 +122,24 @@ void process_vimage(vips::VImage img, PageTask task, Logger log) {
 
         img = img.colourspace(VIPS_INTERPRETATION_B_W);
 
-        auto image_should_rotate = should_image_rotate(
-            img.width(), img.height(), task.page_width, task.page_height
-        );
+        bool rotate_option;
+        switch (task.double_page_spread_action) {
+        case ROTATE:
+            rotate_option = true;
+            break;
+        case BOTH:
+            rotate_option = true;
+            break;
+        default:
+            rotate_option = false;
+            break;
+        }
+
+        auto image_should_rotate
+            = rotate_option
+           && should_image_rotate(
+                  img.width(), img.height(), task.page_width, task.page_height
+           );
         if (image_should_rotate) {
             img = remove_uniform_middle_columns(img);
             img = img.rotate(90.0);

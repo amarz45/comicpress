@@ -38,9 +38,9 @@ T parse_arg(const std::string &arg_str, const std::string &error_msg) {
 // as command-line arguments, performs the processing, and prints logs to
 // standard output for the main application to capture.
 int main(int argc, char *argv[]) {
-    // Expect program name + 18 pairs of (flag, value) = 37 arguments
-    if (argc != 37) {
-        std::cerr << "Worker error: Expected exactly 36 arguments (18 "
+    // Expect program name + 19 pairs of (flag, value) = 39 arguments
+    if (argc != 39) {
+        std::cerr << "Worker error: Expected exactly 38 arguments (19 "
                      "flag-value pairs) after program name."
                   << std::endl;
         return 1;
@@ -79,6 +79,12 @@ int main(int argc, char *argv[]) {
         task.pdf_pixel_density = parse_arg<int>(
             args.at("-pdf_pixel_density"), "Invalid PDF pixel density"
         );
+
+        task.double_page_spread_action
+            = (DoublePageSpreadActions)parse_arg<int>(
+                args.at("-double_page_spread_actions"),
+                "Invalid double page spread options"
+            );
 
         task.stretch_page_contrast = parse_arg<int>(
                                          args.at("-stretch_page_contrast"),

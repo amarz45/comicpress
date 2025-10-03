@@ -7,6 +7,7 @@
 namespace fs = std::filesystem;
 
 enum DoublePageSpreadActions { ROTATE, SPLIT, BOTH, NONE };
+enum RotationDirection { CLOCKWISE, COUNTERCLOCKWISE };
 
 struct PageTask {
     fs::path source_file;
@@ -16,6 +17,7 @@ struct PageTask {
     std::string path_in_archive;
     int pdf_pixel_density;
     DoublePageSpreadActions double_page_spread_action;
+    RotationDirection rotation_direction;
     bool remove_spine;
     bool stretch_page_contrast;
     bool scale_pages;

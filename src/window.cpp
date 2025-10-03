@@ -1095,8 +1095,9 @@ void Window::start_next_task() {
               << "-pdf_pixel_density" << QString::number(task.pdf_pixel_density)
               << "-double_page_spread_actions"
               << QString::number(task.double_page_spread_action)
-              << "-remove_spine" << QString::number(task.remove_spine)
-              << "-stretch_page_contrast"
+              << "-rotation_direction"
+              << QString::number(task.rotation_direction) << "-remove_spine"
+              << QString::number(task.remove_spine) << "-stretch_page_contrast"
               << (task.stretch_page_contrast ? "1" : "0") << "-scale_pages"
               << (task.scale_pages ? "1" : "0") << "-page_width"
               << QString::number(task.page_width) << "-page_height"
@@ -1234,6 +1235,12 @@ Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
     task.double_page_spread_action
         = (DoublePageSpreadActions)this->double_page_spread_combo_box
               ->currentIndex();
+    if (this->clockwise_radio->isChecked()) {
+        task.rotation_direction = CLOCKWISE;
+    }
+    else {
+        task.rotation_direction = COUNTERCLOCKWISE;
+    }
     task.remove_spine = this->remove_spine_check_box->isChecked();
     //  TODO: Replace placeholders.
     task.stretch_page_contrast = this->contrast_check_box->isChecked();

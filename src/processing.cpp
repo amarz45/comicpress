@@ -144,7 +144,14 @@ void process_vimage(vips::VImage img, PageTask task, Logger log) {
                 img = remove_uniform_middle_columns(img);
             }
             if (rotate_option) {
-                img = img.rotate(90.0);
+                double angle;
+                switch (task.rotation_direction) {
+                case CLOCKWISE:
+                    angle = 90.0;
+                case COUNTERCLOCKWISE:
+                    angle = -90.0;
+                }
+                img = img.rotate(angle);
             }
         }
 

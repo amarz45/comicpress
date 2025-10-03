@@ -16,6 +16,7 @@ struct PageTask {
     std::string path_in_archive;
     int pdf_pixel_density;
     DoublePageSpreadActions double_page_spread_action;
+    bool remove_spine;
     bool stretch_page_contrast;
     bool scale_pages;
     int page_width;

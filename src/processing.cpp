@@ -135,14 +135,17 @@ void process_vimage(vips::VImage img, PageTask task, Logger log) {
             break;
         }
 
-        auto image_should_rotate
-            = rotate_option
-           && should_image_rotate(
-                  img.width(), img.height(), task.page_width, task.page_height
-           );
+        auto image_should_rotate = should_image_rotate(
+            img.width(), img.height(), task.page_width, task.page_height
+        );
+
         if (image_should_rotate) {
-            img = remove_uniform_middle_columns(img);
-            img = img.rotate(90.0);
+            if (task.remove_spine) {
+                img = remove_uniform_middle_columns(img);
+            }
+            if (rotate_option) {
+                img = img.rotate(90.0);
+            }
         }
 
         if (task.stretch_page_contrast) {

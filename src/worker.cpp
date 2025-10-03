@@ -38,9 +38,9 @@ T parse_arg(const std::string &arg_str, const std::string &error_msg) {
 // as command-line arguments, performs the processing, and prints logs to
 // standard output for the main application to capture.
 int main(int argc, char *argv[]) {
-    // Expect program name + 19 pairs of (flag, value) = 39 arguments
-    if (argc != 39) {
-        std::cerr << "Worker error: Expected exactly 38 arguments (19 "
+    // Expect program name + 21 pairs of (flag, value) = 41 arguments
+    if (argc != 41) {
+        std::cerr << "Worker error: Expected exactly 40 arguments (21 "
                      "flag-value pairs) after program name."
                   << std::endl;
         return 1;
@@ -85,6 +85,10 @@ int main(int argc, char *argv[]) {
                 args.at("-double_page_spread_actions"),
                 "Invalid double page spread options"
             );
+
+        task.remove_spine
+            = parse_arg<int>(args.at("-remove_spine"), "Invalid remove spine")
+           != 0;
 
         task.stretch_page_contrast = parse_arg<int>(
                                          args.at("-stretch_page_contrast"),

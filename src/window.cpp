@@ -1095,6 +1095,7 @@ void Window::start_next_task() {
               << "-pdf_pixel_density" << QString::number(task.pdf_pixel_density)
               << "-double_page_spread_actions"
               << QString::number(task.double_page_spread_action)
+              << "-remove_spine" << QString::number(task.remove_spine)
               << "-stretch_page_contrast"
               << (task.stretch_page_contrast ? "1" : "0") << "-scale_pages"
               << (task.scale_pages ? "1" : "0") << "-page_width"
@@ -1233,6 +1234,7 @@ Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
     task.double_page_spread_action
         = (DoublePageSpreadActions)this->double_page_spread_combo_box
               ->currentIndex();
+    task.remove_spine = this->remove_spine_check_box->isChecked();
     //  TODO: Replace placeholders.
     task.stretch_page_contrast = this->contrast_check_box->isChecked();
     task.scale_pages = this->enable_image_scaling_check_box->isChecked();

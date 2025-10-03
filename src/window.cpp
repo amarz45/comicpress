@@ -271,6 +271,7 @@ void Window::update_file_time_labels(const QString &file) {
 
 void Window::setup_ui() {
     auto container_layout = new QHBoxLayout(this->central_widget);
+    container_layout->setContentsMargins(20, 20, 20, 20);
     auto content_widget = new QWidget();
     container_layout->setAlignment(Qt::AlignTop);
     content_widget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
@@ -279,12 +280,14 @@ void Window::setup_ui() {
     auto settings_group = this->create_settings_group();
 
     this->progress_bars_group = new QGroupBox("File progress");
+    this->progress_bars_group->setFlat(true);
     this->progress_bars_layout = new QVBoxLayout(this->progress_bars_group);
     this->progress_bars_group->setVisible(false);
 
     this->create_log_group();
 
     auto tabs = new QTabWidget();
+    tabs->setDocumentMode(true);
     tabs->addTab(io_group, "Input/output");
     tabs->addTab(settings_group, "Settings");
 
@@ -315,6 +318,7 @@ void Window::setup_ui() {
 
 QGroupBox *Window::create_io_group() {
     auto io_group = new QGroupBox();
+    io_group->setFlat(true);
     auto io_layout = new QVBoxLayout(io_group);
     auto file_buttons_layout = new QHBoxLayout();
 
@@ -355,6 +359,7 @@ QGroupBox *Window::create_io_group() {
 
 QGroupBox *Window::create_settings_group() {
     auto settings_group = new QGroupBox();
+    settings_group->setFlat(true);
     this->settings_layout = new QVBoxLayout(settings_group);
 
     this->add_pdf_pixel_density_widget();
@@ -372,6 +377,7 @@ QGroupBox *Window::create_settings_group() {
 void Window::create_log_group() {
     log_group = new QGroupBox("Total progress");
     log_group->setVisible(false);
+    log_group->setFlat(true);
     auto log_layout = new QVBoxLayout(log_group);
 
     auto time_layout = new QHBoxLayout();

@@ -363,6 +363,8 @@ QGroupBox *Window::create_settings_group() {
     this->settings_layout = new QVBoxLayout(settings_group);
 
     this->add_pdf_pixel_density_widget();
+    this->add_double_page_spread_widget();
+    this->add_remove_spine_widget();
     this->add_contrast_widget();
     this->add_display_presets_widget();
     this->add_scaling_widgets();
@@ -414,6 +416,36 @@ void Window::add_pdf_pixel_density_widget() {
     auto layout = new QHBoxLayout();
     layout->addWidget(pdf_pixel_density_widget);
     layout->addWidget(this->pdf_pixel_density_spin_box);
+    layout->addStretch();
+
+    this->settings_layout->addLayout(layout);
+}
+
+void Window::add_double_page_spread_widget() {
+    auto widget = this->create_widget_with_info(
+        new QLabel("Double-page spread actions"), DOUBLE_PAGE_SPREAD_TOOLTIP
+    );
+    this->double_page_spread_combo_box = create_combo_box(
+        {"Rotate page", "Split into two pages", "Both", "None"}, "Rotate page"
+    );
+
+    auto layout = new QHBoxLayout();
+    layout->addWidget(widget);
+    layout->addWidget(this->double_page_spread_combo_box);
+    layout->addStretch();
+
+    this->settings_layout->addLayout(layout);
+}
+
+void Window::add_remove_spine_widget() {
+    this->remove_spine_check_box = new QCheckBox("Remove spines");
+    this->remove_spine_check_box->setChecked(true);
+    auto remove_spine_widget = this->create_widget_with_info(
+        this->remove_spine_check_box, REMOVE_SPINE_TOOLTIP
+    );
+
+    auto layout = new QHBoxLayout();
+    layout->addWidget(remove_spine_widget);
     layout->addStretch();
 
     this->settings_layout->addLayout(layout);

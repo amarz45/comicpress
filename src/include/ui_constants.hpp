@@ -8,6 +8,14 @@ static const char *PDF_TOOLTIP = R"(
     600 PPI.
 )";
 
+static const char *DOUBLE_PAGE_SPREAD_TOOLTIP = R"(
+    Lorem ipsum
+)";
+
+static const char *REMOVE_SPINE_TOOLTIP = R"(
+    Lorem ipsum
+)";
+
 static const char *CONTRAST_TOOLTIP = R"(
     Automatically adjusts the page’s black and white points to maximize
     contrast. This is highly recommended when reading on an ereader, as it makes

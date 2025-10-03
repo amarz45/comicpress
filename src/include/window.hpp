@@ -115,6 +115,8 @@ class Window : public QMainWindow {
     // Settings
     QVBoxLayout *settings_layout;
     QSpinBox *pdf_pixel_density_spin_box;
+    QComboBox *double_page_spread_combo_box;
+    QCheckBox *remove_spine_check_box;
     QCheckBox *contrast_check_box;
     QPushButton *display_preset_button;
     QCheckBox *enable_image_scaling_check_box;
@@ -170,6 +172,8 @@ class Window : public QMainWindow {
 
     // Settings group
     void add_pdf_pixel_density_widget();
+    void add_double_page_spread_widget();
+    void add_remove_spine_widget();
     void add_contrast_widget();
     void add_display_presets_widget();
     void add_scaling_widgets();

@@ -914,7 +914,7 @@ void Window::start_next_task() {
         vbox->setContentsMargins(5, 2, 5, 2);
 
         auto progress_layout = new QHBoxLayout();
-        auto filename = QFileInfo(source_qstr).fileName();
+        auto filename = QFileInfo(source_qstr).completeBaseName() + ".cbz";
         auto label = new QLabel("<code>" + filename + "</code>");
         auto progressBar = new QProgressBar();
         progressBar->setMaximum(this->archive_task_counts.value(source_qstr));

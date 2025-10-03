@@ -317,10 +317,11 @@ QGroupBox *Window::create_io_group() {
     auto file_buttons_layout = new QHBoxLayout();
 
     this->file_list = new QListWidget();
-    this->file_list->setVisible(false);
-    this->file_list->setMaximumHeight(300);
+    this->file_list->setFont(QFont("monospace"));
+    // this->file_list->setVisible(false);
+    this->file_list->setFixedHeight(300);
 
-    this->add_files_button = new QPushButton("Add files");
+    this->add_files_button = new QPushButton("Add input files");
     this->remove_selected_button = new QPushButton("Remove selected");
     this->clear_all_button = new QPushButton("Clear all");
 
@@ -913,7 +914,8 @@ void Window::start_next_task() {
         vbox->setContentsMargins(5, 2, 5, 2);
 
         auto progress_layout = new QHBoxLayout();
-        auto label = new QLabel(QFileInfo(source_qstr).fileName());
+        auto filename = QFileInfo(source_qstr).fileName();
+        auto label = new QLabel("<code>" + filename + "</code>");
         auto progressBar = new QProgressBar();
         progressBar->setMaximum(this->archive_task_counts.value(source_qstr));
         progressBar->setValue(0);

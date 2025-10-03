@@ -1,4 +1,3 @@
-// window.cpp
 #include "include/window.hpp"
 #include "include/display_presets.hpp"
 #include "include/task.hpp"

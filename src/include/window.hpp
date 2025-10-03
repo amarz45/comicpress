@@ -13,6 +13,7 @@
 #include <QPushButton>
 #include <QQueue>
 #include <QSpinBox>
+#include <QTabWidget>
 #include <QTextEdit>
 #include <QTimer>
 #include <QVBoxLayout>

@@ -22,6 +22,7 @@
 #include <QPushButton>
 #include <QScroller>
 #include <QSpinBox>
+#include <QTabWidget>
 #include <QTextEdit>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -274,7 +275,16 @@ void Window::setup_ui() {
 
     auto io_group = this->create_io_group();
     auto settings_group = this->create_settings_group();
+
+    this->progress_bars_group = new QGroupBox("File progress");
+    this->progress_bars_layout = new QVBoxLayout(this->progress_bars_group);
+    this->progress_bars_group->setVisible(false);
+
     this->create_log_group();
+
+    auto tabs = new QTabWidget();
+    tabs->addTab(io_group, "Input/output");
+    tabs->addTab(settings_group, "Settings");
 
     auto action_group = new QWidget();
     auto action_layout = new QHBoxLayout(action_group);
@@ -288,8 +298,8 @@ void Window::setup_ui() {
     this->main_layout = new QVBoxLayout(content_widget);
     this->main_layout->setContentsMargins(0, 0, 0, 0);
 
-    this->main_layout->addWidget(io_group);
-    this->main_layout->addWidget(settings_group);
+    this->main_layout->addWidget(tabs);
+    this->main_layout->addWidget(this->progress_bars_group);
     this->main_layout->addWidget(log_group);
     this->main_layout->addItem(
         new QSpacerItem(1000, 0, QSizePolicy::Preferred, QSizePolicy::Fixed)
@@ -308,7 +318,7 @@ QGroupBox *Window::create_io_group() {
 
     this->file_list = new QListWidget();
     this->file_list->setVisible(false);
-    this->file_list->setMaximumHeight(200);
+    this->file_list->setMaximumHeight(300);
 
     this->add_files_button = new QPushButton("Add files");
     this->remove_selected_button = new QPushButton("Remove selected");
@@ -322,14 +332,7 @@ QGroupBox *Window::create_io_group() {
     file_buttons_layout->addWidget(this->clear_all_button);
     file_buttons_layout->addStretch();
 
-    io_layout->addWidget(new QLabel("Input files"));
     io_layout->addWidget(file_list);
-
-    this->progress_bars_group = new QGroupBox("File progress");
-    this->progress_bars_layout = new QVBoxLayout(this->progress_bars_group);
-    this->progress_bars_group->setVisible(false);
-    io_layout->addWidget(this->progress_bars_group);
-
     io_layout->addLayout(file_buttons_layout);
 
     auto output_layout = new QHBoxLayout();
@@ -340,12 +343,13 @@ QGroupBox *Window::create_io_group() {
     output_layout->addWidget(this->browse_output_button);
 
     io_layout->addLayout(output_layout);
+    io_layout->addStretch();
 
     return io_group;
 }
 
 QGroupBox *Window::create_settings_group() {
-    auto settings_group = new QGroupBox("Processing parameters");
+    auto settings_group = new QGroupBox();
     this->settings_layout = new QVBoxLayout(settings_group);
 
     this->add_pdf_pixel_density_widget();
@@ -360,7 +364,7 @@ QGroupBox *Window::create_settings_group() {
 }
 
 void Window::create_log_group() {
-    log_group = new QGroupBox();
+    log_group = new QGroupBox("Total progress");
     log_group->setVisible(false);
     auto log_layout = new QVBoxLayout(log_group);
 
@@ -375,7 +379,7 @@ void Window::create_log_group() {
     this->progress_bar = new QProgressBar();
     this->progress_bar->setVisible(false);
     this->progress_bar->setTextVisible(true);
-    this->progress_bar->setFormat("%p % (%v / %m pages)");
+    this->progress_bar->setFormat("%p % (%v / %m pages)");
 
     this->log_output = new QTextEdit();
     this->log_output->setVisible(false);
@@ -915,7 +919,7 @@ void Window::start_next_task() {
         progressBar->setMaximum(this->archive_task_counts.value(source_qstr));
         progressBar->setValue(0);
         progressBar->setTextVisible(true);
-        progressBar->setFormat("%p % (%v / %m pages)");
+        progressBar->setFormat("%p % (%v / %m pages)");
 
         progress_layout->addWidget(label);
         progress_layout->addWidget(progressBar);

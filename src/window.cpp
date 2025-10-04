@@ -284,7 +284,7 @@ void Window::setup_ui() {
     );
 
     auto io_group = this->create_io_group();
-    auto settings_group = this->create_settings_group();
+    this->settings_group = this->create_settings_group();
 
     this->progress_bars_group = new QGroupBox("File progress");
     this->progress_bars_group->setFlat(true);
@@ -303,7 +303,7 @@ void Window::setup_ui() {
     tabs->addTab(io_scroll, "Input/output");
 
     auto settings_scroll = new QScrollArea();
-    settings_scroll->setWidget(settings_group);
+    settings_scroll->setWidget(this->settings_group);
     settings_scroll->setWidgetResizable(true);
     settings_scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     settings_scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
@@ -805,6 +805,7 @@ void Window::on_start_button_clicked() {
         return;
     }
 
+    this->settings_group->setEnabled(false);
     start_button->setEnabled(false);
     cancel_button->setEnabled(true);
     log_output->clear();
@@ -953,6 +954,7 @@ void Window::on_start_button_clicked() {
     if (task_queue.isEmpty()) {
         log_output->setVisible(true);
         log_output->append("No pages found to process.");
+        this->settings_group->setEnabled(true);
         start_button->setEnabled(true);
         cancel_button->setEnabled(false);
         this->progress_bar->setVisible(false);
@@ -1012,6 +1014,7 @@ void Window::on_cancel_button_clicked() {
     this->progress_bar->setValue(0);
 
     timer->stop();
+    this->settings_group->setEnabled(true);
     start_button->setEnabled(true);
     cancel_button->setEnabled(false);
 }
@@ -1201,6 +1204,7 @@ void Window::on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus) {
     else {
         if (pages_processed == total_pages) {
             timer->stop();
+            this->settings_group->setEnabled(true);
             start_button->setEnabled(true);
             cancel_button->setEnabled(false);
         }

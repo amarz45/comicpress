@@ -115,6 +115,7 @@ class Window : public QMainWindow {
     QVBoxLayout *progress_bars_layout;
 
     // Settings
+    QGroupBox *settings_group;
     QVBoxLayout *settings_layout;
     QSpinBox *pdf_pixel_density_spin_box;
     QComboBox *double_page_spread_combo_box;

@@ -291,7 +291,6 @@ void Window::setup_ui() {
     this->create_log_group();
 
     auto tabs = new QTabWidget();
-    tabs->setDocumentMode(true);
     tabs->addTab(io_group, "Input/output");
     tabs->addTab(settings_group, "Settings");
 

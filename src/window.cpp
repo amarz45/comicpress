@@ -21,6 +21,7 @@
 #include <QProgressBar>
 #include <QPushButton>
 #include <QRadioButton>
+#include <QScrollArea>
 #include <QScroller>
 #include <QSpinBox>
 #include <QStandardPaths>
@@ -293,8 +294,20 @@ void Window::setup_ui() {
     this->create_log_group();
 
     auto tabs = new QTabWidget();
-    tabs->addTab(io_group, "Input/output");
-    tabs->addTab(settings_group, "Settings");
+
+    auto io_scroll = new QScrollArea();
+    io_scroll->setWidget(io_group);
+    io_scroll->setWidgetResizable(true);
+    io_scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    io_scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    tabs->addTab(io_scroll, "Input/output");
+
+    auto settings_scroll = new QScrollArea();
+    settings_scroll->setWidget(settings_group);
+    settings_scroll->setWidgetResizable(true);
+    settings_scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    settings_scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    tabs->addTab(settings_scroll, "Settings");
 
     auto action_group = new QWidget();
     auto action_layout = new QHBoxLayout(action_group);

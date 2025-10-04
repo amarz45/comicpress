@@ -357,6 +357,7 @@ QGroupBox *Window::create_io_group() {
     output_layout->addWidget(this->output_dir_field);
 
     io_layout->addLayout(output_layout);
+    io_layout->addStretch();
 
     return io_group;
 }

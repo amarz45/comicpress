@@ -463,7 +463,7 @@ void Window::add_double_page_spread_widget() {
 
     auto radio_group_layout = new QHBoxLayout();
     this->clockwise_radio = new QRadioButton("Clockwise");
-    this->counter_clockwise_radio = new QRadioButton("Counter-clockwise");
+    this->counter_clockwise_radio = new QRadioButton("Counterclockwise");
     this->clockwise_radio->setChecked(true);
     radio_group_layout->addWidget(this->clockwise_radio);
     radio_group_layout->addWidget(this->counter_clockwise_radio);

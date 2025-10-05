@@ -159,8 +159,10 @@ void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
                 switch (task.rotation_direction) {
                 case CLOCKWISE:
                     angle = 90.0;
+                    break;
                 case COUNTERCLOCKWISE:
                     angle = -90.0;
+                    break;
                 }
                 img = img.rotate(angle);
             }

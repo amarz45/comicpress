@@ -641,13 +641,31 @@ void Window::add_image_format_widgets() {
         new QLabel("Image format"), IMG_FORMAT_TOOLTIP
     );
 
-    this->image_format_options_container = new QWidget();
+    auto image_format_options_container = new QWidget();
     auto image_format_layout
-        = create_container_layout(this->image_format_options_container);
+        = create_container_layout(image_format_options_container);
 
-    this->image_compression_spin_box = create_spin_box_with_label(
-        image_format_layout, new QLabel("Compression effort"), 0, 9, 1, 6
+    this->image_compression_type_label = new QLabel("Compression type");
+    this->image_compression_type_combo_box = create_combo_box_with_layout(
+        image_format_layout,
+        this->image_compression_type_label,
+        {"Lossless", "Lossy"},
+        "Lossless"
     );
+    this->image_compression_type_label->setVisible(false);
+    this->image_compression_type_combo_box->setVisible(false);
+
+    this->image_compression_label = new QLabel("Compression effort");
+    this->image_compression_spin_box = create_spin_box_with_label(
+        image_format_layout, this->image_compression_label, 0, 9, 1, 6
+    );
+
+    this->image_quality_label = new QLabel("Quality");
+    this->image_quality_spin_box = create_spin_box_with_label(
+        image_format_layout, this->image_quality_label, 0, 100, 1, 50
+    );
+    this->image_quality_label->setVisible(false);
+    this->image_quality_spin_box->setVisible(false);
 
     image_format_layout->addStretch();
 
@@ -657,7 +675,7 @@ void Window::add_image_format_widgets() {
     layout->addStretch();
 
     this->settings_layout->addLayout(layout);
-    this->settings_layout->addWidget(this->image_format_options_container);
+    this->settings_layout->addWidget(image_format_options_container);
 }
 
 void Window::add_parallel_workers_widget() {
@@ -766,37 +784,52 @@ void Window::on_enable_image_quantization_changed(int state) {
 
 void Window::on_image_format_changed() {
     auto img_format = this->image_format_combo_box->currentText();
+
+    auto compression_min = 0;
+    auto compression_max = 9;
+    auto compression_effort = 0;
+    auto quality = 0;
+    auto compression_type_visible = false;
+    auto compression_effort_visible = true;
+
     if (img_format == "AVIF") {
-        this->image_compression_spin_box->setRange(0, 9);
-        this->image_compression_spin_box->setValue(
-            this->avif_compression_effort
-        );
-        this->image_format_options_container->setVisible(true);
+        compression_effort = this->avif_compression_effort;
+        quality = this->avif_quality;
+        compression_type_visible = true;
     }
     else if (img_format == "JPEG") {
-        this->image_format_options_container->setVisible(false);
+        quality = this->jpeg_quality;
+        compression_effort_visible = false;
     }
     else if (img_format == "JPEG XL") {
-        this->image_compression_spin_box->setRange(1, 9);
-        this->image_compression_spin_box->setValue(
-            this->jpeg_xl_compression_effort
-        );
-        this->image_format_options_container->setVisible(true);
+        compression_min = 1;
+        compression_effort = this->jpeg_xl_compression_effort;
+        quality = this->jpeg_xl_quality;
+        compression_type_visible = true;
     }
     else if (img_format == "PNG") {
-        this->image_compression_spin_box->setRange(0, 9);
-        this->image_compression_spin_box->setValue(
-            this->png_compression_effort
-        );
-        this->image_format_options_container->setVisible(true);
+        compression_effort = this->png_compression_effort;
     }
     else if (img_format == "WebP") {
-        this->image_compression_spin_box->setRange(0, 6);
-        this->image_compression_spin_box->setValue(
-            this->webp_compression_effort
-        );
-        this->image_format_options_container->setVisible(true);
+        compression_max = 6;
+        compression_effort = this->webp_compression_effort;
+        quality = this->webp_quality;
+        compression_type_visible = true;
     }
+
+    this->image_compression_spin_box->setRange(
+        compression_min, compression_max
+    );
+    this->image_compression_spin_box->setValue(compression_effort);
+    this->image_quality_spin_box->setValue(quality);
+    this->image_compression_type_label->setVisible(compression_type_visible);
+    this->image_compression_type_combo_box->setVisible(
+        compression_type_visible
+    );
+    this->image_compression_label->setVisible(compression_effort_visible);
+    this->image_compression_spin_box->setVisible(compression_effort_visible);
+
+    this->on_image_compression_type_changed();
 }
 
 void Window::on_image_compression_changed(int state) {
@@ -812,6 +845,33 @@ void Window::on_image_compression_changed(int state) {
     }
     else if (img_format == "WebP") {
         this->webp_compression_effort = state;
+    }
+}
+
+void Window::on_image_compression_type_changed() {
+    auto img_format = this->image_format_combo_box->currentText();
+    auto compression_type
+        = this->image_compression_type_combo_box->currentText();
+    auto image_quality_visible
+        = img_format != "PNG"
+       && (img_format == "JPEG" || compression_type == "Lossy");
+    this->image_quality_label->setVisible(image_quality_visible);
+    this->image_quality_spin_box->setVisible(image_quality_visible);
+}
+
+void Window::on_image_quality_changed(int state) {
+    auto img_format = this->image_format_combo_box->currentText();
+    if (img_format == "AVIF") {
+        this->avif_quality = state;
+    }
+    else if (img_format == "JPEG") {
+        this->jpeg_quality = state;
+    }
+    else if (img_format == "JPEG XL") {
+        this->jpeg_xl_quality = state;
+    }
+    else if (img_format == "WebP") {
+        this->webp_quality = state;
     }
 }
 
@@ -1415,6 +1475,18 @@ void Window::connect_signals() {
         &QSpinBox::valueChanged,
         this,
         &Window::on_image_compression_changed
+    );
+    connect(
+        this->image_compression_type_combo_box,
+        &QComboBox::currentTextChanged,
+        this,
+        &Window::on_image_compression_type_changed
+    );
+    connect(
+        this->image_quality_spin_box,
+        &QSpinBox::valueChanged,
+        this,
+        &Window::on_image_quality_changed
     );
     connect(
         this->start_button,

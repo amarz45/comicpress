@@ -92,6 +92,8 @@ class Window : public QMainWindow {
     void on_enable_image_quantization_changed(int state);
     void on_image_format_changed();
     void on_image_compression_changed(int state);
+    void on_image_compression_type_changed();
+    void on_image_quality_changed(int state);
 
   private:
     QWidget *central_widget;
@@ -133,8 +135,12 @@ class Window : public QMainWindow {
     QComboBox *bit_depth_combo_box;
     QDoubleSpinBox *dithering_spin_box;
     QComboBox *image_format_combo_box;
-    QWidget *image_format_options_container;
+    QLabel *image_compression_label;
     QSpinBox *image_compression_spin_box;
+    QComboBox *image_compression_type_combo_box;
+    QLabel *image_compression_type_label;
+    QSpinBox *image_quality_spin_box;
+    QLabel *image_quality_label;
     QSpinBox *workers_spin_box;
     QWidget *rotation_options_container;
     QRadioButton *clockwise_radio;
@@ -203,9 +209,13 @@ class Window : public QMainWindow {
     int pages_processed;
 
     int avif_compression_effort = 4;
+    int avif_quality = 50;
+    int jpeg_quality = 80;
     int jpeg_xl_compression_effort = 7;
+    int jpeg_xl_quality = 75;
     int png_compression_effort = 6;
     int webp_compression_effort = 4;
+    int webp_quality = 80;
 };
 
 std::string time_to_str(int64_t milliseconds);

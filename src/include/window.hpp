@@ -91,6 +91,7 @@ class Window : public QMainWindow {
     void on_enable_image_scaling_changed(int state);
     void on_enable_image_quantization_changed(int state);
     void on_image_format_changed();
+    void on_image_compression_changed(int state);
 
   private:
     QWidget *central_widget;
@@ -200,6 +201,11 @@ class Window : public QMainWindow {
 
     int total_pages;
     int pages_processed;
+
+    int avif_compression_effort = 4;
+    int jpeg_xl_compression_effort = 7;
+    int png_compression_effort = 6;
+    int webp_compression_effort = 4;
 };
 
 std::string time_to_str(int64_t milliseconds);

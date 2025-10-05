@@ -768,7 +768,9 @@ void Window::on_image_format_changed() {
     auto img_format = this->image_format_combo_box->currentText();
     if (img_format == "AVIF") {
         this->image_compression_spin_box->setRange(0, 9);
-        this->image_compression_spin_box->setValue(4);
+        this->image_compression_spin_box->setValue(
+            this->avif_compression_effort
+        );
         this->image_format_options_container->setVisible(true);
     }
     else if (img_format == "JPEG") {
@@ -776,18 +778,40 @@ void Window::on_image_format_changed() {
     }
     else if (img_format == "JPEG XL") {
         this->image_compression_spin_box->setRange(1, 9);
-        this->image_compression_spin_box->setValue(7);
+        this->image_compression_spin_box->setValue(
+            this->jpeg_xl_compression_effort
+        );
         this->image_format_options_container->setVisible(true);
     }
     else if (img_format == "PNG") {
         this->image_compression_spin_box->setRange(0, 9);
-        this->image_compression_spin_box->setValue(6);
+        this->image_compression_spin_box->setValue(
+            this->png_compression_effort
+        );
         this->image_format_options_container->setVisible(true);
     }
     else if (img_format == "WebP") {
         this->image_compression_spin_box->setRange(0, 6);
-        this->image_compression_spin_box->setValue(4);
+        this->image_compression_spin_box->setValue(
+            this->webp_compression_effort
+        );
         this->image_format_options_container->setVisible(true);
+    }
+}
+
+void Window::on_image_compression_changed(int state) {
+    auto img_format = this->image_format_combo_box->currentText();
+    if (img_format == "AVIF") {
+        this->avif_compression_effort = state;
+    }
+    else if (img_format == "JPEG XL") {
+        this->jpeg_xl_compression_effort = state;
+    }
+    else if (img_format == "PNG") {
+        this->png_compression_effort = state;
+    }
+    else if (img_format == "WebP") {
+        this->webp_compression_effort = state;
     }
 }
 
@@ -1385,6 +1409,12 @@ void Window::connect_signals() {
         &QComboBox::currentTextChanged,
         this,
         &Window::on_image_format_changed
+    );
+    connect(
+        this->image_compression_spin_box,
+        &QSpinBox::valueChanged,
+        this,
+        &Window::on_image_compression_changed
     );
     connect(
         this->start_button,

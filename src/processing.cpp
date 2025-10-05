@@ -71,7 +71,7 @@ LoadPageReturn load_pdf_page(const PageTask &task) {
     FPDF_ClosePage(page);
     FPDF_CloseDocument(doc);
 
-    return LoadPageReturn {
+    return LoadPageReturn{
         .image = img,
         .is_originally_greyscale = is_originally_greyscale,
     };
@@ -120,17 +120,16 @@ LoadPageReturn load_archive_image(const PageTask &task) {
     auto is_originally_greyscale = is_greyscale(img, 10.0);
     img = img.colourspace(VIPS_INTERPRETATION_B_W);
 
-    return LoadPageReturn {
-        .image = img,
-        .is_originally_greyscale = is_originally_greyscale
+    return LoadPageReturn{
+        .image = img, .is_originally_greyscale = is_originally_greyscale
     };
 }
 
 void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
     try {
-        auto png_path = task.output_dir / (task.output_base_name + ".png");
-        auto output_path = task.output_dir / (task.output_base_name + ".webp");
-        fs::create_directories(output_path.parent_path());
+        auto base_path = task.output_dir / task.output_base_name;
+        auto png_path = std::string(base_path) + ".png";
+        fs::create_directories(base_path.parent_path());
 
         bool rotate_option;
         switch (task.double_page_spread_action) {
@@ -188,33 +187,66 @@ void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
             );
         }
 
-        if (task.quantize_pages) {
+        auto png_palette_options = vips::VImage::option()
+                                       ->set("palette", true)
+                                       ->set("bitdepth", task.bit_depth)
+                                       ->set("dither", task.dither)
+                                       ->set("effort", 10);
+
+        if (task.image_format == "PNG") {
+            auto base_options = task.quantize_pages ? png_palette_options
+                                                    : vips::VImage::option();
             img.pngsave(
                 png_path.c_str(),
-                vips::VImage::option()
-                    ->set("compression", 0)
-                    ->set("palette", true)
-                    ->set("bitdepth", task.bit_depth)
-                    ->set("dither", task.dither)
-                    ->set("effort", 10)
+                base_options->set("compression", task.compression_effort)
             );
+            return;
         }
-        else {
+
+        if (task.quantize_pages) {
             img.pngsave(
-                png_path.c_str(), vips::VImage::option()->set("compression", 0)
+                png_path.c_str(), png_palette_options->set("compression", 0)
+            );
+            img = vips::VImage::new_from_file(png_path.c_str());
+        }
+
+        if (task.image_format == "AVIF") {
+            auto output_path = std::string(base_path) + ".avif";
+            auto compression = VIPS_FOREIGN_HEIF_COMPRESSION_AV1;
+            auto subsample_mode = VIPS_FOREIGN_SUBSAMPLE_ON;
+            img.heifsave(
+                output_path.c_str(),
+                vips::VImage::option()
+                    ->set("compression", compression)
+                    ->set("subsample_mode", subsample_mode)
+            );
+        }
+        else if (task.image_format == "JPEG") {
+            auto output_path = std::string(base_path) + ".jpg";
+            img.jpegsave(output_path.c_str());
+        }
+        else if (task.image_format == "JPEG XL") {
+            auto output_path = std::string(base_path) + ".jxl";
+            img.jxlsave(
+                output_path.c_str(),
+                vips::VImage::option()
+                    ->set("distance", task.quantize_pages ? 0.0 : 1.0)
+                    ->set("effort", task.compression_effort)
+            );
+        }
+        else if (task.image_format == "WebP") {
+            auto output_path = std::string(base_path) + ".webp";
+            img.webpsave(
+                output_path.c_str(),
+                vips::VImage::option()
+                    ->set("lossless", task.quantize_pages)
+                    ->set("effort", task.compression_effort)
             );
         }
 
-        vips::VImage final_img = vips::VImage::new_from_file(png_path.c_str());
-
-        final_img.webpsave(
-            output_path.c_str(),
-            vips::VImage::option()
-                ->set("lossless", !task.is_lossy)
-                ->set("effort", task.compression_effort)
-        );
-
-        fs::remove(png_path);
+        if (task.quantize_pages) {
+            fs::remove(png_path);
+        }
     }
     catch (const vips::VError &e) {
         log("  -> VIPS Error processing in-memory image "

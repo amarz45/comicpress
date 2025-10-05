@@ -842,6 +842,7 @@ void Window::on_image_format_changed() {
     );
     this->image_compression_spin_box->setValue(compression_effort);
     this->image_quality_label = quality_label;
+    this->image_quality_label_original->setVisible(!jxl_quality_label_visible);
     this->image_quality_label_jpeg_xl->setVisible(jxl_quality_label_visible);
 
     if (quality_type == "Quality") {

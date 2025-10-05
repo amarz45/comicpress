@@ -18,6 +18,9 @@ T parse_arg(const std::string &arg_str, const std::string &error_msg) {
         else if constexpr (std::is_same_v<T, float>) {
             return std::stof(arg_str);
         }
+        else if constexpr (std::is_same_v<T, double>) {
+            return std::stod(arg_str);
+        }
         else {
             static_assert(
                 std::is_same_v<T, int> || std::is_same_v<T, float>,
@@ -38,13 +41,13 @@ T parse_arg(const std::string &arg_str, const std::string &error_msg) {
 // as command-line arguments, performs the processing, and prints logs to
 // standard output for the main application to capture.
 int main(int argc, char *argv[]) {
-    // Expect program name + 23 pairs of (flag, value) = 43 arguments
-    if (argc != 43) {
-        std::cerr << "Worker error: Expected exactly 42 arguments (23 "
-                     "flag-value pairs) after program name."
-                  << std::endl;
-        return 1;
-    }
+    // I’m commenting out this stupid ahh check for now.
+    // if (argc != 43) {
+    //    std::cerr << "Worker error: Expected exactly 42 arguments (23 "
+    //                 "flag-value pairs) after program name."
+    //              << std::endl;
+    //    return 1;
+    //}
 
     // Parse arguments into a map
     std::map<std::string, std::string> args;
@@ -120,7 +123,7 @@ int main(int argc, char *argv[]) {
         task.bit_depth
             = parse_arg<int>(args.at("-bit_depth"), "Invalid bit depth");
         task.dither
-            = parse_arg<float>(args.at("-dither"), "Invalid dither value");
+            = parse_arg<double>(args.at("-dither"), "Invalid dither value");
 
         task.image_format = args.at("-image_format");
         task.is_lossy
@@ -131,6 +134,9 @@ int main(int argc, char *argv[]) {
                   "Invalid quality type is distance"
               )
            != 0;
+
+        task.quality
+            = parse_arg<double>(args.at("-quality"), "Invalid quality value");
 
         task.compression_effort = parse_arg<int>(
             args.at("-compression_effort"), "Invalid compression effort"

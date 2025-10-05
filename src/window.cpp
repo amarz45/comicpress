@@ -1274,8 +1274,8 @@ void Window::start_next_task() {
               << QString::number(task.dither) << "-image_format"
               << QString::fromStdString(task.image_format) << "-is_lossy"
               << (task.is_lossy ? "1" : "0") << "-quality_type_is_distance"
-              << (task.quality_type_is_distance ? "1" : "0")
-              << "-compression_effort"
+              << (task.quality_type_is_distance ? "1" : "0") << "-quality"
+              << QString::number(task.quality) << "-compression_effort"
               << QString::number(task.compression_effort);
 
     process->start(program, arguments);
@@ -1444,8 +1444,11 @@ Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
     task.bit_depth = 4;
     task.dither = 1.0;
     task.image_format = image_format_combo_box->currentText().toStdString();
-    task.is_lossy = false;
-    task.quality_type_is_distance = true;
+    task.is_lossy
+        = this->image_compression_type_combo_box->currentText() == "Lossy";
+    task.quality_type_is_distance
+        = this->image_quality_label_jpeg_xl->currentText() == "Distance";
+    task.quality = this->image_quality_spin_box->value();
     task.compression_effort = this->image_compression_spin_box->value();
     return task;
 }

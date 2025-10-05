@@ -26,9 +26,10 @@ struct PageTask {
     VipsKernel page_resampler;
     bool quantize_pages;
     int bit_depth;
-    float dither;
+    double dither;
     std::string image_format;
     bool is_lossy;
     bool quality_type_is_distance;
+    double quality;
     int compression_effort;
 };

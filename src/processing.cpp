@@ -212,38 +212,47 @@ void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
             img = vips::VImage::new_from_file(png_path.c_str());
         }
 
+        auto options = vips::VImage::option();
         if (task.image_format == "AVIF") {
             auto output_path = std::string(base_path) + ".avif";
-            auto compression = VIPS_FOREIGN_HEIF_COMPRESSION_AV1;
-            auto subsample_mode = VIPS_FOREIGN_SUBSAMPLE_ON;
-            img.heifsave(
-                output_path.c_str(),
-                vips::VImage::option()
-                    ->set("compression", compression)
-                    ->set("subsample_mode", subsample_mode)
-            );
+            options
+                = options->set("compression", VIPS_FOREIGN_HEIF_COMPRESSION_AV1)
+                      ->set("effort", task.compression_effort)
+                      ->set("subsample_mode", VIPS_FOREIGN_SUBSAMPLE_ON);
+            if (task.is_lossy) {
+                options = options->set("Q", task.quality);
+            }
+            else {
+                options = options->set("lossless", true);
+            }
+            img.heifsave(output_path.c_str(), options);
         }
         else if (task.image_format == "JPEG") {
             auto output_path = std::string(base_path) + ".jpg";
-            img.jpegsave(output_path.c_str());
+            img.jpegsave(output_path.c_str(), options->set("Q", task.quality));
         }
         else if (task.image_format == "JPEG XL") {
             auto output_path = std::string(base_path) + ".jxl";
-            img.jxlsave(
-                output_path.c_str(),
-                vips::VImage::option()
-                    ->set("distance", task.quantize_pages ? 0.0 : 1.0)
-                    ->set("effort", task.compression_effort)
-            );
+            if (!task.is_lossy) {
+                options = options->set("distance", 0.0);
+            }
+            else if (task.quality_type_is_distance) {
+                options = options->set("distance", task.quality);
+            }
+            else {
+                options = options->set("Q", task.quality);
+            }
+            img.jxlsave(output_path.c_str(), options);
         }
         else if (task.image_format == "WebP") {
             auto output_path = std::string(base_path) + ".webp";
-            img.webpsave(
-                output_path.c_str(),
-                vips::VImage::option()
-                    ->set("lossless", task.quantize_pages)
-                    ->set("effort", task.compression_effort)
-            );
+            if (task.is_lossy) {
+                options = options->set("Q", task.quality);
+            }
+            else {
+                options = options->set("lossless", true);
+            }
+            img.webpsave(output_path.c_str(), options);
         }
 
         if (task.quantize_pages) {

@@ -756,12 +756,12 @@ void Window::on_display_preset_changed(bool first_time) {
 
 void Window::on_enable_image_scaling_changed(int state) {
     bool is_checked = state == Qt::Checked;
-    this->scaling_options_container->setVisible(is_checked);
+    this->scaling_options_container->setEnabled(is_checked);
 }
 
 void Window::on_enable_image_quantization_changed(int state) {
     bool is_checked = state == Qt::Checked;
-    this->quantization_options_container->setVisible(is_checked);
+    this->quantization_options_container->setEnabled(is_checked);
 }
 
 void Window::on_image_format_changed() {

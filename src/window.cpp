@@ -307,7 +307,7 @@ void Window::setup_ui() {
     settings_scroll->setWidgetResizable(true);
     settings_scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     settings_scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    tabs->addTab(settings_scroll, "Settings");
+    tabs->addTab(settings_scroll, "Options");
 
     auto action_group = new QWidget();
     auto action_layout = new QHBoxLayout(action_group);

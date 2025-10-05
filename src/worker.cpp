@@ -148,14 +148,14 @@ int main(int argc, char *argv[]) {
     auto logger = [](const std::string &msg) { std::cout << msg << std::endl; };
 
     try {
-        vips::VImage image;
+        LoadPageReturn page_info;
         if (!task.path_in_archive.empty()) {
-            image = load_archive_image(task);
+            page_info = load_archive_image(task);
         }
         else {
-            image = load_pdf_page(task);
+            page_info = load_pdf_page(task);
         }
-        process_vimage(image, task, logger);
+        process_vimage(page_info, task, logger);
     }
     catch (const std::exception &e) {
         logger(

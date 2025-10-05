@@ -8,8 +8,13 @@
 
 using Logger = const std::function<void(const std::string &)> &;
 
-vips::VImage load_pdf_page(const PageTask &task);
-vips::VImage load_archive_image(const PageTask &task);
+struct LoadPageReturn {
+    vips::VImage image;
+    bool is_originally_greyscale;
+};
+
+LoadPageReturn load_pdf_page(const PageTask &task);
+LoadPageReturn load_archive_image(const PageTask &task);
 vips::VImage get_vips_img_from_pdf_page(
     FPDF_DOCUMENT doc,
     FPDF_PAGE page,
@@ -30,4 +35,4 @@ bool should_image_rotate(
 );
 bool is_uniform_column(const vips::VImage &img, int col, double threshold);
 
-void process_vimage(vips::VImage img, PageTask task, Logger log);
+void process_vimage(LoadPageReturn page_info, PageTask task, Logger log);

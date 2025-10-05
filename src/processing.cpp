@@ -15,7 +15,7 @@ using Logger = const std::function<void(const std::string &)> &;
 
 namespace fs = std::filesystem;
 
-vips::VImage load_pdf_page(const PageTask &task) {
+LoadPageReturn load_pdf_page(const PageTask &task) {
     FPDF_DOCUMENT doc = FPDF_LoadDocument(task.source_file.c_str(), nullptr);
     if (!doc) {
         throw std::runtime_error(
@@ -61,6 +61,9 @@ vips::VImage load_pdf_page(const PageTask &task) {
         task.pdf_pixel_density,
         render_flags
     );
+
+    auto is_originally_greyscale = is_greyscale(img, 10.0);
+
     if (!is_colour_display && !render_page_greyscale) {
         img = img.colourspace(VIPS_INTERPRETATION_B_W);
     }
@@ -68,10 +71,13 @@ vips::VImage load_pdf_page(const PageTask &task) {
     FPDF_ClosePage(page);
     FPDF_CloseDocument(doc);
 
-    return img;
+    return LoadPageReturn {
+        .image = img,
+        .is_originally_greyscale = is_originally_greyscale,
+    };
 }
 
-vips::VImage load_archive_image(const PageTask &task) {
+LoadPageReturn load_archive_image(const PageTask &task) {
     auto archive = archive_read_new();
     archive_read_support_filter_all(archive);
     archive_read_support_format_all(archive);
@@ -111,16 +117,20 @@ vips::VImage load_archive_image(const PageTask &task) {
         = vips::VImage::new_from_buffer(buffer.data(), buffer.size(), "");
     img = img.copy_memory();
 
-    return img;
+    auto is_originally_greyscale = is_greyscale(img, 10.0);
+    img = img.colourspace(VIPS_INTERPRETATION_B_W);
+
+    return LoadPageReturn {
+        .image = img,
+        .is_originally_greyscale = is_originally_greyscale
+    };
 }
 
-void process_vimage(vips::VImage img, PageTask task, Logger log) {
+void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
     try {
         auto png_path = task.output_dir / (task.output_base_name + ".png");
         auto output_path = task.output_dir / (task.output_base_name + ".webp");
         fs::create_directories(output_path.parent_path());
-
-        img = img.colourspace(VIPS_INTERPRETATION_B_W);
 
         bool rotate_option;
         switch (task.double_page_spread_action) {
@@ -134,6 +144,8 @@ void process_vimage(vips::VImage img, PageTask task, Logger log) {
             rotate_option = false;
             break;
         }
+
+        auto img = page_info.image;
 
         auto image_should_rotate = should_image_rotate(
             img.width(), img.height(), task.page_width, task.page_height
@@ -155,7 +167,7 @@ void process_vimage(vips::VImage img, PageTask task, Logger log) {
             }
         }
 
-        if (task.stretch_page_contrast) {
+        if (page_info.is_originally_greyscale && task.stretch_page_contrast) {
             auto min = img.min();
             auto max = img.max();
 

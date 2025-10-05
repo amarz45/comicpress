@@ -14,6 +14,7 @@
 #include <QQueue>
 #include <QRadioButton>
 #include <QSpinBox>
+#include <QStackedWidget>
 #include <QTabWidget>
 #include <QTextEdit>
 #include <QTimer>
@@ -94,6 +95,7 @@ class Window : public QMainWindow {
     void on_image_compression_changed(int state);
     void on_image_compression_type_changed();
     void on_image_quality_changed(int state);
+    void on_jpeg_xl_quality_type_changed();
 
   private:
     QWidget *central_widget;
@@ -139,8 +141,10 @@ class Window : public QMainWindow {
     QSpinBox *image_compression_spin_box;
     QComboBox *image_compression_type_combo_box;
     QLabel *image_compression_type_label;
-    QSpinBox *image_quality_spin_box;
-    QLabel *image_quality_label;
+    QDoubleSpinBox *image_quality_spin_box;
+    QWidget *image_quality_label;
+    QLabel *image_quality_label_original;
+    QComboBox *image_quality_label_jpeg_xl;
     QSpinBox *workers_spin_box;
     QWidget *rotation_options_container;
     QRadioButton *clockwise_radio;
@@ -212,6 +216,7 @@ class Window : public QMainWindow {
     int avif_quality = 50;
     int jpeg_quality = 80;
     int jpeg_xl_compression_effort = 7;
+    double jpeg_xl_distance = 1.0;
     int jpeg_xl_quality = 75;
     int png_compression_effort = 6;
     int webp_compression_effort = 4;

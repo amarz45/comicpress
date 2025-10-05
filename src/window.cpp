@@ -24,6 +24,7 @@
 #include <QScrollArea>
 #include <QScroller>
 #include <QSpinBox>
+#include <QStackedWidget>
 #include <QStandardPaths>
 #include <QTabWidget>
 #include <QTextEdit>
@@ -660,11 +661,18 @@ void Window::add_image_format_widgets() {
         image_format_layout, this->image_compression_label, 0, 9, 1, 6
     );
 
-    this->image_quality_label = new QLabel("Quality");
-    this->image_quality_spin_box = create_spin_box_with_label(
+    this->image_quality_label_original = new QLabel("Quality");
+    this->image_quality_label_jpeg_xl
+        = create_combo_box({"Distance", "Quality"}, "Distance");
+    this->image_quality_label_jpeg_xl->setVisible(false);
+    image_format_layout->addWidget(this->image_quality_label_jpeg_xl);
+    this->image_quality_label = this->image_quality_label_original;
+
+    this->image_quality_spin_box = create_double_spin_box(
         image_format_layout, this->image_quality_label, 0, 100, 1, 50
     );
     this->image_quality_label->setVisible(false);
+    this->image_quality_spin_box->setDecimals(0);
     this->image_quality_spin_box->setVisible(false);
 
     image_format_layout->addStretch();
@@ -788,6 +796,10 @@ void Window::on_image_format_changed() {
     auto compression_min = 0;
     auto compression_max = 9;
     auto compression_effort = 0;
+    QWidget *quality_label = this->image_quality_label_original;
+    auto jxl_quality_label_visible = false;
+    std::string quality_type = "Quality";
+    double distance = 0.0;
     auto quality = 0;
     auto compression_type_visible = false;
     auto compression_effort_visible = true;
@@ -804,6 +816,11 @@ void Window::on_image_format_changed() {
     else if (img_format == "JPEG XL") {
         compression_min = 1;
         compression_effort = this->jpeg_xl_compression_effort;
+        quality_label = this->image_quality_label_jpeg_xl;
+        jxl_quality_label_visible = true;
+        quality_type
+            = this->image_quality_label_jpeg_xl->currentText().toStdString();
+        distance = this->jpeg_xl_distance;
         quality = this->jpeg_xl_quality;
         compression_type_visible = true;
     }
@@ -821,7 +838,16 @@ void Window::on_image_format_changed() {
         compression_min, compression_max
     );
     this->image_compression_spin_box->setValue(compression_effort);
-    this->image_quality_spin_box->setValue(quality);
+    this->image_quality_label = quality_label;
+    this->image_quality_label_jpeg_xl->setVisible(jxl_quality_label_visible);
+
+    if (quality_type == "Quality") {
+        this->image_quality_spin_box->setValue(quality);
+    }
+    else {
+        this->image_quality_spin_box->setValue(distance);
+    }
+
     this->image_compression_type_label->setVisible(compression_type_visible);
     this->image_compression_type_combo_box->setVisible(
         compression_type_visible
@@ -830,6 +856,7 @@ void Window::on_image_format_changed() {
     this->image_compression_spin_box->setVisible(compression_effort_visible);
 
     this->on_image_compression_type_changed();
+    this->on_jpeg_xl_quality_type_changed();
 }
 
 void Window::on_image_compression_changed(int state) {
@@ -868,11 +895,45 @@ void Window::on_image_quality_changed(int state) {
         this->jpeg_quality = state;
     }
     else if (img_format == "JPEG XL") {
-        this->jpeg_xl_quality = state;
+        if (this->image_quality_label_jpeg_xl->currentText() == "Distance") {
+            this->jpeg_xl_distance = state;
+        }
+        else {
+            this->jpeg_xl_quality = state;
+        }
     }
     else if (img_format == "WebP") {
         this->webp_quality = state;
     }
+}
+
+void Window::on_jpeg_xl_quality_type_changed() {
+    auto quality_type = this->image_quality_label_jpeg_xl->currentText();
+
+    auto min = 0.0;
+    auto max = 100.0;
+    auto step = 1.0;
+    auto decimals = 0;
+    auto quality = this->jpeg_xl_quality;
+
+    auto img_format = this->image_format_combo_box->currentText();
+    if (img_format != "JPEG XL") {
+        this->image_quality_spin_box->setSingleStep(step);
+        this->image_quality_spin_box->setDecimals(decimals);
+        return;
+    }
+
+    if (quality_type == "Distance") {
+        max = 15.0;
+        step = 0.1;
+        decimals = 2;
+        quality = this->jpeg_xl_distance;
+    }
+
+    this->image_quality_spin_box->setRange(min, max);
+    this->image_quality_spin_box->setSingleStep(step);
+    this->image_quality_spin_box->setDecimals(decimals);
+    this->image_quality_spin_box->setValue(quality);
 }
 
 void Window::on_start_button_clicked() {
@@ -1484,9 +1545,15 @@ void Window::connect_signals() {
     );
     connect(
         this->image_quality_spin_box,
-        &QSpinBox::valueChanged,
+        &QDoubleSpinBox::valueChanged,
         this,
         &Window::on_image_quality_changed
+    );
+    connect(
+        this->image_quality_label_jpeg_xl,
+        &QComboBox::currentTextChanged,
+        this,
+        &Window::on_jpeg_xl_quality_type_changed
     );
     connect(
         this->start_button,

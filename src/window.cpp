@@ -834,6 +834,9 @@ void Window::on_image_format_changed() {
         compression_type_visible = true;
     }
 
+    // Important: This should be before the others.
+    this->on_jpeg_xl_quality_type_changed();
+
     this->image_compression_spin_box->setRange(
         compression_min, compression_max
     );
@@ -856,7 +859,6 @@ void Window::on_image_format_changed() {
     this->image_compression_spin_box->setVisible(compression_effort_visible);
 
     this->on_image_compression_type_changed();
-    this->on_jpeg_xl_quality_type_changed();
 }
 
 void Window::on_image_compression_changed(int state) {
@@ -918,6 +920,7 @@ void Window::on_jpeg_xl_quality_type_changed() {
 
     auto img_format = this->image_format_combo_box->currentText();
     if (img_format != "JPEG XL") {
+        this->image_quality_spin_box->setRange(min, max);
         this->image_quality_spin_box->setSingleStep(step);
         this->image_quality_spin_box->setDecimals(decimals);
         return;

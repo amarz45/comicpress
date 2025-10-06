@@ -233,6 +233,7 @@ void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
         }
         else if (task.image_format == "JPEG XL") {
             auto output_path = std::string(base_path) + ".jxl";
+            options = options->set("effort", task.compression_effort);
             if (!task.is_lossy) {
                 options = options->set("distance", 0.0);
             }
@@ -246,6 +247,7 @@ void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
         }
         else if (task.image_format == "WebP") {
             auto output_path = std::string(base_path) + ".webp";
+            options = options->set("effort", task.compression_effort);
             if (task.is_lossy) {
                 options = options->set("Q", task.quality);
             }

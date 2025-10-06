@@ -8,8 +8,8 @@
 #include <string>
 #include <vips/vips8>
 
+#include "../include/task.hpp"
 #include "include/processing.hpp"
-#include "include/task.hpp"
 
 using Logger = const std::function<void(const std::string &)> &;
 

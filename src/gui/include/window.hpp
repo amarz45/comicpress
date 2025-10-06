@@ -23,8 +23,8 @@
 #include <optional>
 #include <string>
 
+#include "../../include/task.hpp"
 #include "qpushbutton.h"
-#include "task.hpp"
 
 class BoundedDeque {
     size_t max_size;

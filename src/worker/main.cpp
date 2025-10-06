@@ -1,5 +1,5 @@
+#include "../include/task.hpp"
 #include "include/processing.hpp"
-#include "include/task.hpp"
 
 #include <fpdfview.h>
 #include <iostream>

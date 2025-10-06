@@ -28,24 +28,21 @@ endif
 qt6 = import('qt6')
 
 qt_processed_files = qt6.preprocess(
-    moc_headers: ['src/include/window.hpp']
+    moc_headers: ['src/gui/include/window.hpp']
 )
-
-# Sources and dependencies for the processing logic, shared by the worker.
-processing_src = ['src/processing.cpp']
-processing_deps = [vips_dep, pdfium_dep, libarchive_dep, zlib_dep]
 
 # Worker executable, this does the actual image processing.
 executable(
-    'comicpress-worker', 'src/worker.cpp', processing_src,
-    dependencies: processing_deps,
+    'comicpress-worker', 'src/worker/main.cpp', 'src/worker/processing.cpp',
+    dependencies: [vips_dep, pdfium_dep, libarchive_dep, zlib_dep],
     include_directories: pdfium_inc,
     install: true,
 )
 
 executable(
-    'comicpress', 'src/main.cpp', 'src/window.cpp', 'src/signal.cpp',
-    'src/time.cpp', 'src/options.cpp', 'src/window_util.cpp',
+    'comicpress', 'src/gui/main.cpp', 'src/gui/window.cpp',
+    'src/gui/signal.cpp', 'src/gui/time.cpp', 'src/gui/options.cpp',
+    'src/gui/window_util.cpp',
     qt_processed_files,
     dependencies: [qt6_dep, pdfium_dep, libarchive_dep, vips_dep],
     include_directories: pdfium_inc,

@@ -1,43 +1,15 @@
 #include "include/options.hpp"
 #include "include/ui_constants.hpp"
-#include "include/window.hpp"
+#include "include/window_util.hpp"
 #include <QSpinBox>
 #include <QStyle>
 #include <thread>
-
-QWidget *create_widget_with_infoo(
-    QStyle *style, QWidget *main_widget, const char *tooltip_text
-) {
-    auto container = new QWidget();
-    auto layout = new QHBoxLayout(container);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(5);
-
-    auto has_tooltip = tooltip_text && strlen(tooltip_text) > 0;
-
-    auto info_area = new QLabel();
-    info_area->setFixedSize(16, 16);
-
-    if (has_tooltip && style) {
-        auto icon = style->standardIcon(
-            QStyle::StandardPixmap::SP_MessageBoxInformation
-        );
-        auto formatted_tooltip = "<p>" + std::string(tooltip_text) + "</p>";
-        info_area->setPixmap(icon.pixmap(16, 16));
-        info_area->setToolTip(QString::fromStdString(formatted_tooltip));
-    }
-
-    layout->addWidget(info_area);
-    layout->addWidget(main_widget);
-
-    return container;
-}
 
 void add_pdf_pixel_density_widget(QStyle *style, Options *options) {
     options->pdf_pixel_density_spin_box
         = create_spin_box(300, 4'800, 300, 1'200);
 
-    auto pdf_pixel_density_widget = create_widget_with_infoo(
+    auto pdf_pixel_density_widget = create_widget_with_info(
         style, new QLabel("PDF pixel density (PPI)"), PDF_TOOLTIP
     );
 
@@ -50,7 +22,7 @@ void add_pdf_pixel_density_widget(QStyle *style, Options *options) {
 }
 
 void add_double_page_spread_widget(QStyle *style, Options *options) {
-    auto widget = create_widget_with_infoo(
+    auto widget = create_widget_with_info(
         style,
         new QLabel("Double-page spread actions"),
         DOUBLE_PAGE_SPREAD_TOOLTIP
@@ -89,7 +61,7 @@ void add_double_page_spread_widget(QStyle *style, Options *options) {
 void add_remove_spine_widget(QStyle *style, Options *options) {
     options->remove_spine_check_box = new QCheckBox("Remove spines");
     options->remove_spine_check_box->setChecked(true);
-    auto remove_spine_widget = create_widget_with_infoo(
+    auto remove_spine_widget = create_widget_with_info(
         style, options->remove_spine_check_box, REMOVE_SPINE_TOOLTIP
     );
 
@@ -103,7 +75,7 @@ void add_remove_spine_widget(QStyle *style, Options *options) {
 void add_contrast_widget(QStyle *style, Options *options) {
     options->contrast_check_box = new QCheckBox("Stretch contrast");
     options->contrast_check_box->setChecked(true);
-    auto contrast_widget = create_widget_with_infoo(
+    auto contrast_widget = create_widget_with_info(
         style, options->contrast_check_box, CONTRAST_TOOLTIP
     );
 
@@ -129,7 +101,7 @@ void add_scaling_widgets(QStyle *style, Options *options) {
     );
 
     // Resampler
-    auto resampler_label_with_info = create_widget_with_infoo(
+    auto resampler_label_with_info = create_widget_with_info(
         style, new QLabel("Resampler"), RESAMPLER_TOOLTIP
     );
     options->resampler_combo_box = create_combo_box_with_layout(
@@ -149,7 +121,7 @@ void add_scaling_widgets(QStyle *style, Options *options) {
     scaling_layout->addStretch();
 
     auto layout = new QHBoxLayout();
-    layout->addWidget(create_widget_with_infoo(
+    layout->addWidget(create_widget_with_info(
         style, options->enable_image_scaling_check_box, SCALE_TOOLTIP
     ));
     layout->addStretch();
@@ -167,14 +139,14 @@ void add_quantization_widgets(QStyle *style, Options *options) {
     auto quantization_layout
         = create_container_layout(options->quantization_options_container);
 
-    auto bit_depth_label = create_widget_with_infoo(
+    auto bit_depth_label = create_widget_with_info(
         style, new QLabel("Bit depth"), BIT_DEPTH_TOOLTIP
     );
     options->bit_depth_combo_box = create_combo_box_with_layout(
         quantization_layout, bit_depth_label, {"1", "2", "4", "8", "16"}, "4"
     );
 
-    auto dithering_label = create_widget_with_infoo(
+    auto dithering_label = create_widget_with_info(
         style, new QLabel("Dithering"), DITHERING_TOOLTIP
     );
     options->dithering_spin_box = create_double_spin_box(
@@ -184,7 +156,7 @@ void add_quantization_widgets(QStyle *style, Options *options) {
     quantization_layout->addStretch();
 
     auto layout = new QHBoxLayout();
-    layout->addWidget(create_widget_with_infoo(
+    layout->addWidget(create_widget_with_info(
         style, options->enable_image_quantization_check_box, QUANTIZE_TOOLTIP
     ));
     layout->addStretch();
@@ -198,7 +170,7 @@ void add_quantization_widgets(QStyle *style, Options *options) {
 void add_image_format_widgets(QStyle *style, Options *options) {
     options->image_format_combo_box
         = create_combo_box({"AVIF", "JPEG", "JPEG XL", "PNG", "WebP"}, "PNG");
-    auto image_format_label = create_widget_with_infoo(
+    auto image_format_label = create_widget_with_info(
         style, new QLabel("Image format"), IMG_FORMAT_TOOLTIP
     );
 
@@ -248,7 +220,7 @@ void add_image_format_widgets(QStyle *style, Options *options) {
 
 void add_parallel_workers_widget(QStyle *style, Options *options) {
     auto label
-        = create_widget_with_infoo(style, new QLabel("Parallel workers"), "");
+        = create_widget_with_info(style, new QLabel("Parallel workers"), "");
 
     options->workers_spin_box = new QSpinBox();
     auto threads = std::thread::hardware_concurrency();

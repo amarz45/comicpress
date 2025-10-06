@@ -195,8 +195,6 @@ class Window : public QMainWindow {
     // Helper methods
     PageTask
     create_task(fs::path source_file, fs::path output_dir, int page_num);
-    QWidget *
-    create_widget_with_info(QWidget *main_widget, const char *tooltip_text);
     void update_file_list_buttons();
     void connect_signals();
     void
@@ -216,31 +214,3 @@ class Window : public QMainWindow {
     int webp_compression_effort = 4;
     int webp_quality = 80;
 };
-
-std::string time_to_str(int64_t milliseconds);
-QSpinBox *create_spin_box(int lower, int upper, int step_size, int value);
-QComboBox *create_combo_box(QStringList items, QString current_text);
-QHBoxLayout *create_container_layout(QWidget *container);
-QSpinBox *create_spin_box_with_label(
-    QHBoxLayout *layout,
-    QWidget *widget,
-    int lower,
-    int upper,
-    int step_size,
-    int value
-);
-
-QComboBox *create_combo_box_with_layout(
-    QHBoxLayout *layout,
-    QWidget *widget,
-    QStringList items,
-    QString current_text
-);
-QDoubleSpinBox *create_double_spin_box(
-    QHBoxLayout *layout,
-    QWidget *widget,
-    double lower,
-    double upper,
-    double step_size,
-    double value
-);

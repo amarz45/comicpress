@@ -49,6 +49,38 @@ class BoundedDeque {
     }
 };
 
+struct Options {
+    QGroupBox *settings_group;
+    QVBoxLayout *settings_layout;
+    QSpinBox *pdf_pixel_density_spin_box;
+    QComboBox *double_page_spread_combo_box;
+    QCheckBox *remove_spine_check_box;
+    QCheckBox *contrast_check_box;
+    QPushButton *display_preset_button;
+    QCheckBox *enable_image_scaling_check_box;
+    QWidget *scaling_options_container;
+    QSpinBox *width_spin_box;
+    QSpinBox *height_spin_box;
+    QComboBox *resampler_combo_box;
+    QCheckBox *enable_image_quantization_check_box;
+    QWidget *quantization_options_container;
+    QComboBox *bit_depth_combo_box;
+    QDoubleSpinBox *dithering_spin_box;
+    QComboBox *image_format_combo_box;
+    QLabel *image_compression_label;
+    QSpinBox *image_compression_spin_box;
+    QComboBox *image_compression_type_combo_box;
+    QLabel *image_compression_type_label;
+    QDoubleSpinBox *image_quality_spin_box;
+    QWidget *image_quality_label;
+    QLabel *image_quality_label_original;
+    QComboBox *image_quality_label_jpeg_xl;
+    QSpinBox *workers_spin_box;
+    QWidget *rotation_options_container;
+    QRadioButton *clockwise_radio;
+    QRadioButton *counter_clockwise_radio;
+};
+
 struct FileTimer {
     std::optional<int64_t> start_time;
     std::optional<int64_t> last_eta_recent_time;
@@ -119,36 +151,7 @@ class Window : public QMainWindow {
     QGroupBox *progress_bars_group;
     QVBoxLayout *progress_bars_layout;
 
-    // Settings
-    QGroupBox *settings_group;
-    QVBoxLayout *settings_layout;
-    QSpinBox *pdf_pixel_density_spin_box;
-    QComboBox *double_page_spread_combo_box;
-    QCheckBox *remove_spine_check_box;
-    QCheckBox *contrast_check_box;
-    QPushButton *display_preset_button;
-    QCheckBox *enable_image_scaling_check_box;
-    QWidget *scaling_options_container;
-    QSpinBox *width_spin_box;
-    QSpinBox *height_spin_box;
-    QComboBox *resampler_combo_box;
-    QCheckBox *enable_image_quantization_check_box;
-    QWidget *quantization_options_container;
-    QComboBox *bit_depth_combo_box;
-    QDoubleSpinBox *dithering_spin_box;
-    QComboBox *image_format_combo_box;
-    QLabel *image_compression_label;
-    QSpinBox *image_compression_spin_box;
-    QComboBox *image_compression_type_combo_box;
-    QLabel *image_compression_type_label;
-    QDoubleSpinBox *image_quality_spin_box;
-    QWidget *image_quality_label;
-    QLabel *image_quality_label_original;
-    QComboBox *image_quality_label_jpeg_xl;
-    QSpinBox *workers_spin_box;
-    QWidget *rotation_options_container;
-    QRadioButton *clockwise_radio;
-    QRadioButton *counter_clockwise_radio;
+    Options options;
 
     // Progress
     QLabel *elapsed_label;

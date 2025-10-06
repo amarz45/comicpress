@@ -126,10 +126,10 @@ Window::Window(QWidget *parent) : QMainWindow(parent), eta_recent_intervals(5) {
     this->setup_ui();
     this->on_display_preset_changed(true);
     this->on_enable_image_scaling_changed(
-        this->enable_image_scaling_check_box->checkState()
+        this->options.enable_image_scaling_check_box->checkState()
     );
     this->on_double_page_spread_changed(
-        this->double_page_spread_combo_box->currentText()
+        this->options.double_page_spread_combo_box->currentText()
     );
     this->connect_signals();
 }
@@ -285,7 +285,7 @@ void Window::setup_ui() {
     );
 
     auto io_group = this->create_io_group();
-    this->settings_group = this->create_settings_group();
+    this->options.settings_group = this->create_settings_group();
 
     this->progress_bars_group = new QGroupBox("File progress");
     this->progress_bars_group->setFlat(true);
@@ -304,7 +304,7 @@ void Window::setup_ui() {
     tabs->addTab(io_scroll, "Input/output");
 
     auto settings_scroll = new QScrollArea();
-    settings_scroll->setWidget(this->settings_group);
+    settings_scroll->setWidget(this->options.settings_group);
     settings_scroll->setWidgetResizable(true);
     settings_scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     settings_scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
@@ -380,7 +380,7 @@ QGroupBox *Window::create_io_group() {
 QGroupBox *Window::create_settings_group() {
     auto settings_group = new QGroupBox();
     settings_group->setFlat(true);
-    this->settings_layout = new QVBoxLayout(settings_group);
+    this->options.settings_layout = new QVBoxLayout(settings_group);
 
     this->add_pdf_pixel_density_widget();
     this->add_double_page_spread_widget();
@@ -392,7 +392,7 @@ QGroupBox *Window::create_settings_group() {
     this->add_image_format_widgets();
     this->add_parallel_workers_widget();
 
-    this->settings_layout->addStretch();
+    this->options.settings_layout->addStretch();
     return settings_group;
 }
 
@@ -427,7 +427,8 @@ void Window::create_log_group() {
 }
 
 void Window::add_pdf_pixel_density_widget() {
-    this->pdf_pixel_density_spin_box = create_spin_box(300, 4'800, 300, 1'200);
+    this->options.pdf_pixel_density_spin_box
+        = create_spin_box(300, 4'800, 300, 1'200);
 
     auto pdf_pixel_density_widget = this->create_widget_with_info(
         new QLabel("PDF pixel density (PPI)"), PDF_TOOLTIP
@@ -435,78 +436,81 @@ void Window::add_pdf_pixel_density_widget() {
 
     auto layout = new QHBoxLayout();
     layout->addWidget(pdf_pixel_density_widget);
-    layout->addWidget(this->pdf_pixel_density_spin_box);
+    layout->addWidget(this->options.pdf_pixel_density_spin_box);
     layout->addStretch();
 
-    this->settings_layout->addLayout(layout);
+    this->options.settings_layout->addLayout(layout);
 }
 
 void Window::add_double_page_spread_widget() {
     auto widget = this->create_widget_with_info(
         new QLabel("Double-page spread actions"), DOUBLE_PAGE_SPREAD_TOOLTIP
     );
-    this->double_page_spread_combo_box = create_combo_box(
+    this->options.double_page_spread_combo_box = create_combo_box(
         {"Rotate page", "Split into two pages", "Both", "None"}, "Rotate page"
     );
 
     auto combo_layout = new QHBoxLayout();
     combo_layout->addWidget(widget);
-    combo_layout->addWidget(this->double_page_spread_combo_box);
+    combo_layout->addWidget(this->options.double_page_spread_combo_box);
     combo_layout->addStretch();
 
     // Rotation options
-    this->rotation_options_container = new QWidget();
+    this->options.rotation_options_container = new QWidget();
     auto rotation_layout
-        = create_container_layout(this->rotation_options_container);
+        = create_container_layout(this->options.rotation_options_container);
 
     auto rotation_label = new QLabel("Rotation direction");
     rotation_layout->addWidget(rotation_label);
 
     auto radio_group_layout = new QHBoxLayout();
-    this->clockwise_radio = new QRadioButton("Clockwise");
-    this->counter_clockwise_radio = new QRadioButton("Counterclockwise");
-    this->clockwise_radio->setChecked(true);
-    radio_group_layout->addWidget(this->clockwise_radio);
-    radio_group_layout->addWidget(this->counter_clockwise_radio);
+    this->options.clockwise_radio = new QRadioButton("Clockwise");
+    this->options.counter_clockwise_radio
+        = new QRadioButton("Counterclockwise");
+    this->options.clockwise_radio->setChecked(true);
+    radio_group_layout->addWidget(this->options.clockwise_radio);
+    radio_group_layout->addWidget(this->options.counter_clockwise_radio);
     radio_group_layout->addStretch();
 
     rotation_layout->addLayout(radio_group_layout);
 
-    this->settings_layout->addLayout(combo_layout);
-    this->settings_layout->addWidget(this->rotation_options_container);
+    this->options.settings_layout->addLayout(combo_layout);
+    this->options.settings_layout->addWidget(
+        this->options.rotation_options_container
+    );
 }
 
 void Window::add_remove_spine_widget() {
-    this->remove_spine_check_box = new QCheckBox("Remove spines");
-    this->remove_spine_check_box->setChecked(true);
+    this->options.remove_spine_check_box = new QCheckBox("Remove spines");
+    this->options.remove_spine_check_box->setChecked(true);
     auto remove_spine_widget = this->create_widget_with_info(
-        this->remove_spine_check_box, REMOVE_SPINE_TOOLTIP
+        this->options.remove_spine_check_box, REMOVE_SPINE_TOOLTIP
     );
 
     auto layout = new QHBoxLayout();
     layout->addWidget(remove_spine_widget);
     layout->addStretch();
 
-    this->settings_layout->addLayout(layout);
+    this->options.settings_layout->addLayout(layout);
 }
 
 void Window::add_contrast_widget() {
-    this->contrast_check_box = new QCheckBox("Stretch contrast");
-    this->contrast_check_box->setChecked(true);
+    this->options.contrast_check_box = new QCheckBox("Stretch contrast");
+    this->options.contrast_check_box->setChecked(true);
     auto contrast_widget = this->create_widget_with_info(
-        this->contrast_check_box, CONTRAST_TOOLTIP
+        this->options.contrast_check_box, CONTRAST_TOOLTIP
     );
 
     auto layout = new QHBoxLayout();
     layout->addWidget(contrast_widget);
     layout->addStretch();
 
-    this->settings_layout->addLayout(layout);
+    this->options.settings_layout->addLayout(layout);
 }
 
 void Window::add_display_presets_widget() {
     auto display_preset = QString::fromStdString(this->display_preset.brand);
-    this->display_preset_button = new QPushButton(display_preset);
+    this->options.display_preset_button = new QPushButton(display_preset);
     auto display_menu = new QMenu(this);
 
     if (auto custom_action = display_menu->addAction("Custom")) {
@@ -547,27 +551,27 @@ void Window::add_display_presets_widget() {
 
     auto label
         = this->create_widget_with_info(new QLabel("Display preset"), "");
-    this->display_preset_button->setMenu(display_menu);
+    this->options.display_preset_button->setMenu(display_menu);
 
     auto layout = new QHBoxLayout();
     layout->addWidget(label);
-    layout->addWidget(this->display_preset_button);
+    layout->addWidget(this->options.display_preset_button);
     layout->addStretch();
 
-    this->settings_layout->addLayout(layout);
+    this->options.settings_layout->addLayout(layout);
 }
 
 void Window::add_scaling_widgets() {
-    this->enable_image_scaling_check_box = new QCheckBox("Scale pages");
+    this->options.enable_image_scaling_check_box = new QCheckBox("Scale pages");
 
-    this->scaling_options_container = new QWidget();
+    this->options.scaling_options_container = new QWidget();
     auto scaling_layout
-        = create_container_layout(this->scaling_options_container);
+        = create_container_layout(this->options.scaling_options_container);
 
-    this->width_spin_box = create_spin_box_with_label(
+    this->options.width_spin_box = create_spin_box_with_label(
         scaling_layout, new QLabel("Width"), 100, 4'000, 100, 1440
     );
-    this->height_spin_box = create_spin_box_with_label(
+    this->options.height_spin_box = create_spin_box_with_label(
         scaling_layout, new QLabel("Height"), 100, 4'000, 100, 1920
     );
 
@@ -575,7 +579,7 @@ void Window::add_scaling_widgets() {
     auto resampler_label_with_info = this->create_widget_with_info(
         new QLabel("Resampler"), RESAMPLER_TOOLTIP
     );
-    this->resampler_combo_box = create_combo_box_with_layout(
+    this->options.resampler_combo_box = create_combo_box_with_layout(
         scaling_layout,
         resampler_label_with_info,
         {"Bicubic interpolation",
@@ -593,33 +597,36 @@ void Window::add_scaling_widgets() {
 
     auto layout = new QHBoxLayout();
     layout->addWidget(this->create_widget_with_info(
-        this->enable_image_scaling_check_box, SCALE_TOOLTIP
+        this->options.enable_image_scaling_check_box, SCALE_TOOLTIP
     ));
     layout->addStretch();
 
-    this->settings_layout->addLayout(layout);
-    this->settings_layout->addWidget(this->scaling_options_container);
+    this->options.settings_layout->addLayout(layout);
+    this->options.settings_layout->addWidget(
+        this->options.scaling_options_container
+    );
 }
 
 void Window::add_quantization_widgets() {
-    this->enable_image_quantization_check_box = new QCheckBox("Quantize pages");
-    this->enable_image_quantization_check_box->setChecked(true);
+    this->options.enable_image_quantization_check_box
+        = new QCheckBox("Quantize pages");
+    this->options.enable_image_quantization_check_box->setChecked(true);
 
-    this->quantization_options_container = new QWidget();
+    this->options.quantization_options_container = new QWidget();
     auto quantization_layout
-        = create_container_layout(this->quantization_options_container);
+        = create_container_layout(this->options.quantization_options_container);
 
     auto bit_depth_label = this->create_widget_with_info(
         new QLabel("Bit depth"), BIT_DEPTH_TOOLTIP
     );
-    this->bit_depth_combo_box = create_combo_box_with_layout(
+    this->options.bit_depth_combo_box = create_combo_box_with_layout(
         quantization_layout, bit_depth_label, {"1", "2", "4", "8", "16"}, "4"
     );
 
     auto dithering_label = this->create_widget_with_info(
         new QLabel("Dithering"), DITHERING_TOOLTIP
     );
-    this->dithering_spin_box = create_double_spin_box(
+    this->options.dithering_spin_box = create_double_spin_box(
         quantization_layout, dithering_label, 0.0, 1.0, 0.1, 1.0
     );
 
@@ -627,16 +634,18 @@ void Window::add_quantization_widgets() {
 
     auto layout = new QHBoxLayout();
     layout->addWidget(this->create_widget_with_info(
-        this->enable_image_quantization_check_box, QUANTIZE_TOOLTIP
+        this->options.enable_image_quantization_check_box, QUANTIZE_TOOLTIP
     ));
     layout->addStretch();
 
-    this->settings_layout->addLayout(layout);
-    this->settings_layout->addWidget(this->quantization_options_container);
+    this->options.settings_layout->addLayout(layout);
+    this->options.settings_layout->addWidget(
+        this->options.quantization_options_container
+    );
 }
 
 void Window::add_image_format_widgets() {
-    this->image_format_combo_box
+    this->options.image_format_combo_box
         = create_combo_box({"AVIF", "JPEG", "JPEG XL", "PNG", "WebP"}, "PNG");
     auto image_format_label = this->create_widget_with_info(
         new QLabel("Image format"), IMG_FORMAT_TOOLTIP
@@ -646,61 +655,63 @@ void Window::add_image_format_widgets() {
     auto image_format_layout
         = create_container_layout(image_format_options_container);
 
-    this->image_compression_type_label = new QLabel("Compression type");
-    this->image_compression_type_combo_box = create_combo_box_with_layout(
-        image_format_layout,
-        this->image_compression_type_label,
-        {"Lossless", "Lossy"},
-        "Lossless"
-    );
-    this->image_compression_type_label->setVisible(false);
-    this->image_compression_type_combo_box->setVisible(false);
+    this->options.image_compression_type_label = new QLabel("Compression type");
+    this->options.image_compression_type_combo_box
+        = create_combo_box_with_layout(
+            image_format_layout,
+            this->options.image_compression_type_label,
+            {"Lossless", "Lossy"},
+            "Lossless"
+        );
+    this->options.image_compression_type_label->setVisible(false);
+    this->options.image_compression_type_combo_box->setVisible(false);
 
-    this->image_compression_label = new QLabel("Compression effort");
-    this->image_compression_spin_box = create_spin_box_with_label(
-        image_format_layout, this->image_compression_label, 0, 9, 1, 6
+    this->options.image_compression_label = new QLabel("Compression effort");
+    this->options.image_compression_spin_box = create_spin_box_with_label(
+        image_format_layout, this->options.image_compression_label, 0, 9, 1, 6
     );
 
-    this->image_quality_label_original = new QLabel("Quality");
-    this->image_quality_label_jpeg_xl
+    this->options.image_quality_label_original = new QLabel("Quality");
+    this->options.image_quality_label_jpeg_xl
         = create_combo_box({"Distance", "Quality"}, "Distance");
-    this->image_quality_label_jpeg_xl->setVisible(false);
-    image_format_layout->addWidget(this->image_quality_label_jpeg_xl);
-    this->image_quality_label = this->image_quality_label_original;
+    this->options.image_quality_label_jpeg_xl->setVisible(false);
+    image_format_layout->addWidget(this->options.image_quality_label_jpeg_xl);
+    this->options.image_quality_label
+        = this->options.image_quality_label_original;
 
-    this->image_quality_spin_box = create_double_spin_box(
-        image_format_layout, this->image_quality_label, 0, 100, 1, 50
+    this->options.image_quality_spin_box = create_double_spin_box(
+        image_format_layout, this->options.image_quality_label, 0, 100, 1, 50
     );
-    this->image_quality_label->setVisible(false);
-    this->image_quality_spin_box->setDecimals(0);
-    this->image_quality_spin_box->setVisible(false);
+    this->options.image_quality_label->setVisible(false);
+    this->options.image_quality_spin_box->setDecimals(0);
+    this->options.image_quality_spin_box->setVisible(false);
 
     image_format_layout->addStretch();
 
     auto layout = new QHBoxLayout();
     layout->addWidget(image_format_label);
-    layout->addWidget(image_format_combo_box);
+    layout->addWidget(this->options.image_format_combo_box);
     layout->addStretch();
 
-    this->settings_layout->addLayout(layout);
-    this->settings_layout->addWidget(image_format_options_container);
+    this->options.settings_layout->addLayout(layout);
+    this->options.settings_layout->addWidget(image_format_options_container);
 }
 
 void Window::add_parallel_workers_widget() {
     auto label
         = this->create_widget_with_info(new QLabel("Parallel workers"), "");
 
-    this->workers_spin_box = new QSpinBox();
+    this->options.workers_spin_box = new QSpinBox();
     auto threads = std::thread::hardware_concurrency();
-    this->workers_spin_box->setRange(1, threads);
-    this->workers_spin_box->setValue(threads);
+    this->options.workers_spin_box->setRange(1, threads);
+    this->options.workers_spin_box->setValue(threads);
 
     auto layout = new QHBoxLayout();
     layout->addWidget(label);
-    layout->addWidget(this->workers_spin_box);
+    layout->addWidget(this->options.workers_spin_box);
     layout->addStretch();
 
-    this->settings_layout->addLayout(layout);
+    this->options.settings_layout->addLayout(layout);
 }
 
 void Window::on_add_files_clicked() {
@@ -757,7 +768,7 @@ void Window::on_browse_output_clicked() {
 
 void Window::on_double_page_spread_changed(const QString &text) {
     bool should_show = (text == "Rotate page" || text == "Both");
-    this->rotation_options_container->setVisible(should_show);
+    this->options.rotation_options_container->setVisible(should_show);
 }
 
 void Window::on_display_preset_changed(bool first_time) {
@@ -765,38 +776,38 @@ void Window::on_display_preset_changed(bool first_time) {
     auto model = this->display_preset.model;
     auto is_custom = model.length() == 0;
 
-    this->enable_image_scaling_check_box->setEnabled(is_custom);
+    this->options.enable_image_scaling_check_box->setEnabled(is_custom);
     if (!first_time) {
-        this->enable_image_scaling_check_box->setChecked(true);
+        this->options.enable_image_scaling_check_box->setChecked(true);
     }
 
     if (!is_custom) {
         auto display = DISPLAY_PRESETS.at(brand).value().at(model);
-        this->width_spin_box->setValue(display.width);
-        this->height_spin_box->setValue(display.height);
+        this->options.width_spin_box->setValue(display.width);
+        this->options.height_spin_box->setValue(display.height);
     }
 
-    this->width_spin_box->setEnabled(is_custom);
-    this->height_spin_box->setEnabled(is_custom);
+    this->options.width_spin_box->setEnabled(is_custom);
+    this->options.height_spin_box->setEnabled(is_custom);
 }
 
 void Window::on_enable_image_scaling_changed(int state) {
     bool is_checked = state == Qt::Checked;
-    this->scaling_options_container->setEnabled(is_checked);
+    this->options.scaling_options_container->setEnabled(is_checked);
 }
 
 void Window::on_enable_image_quantization_changed(int state) {
     bool is_checked = state == Qt::Checked;
-    this->quantization_options_container->setEnabled(is_checked);
+    this->options.quantization_options_container->setEnabled(is_checked);
 }
 
 void Window::on_image_format_changed() {
-    auto img_format = this->image_format_combo_box->currentText();
+    auto img_format = this->options.image_format_combo_box->currentText();
 
     auto compression_min = 0;
     auto compression_max = 9;
     auto compression_effort = 0;
-    QWidget *quality_label = this->image_quality_label_original;
+    QWidget *quality_label = this->options.image_quality_label_original;
     auto jxl_quality_label_visible = false;
     std::string quality_type = "Quality";
     double distance = 0.0;
@@ -816,10 +827,10 @@ void Window::on_image_format_changed() {
     else if (img_format == "JPEG XL") {
         compression_min = 1;
         compression_effort = this->jpeg_xl_compression_effort;
-        quality_label = this->image_quality_label_jpeg_xl;
+        quality_label = this->options.image_quality_label_jpeg_xl;
         jxl_quality_label_visible = true;
-        quality_type
-            = this->image_quality_label_jpeg_xl->currentText().toStdString();
+        quality_type = this->options.image_quality_label_jpeg_xl->currentText()
+                           .toStdString();
         distance = this->jpeg_xl_distance;
         quality = this->jpeg_xl_quality;
         compression_type_visible = true;
@@ -837,33 +848,43 @@ void Window::on_image_format_changed() {
     // Important: This should be before the others.
     this->on_jpeg_xl_quality_type_changed();
 
-    this->image_compression_spin_box->setRange(
+    this->options.image_compression_spin_box->setRange(
         compression_min, compression_max
     );
-    this->image_compression_spin_box->setValue(compression_effort);
-    this->image_quality_label = quality_label;
-    this->image_quality_label_original->setVisible(!jxl_quality_label_visible);
-    this->image_quality_label_jpeg_xl->setVisible(jxl_quality_label_visible);
+    this->options.image_compression_spin_box->setValue(compression_effort);
+    this->options.image_quality_label = quality_label;
+    this->options.image_quality_label_original->setVisible(
+        !jxl_quality_label_visible
+    );
+    this->options.image_quality_label_jpeg_xl->setVisible(
+        jxl_quality_label_visible
+    );
 
     if (quality_type == "Quality") {
-        this->image_quality_spin_box->setValue(quality);
+        this->options.image_quality_spin_box->setValue(quality);
     }
     else {
-        this->image_quality_spin_box->setValue(distance);
+        this->options.image_quality_spin_box->setValue(distance);
     }
 
-    this->image_compression_type_label->setVisible(compression_type_visible);
-    this->image_compression_type_combo_box->setVisible(
+    this->options.image_compression_type_label->setVisible(
         compression_type_visible
     );
-    this->image_compression_label->setVisible(compression_effort_visible);
-    this->image_compression_spin_box->setVisible(compression_effort_visible);
+    this->options.image_compression_type_combo_box->setVisible(
+        compression_type_visible
+    );
+    this->options.image_compression_label->setVisible(
+        compression_effort_visible
+    );
+    this->options.image_compression_spin_box->setVisible(
+        compression_effort_visible
+    );
 
     this->on_image_compression_type_changed();
 }
 
 void Window::on_image_compression_changed(int state) {
-    auto img_format = this->image_format_combo_box->currentText();
+    auto img_format = this->options.image_format_combo_box->currentText();
     if (img_format == "AVIF") {
         this->avif_compression_effort = state;
     }
@@ -879,18 +900,18 @@ void Window::on_image_compression_changed(int state) {
 }
 
 void Window::on_image_compression_type_changed() {
-    auto img_format = this->image_format_combo_box->currentText();
+    auto img_format = this->options.image_format_combo_box->currentText();
     auto compression_type
-        = this->image_compression_type_combo_box->currentText();
+        = this->options.image_compression_type_combo_box->currentText();
     auto image_quality_visible
         = img_format != "PNG"
        && (img_format == "JPEG" || compression_type == "Lossy");
-    this->image_quality_label->setVisible(image_quality_visible);
-    this->image_quality_spin_box->setVisible(image_quality_visible);
+    this->options.image_quality_label->setVisible(image_quality_visible);
+    this->options.image_quality_spin_box->setVisible(image_quality_visible);
 }
 
 void Window::on_image_quality_changed(int state) {
-    auto img_format = this->image_format_combo_box->currentText();
+    auto img_format = this->options.image_format_combo_box->currentText();
     if (img_format == "AVIF") {
         this->avif_quality = state;
     }
@@ -898,7 +919,8 @@ void Window::on_image_quality_changed(int state) {
         this->jpeg_quality = state;
     }
     else if (img_format == "JPEG XL") {
-        if (this->image_quality_label_jpeg_xl->currentText() == "Distance") {
+        if (this->options.image_quality_label_jpeg_xl->currentText()
+            == "Distance") {
             this->jpeg_xl_distance = state;
         }
         else {
@@ -911,7 +933,8 @@ void Window::on_image_quality_changed(int state) {
 }
 
 void Window::on_jpeg_xl_quality_type_changed() {
-    auto quality_type = this->image_quality_label_jpeg_xl->currentText();
+    auto quality_type
+        = this->options.image_quality_label_jpeg_xl->currentText();
 
     auto min = 0.0;
     auto max = 100.0;
@@ -919,11 +942,11 @@ void Window::on_jpeg_xl_quality_type_changed() {
     auto decimals = 0;
     auto quality = this->jpeg_xl_quality;
 
-    auto img_format = this->image_format_combo_box->currentText();
+    auto img_format = this->options.image_format_combo_box->currentText();
     if (img_format != "JPEG XL") {
-        this->image_quality_spin_box->setRange(min, max);
-        this->image_quality_spin_box->setSingleStep(step);
-        this->image_quality_spin_box->setDecimals(decimals);
+        this->options.image_quality_spin_box->setRange(min, max);
+        this->options.image_quality_spin_box->setSingleStep(step);
+        this->options.image_quality_spin_box->setDecimals(decimals);
         return;
     }
 
@@ -934,10 +957,10 @@ void Window::on_jpeg_xl_quality_type_changed() {
         quality = this->jpeg_xl_distance;
     }
 
-    this->image_quality_spin_box->setRange(min, max);
-    this->image_quality_spin_box->setSingleStep(step);
-    this->image_quality_spin_box->setDecimals(decimals);
-    this->image_quality_spin_box->setValue(quality);
+    this->options.image_quality_spin_box->setRange(min, max);
+    this->options.image_quality_spin_box->setSingleStep(step);
+    this->options.image_quality_spin_box->setDecimals(decimals);
+    this->options.image_quality_spin_box->setValue(quality);
 }
 
 void Window::on_start_button_clicked() {
@@ -954,7 +977,7 @@ void Window::on_start_button_clicked() {
         return;
     }
 
-    this->settings_group->setEnabled(false);
+    this->options.settings_group->setEnabled(false);
     start_button->setEnabled(false);
     cancel_button->setEnabled(true);
     log_output->clear();
@@ -973,7 +996,7 @@ void Window::on_start_button_clicked() {
     is_processing_cancelled = false;
     pages_processed = 0;
     total_pages = 0;
-    max_concurrent_workers = workers_spin_box->value();
+    max_concurrent_workers = this->options.workers_spin_box->value();
 
     this->progress_bar->setValue(0);
     this->log_group->setVisible(true);
@@ -1103,7 +1126,7 @@ void Window::on_start_button_clicked() {
     if (task_queue.isEmpty()) {
         log_output->setVisible(true);
         log_output->append("No pages found to process.");
-        this->settings_group->setEnabled(true);
+        this->options.settings_group->setEnabled(true);
         start_button->setEnabled(true);
         cancel_button->setEnabled(false);
         this->progress_bar->setVisible(false);
@@ -1163,7 +1186,7 @@ void Window::on_cancel_button_clicked() {
     this->progress_bar->setValue(0);
 
     timer->stop();
-    this->settings_group->setEnabled(true);
+    this->options.settings_group->setEnabled(true);
     start_button->setEnabled(true);
     cancel_button->setEnabled(false);
 }
@@ -1353,7 +1376,7 @@ void Window::on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus) {
     else {
         if (pages_processed == total_pages) {
             timer->stop();
-            this->settings_group->setEnabled(true);
+            this->options.settings_group->setEnabled(true);
             start_button->setEnabled(true);
             cancel_button->setEnabled(false);
         }
@@ -1399,23 +1422,24 @@ Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
               .arg(QString::fromStdString(source_file.stem().string()))
               .arg(page_num + 1, 4, 10, QChar('0'))
               .toStdString();
-    task.pdf_pixel_density = this->pdf_pixel_density_spin_box->value();
+    task.pdf_pixel_density = this->options.pdf_pixel_density_spin_box->value();
     task.double_page_spread_action
-        = (DoublePageSpreadActions)this->double_page_spread_combo_box
+        = (DoublePageSpreadActions)this->options.double_page_spread_combo_box
               ->currentIndex();
-    if (this->clockwise_radio->isChecked()) {
+    if (this->options.clockwise_radio->isChecked()) {
         task.rotation_direction = CLOCKWISE;
     }
     else {
         task.rotation_direction = COUNTERCLOCKWISE;
     }
-    task.remove_spine = this->remove_spine_check_box->isChecked();
+    task.remove_spine = this->options.remove_spine_check_box->isChecked();
     //  TODO: Replace placeholders.
-    task.stretch_page_contrast = this->contrast_check_box->isChecked();
-    task.scale_pages = this->enable_image_scaling_check_box->isChecked();
-    task.page_width = this->width_spin_box->value();
-    task.page_height = this->height_spin_box->value();
-    auto resampler = this->resampler_combo_box->currentText();
+    task.stretch_page_contrast = this->options.contrast_check_box->isChecked();
+    task.scale_pages
+        = this->options.enable_image_scaling_check_box->isChecked();
+    task.page_width = this->options.width_spin_box->value();
+    task.page_height = this->options.height_spin_box->value();
+    auto resampler = this->options.resampler_combo_box->currentText();
     if (resampler == "Bicubic interpolation") {
         task.page_resampler = VIPS_KERNEL_CUBIC;
     }
@@ -1441,16 +1465,19 @@ Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
         task.page_resampler = VIPS_KERNEL_NEAREST;
     }
     task.quantize_pages
-        = this->enable_image_quantization_check_box->isChecked();
+        = this->options.enable_image_quantization_check_box->isChecked();
     task.bit_depth = 4;
     task.dither = 1.0;
-    task.image_format = image_format_combo_box->currentText().toStdString();
+    task.image_format
+        = this->options.image_format_combo_box->currentText().toStdString();
     task.is_lossy
-        = this->image_compression_type_combo_box->currentText() == "Lossy";
+        = this->options.image_compression_type_combo_box->currentText()
+       == "Lossy";
     task.quality_type_is_distance
-        = this->image_quality_label_jpeg_xl->currentText() == "Distance";
-    task.quality = this->image_quality_spin_box->value();
-    task.compression_effort = this->image_compression_spin_box->value();
+        = this->options.image_quality_label_jpeg_xl->currentText()
+       == "Distance";
+    task.quality = this->options.image_quality_spin_box->value();
+    task.compression_effort = this->options.image_compression_spin_box->value();
     return task;
 }
 
@@ -1515,49 +1542,49 @@ void Window::connect_signals() {
         &Window::on_browse_output_clicked
     );
     connect(
-        this->double_page_spread_combo_box,
+        this->options.double_page_spread_combo_box,
         &QComboBox::currentTextChanged,
         this,
         &Window::on_double_page_spread_changed
     );
     connect(
-        this->enable_image_scaling_check_box,
+        this->options.enable_image_scaling_check_box,
         &QCheckBox::checkStateChanged,
         this,
         &Window::on_enable_image_scaling_changed
     );
     connect(
-        this->enable_image_quantization_check_box,
+        this->options.enable_image_quantization_check_box,
         &QCheckBox::checkStateChanged,
         this,
         &Window::on_enable_image_quantization_changed
     );
     connect(
-        this->image_format_combo_box,
+        this->options.image_format_combo_box,
         &QComboBox::currentTextChanged,
         this,
         &Window::on_image_format_changed
     );
     connect(
-        this->image_compression_spin_box,
+        this->options.image_compression_spin_box,
         &QSpinBox::valueChanged,
         this,
         &Window::on_image_compression_changed
     );
     connect(
-        this->image_compression_type_combo_box,
+        this->options.image_compression_type_combo_box,
         &QComboBox::currentTextChanged,
         this,
         &Window::on_image_compression_type_changed
     );
     connect(
-        this->image_quality_spin_box,
+        this->options.image_quality_spin_box,
         &QDoubleSpinBox::valueChanged,
         this,
         &Window::on_image_quality_changed
     );
     connect(
-        this->image_quality_label_jpeg_xl,
+        this->options.image_quality_label_jpeg_xl,
         &QComboBox::currentTextChanged,
         this,
         &Window::on_jpeg_xl_quality_type_changed
@@ -1583,7 +1610,7 @@ void Window::set_display_preset(
     this->display_preset.model = model;
     QString text = model.empty() ? QString::fromStdString(brand)
                                  : QString::fromStdString(brand + " " + model);
-    this->display_preset_button->setText(text);
+    this->options.display_preset_button->setText(text);
     this->on_display_preset_changed(first_time);
 }
 

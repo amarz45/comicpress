@@ -1,3 +1,5 @@
+#pragma once
+
 #include "window.hpp"
 #include <QStyle>
 

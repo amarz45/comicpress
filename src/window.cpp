@@ -1,5 +1,6 @@
 #include "include/window.hpp"
 #include "include/display_presets.hpp"
+#include "include/options.hpp"
 #include "include/task.hpp"
 #include "include/ui_constants.hpp"
 #include "qboxlayout.h"
@@ -39,7 +40,6 @@
 #include <iomanip>
 #include <numeric>
 #include <sstream>
-#include <thread>
 #include <vips/resample.h>
 
 namespace fs = std::filesystem;
@@ -381,16 +381,17 @@ QGroupBox *Window::create_settings_group() {
     auto settings_group = new QGroupBox();
     settings_group->setFlat(true);
     this->options.settings_layout = new QVBoxLayout(settings_group);
+    auto style = this->style();
 
-    this->add_pdf_pixel_density_widget();
-    this->add_double_page_spread_widget();
-    this->add_remove_spine_widget();
-    this->add_contrast_widget();
+    add_pdf_pixel_density_widget(style, &this->options);
+    add_double_page_spread_widget(style, &this->options);
+    add_remove_spine_widget(style, &this->options);
+    add_contrast_widget(style, &this->options);
     this->add_display_presets_widget();
-    this->add_scaling_widgets();
-    this->add_quantization_widgets();
-    this->add_image_format_widgets();
-    this->add_parallel_workers_widget();
+    add_scaling_widgets(style, &this->options);
+    add_quantization_widgets(style, &this->options);
+    add_image_format_widgets(style, &this->options);
+    add_parallel_workers_widget(style, &this->options);
 
     this->options.settings_layout->addStretch();
     return settings_group;
@@ -424,88 +425,6 @@ void Window::create_log_group() {
     log_layout->addWidget(this->progress_bar);
     log_layout->addLayout(time_layout);
     log_layout->addWidget(this->log_output);
-}
-
-void Window::add_pdf_pixel_density_widget() {
-    this->options.pdf_pixel_density_spin_box
-        = create_spin_box(300, 4'800, 300, 1'200);
-
-    auto pdf_pixel_density_widget = this->create_widget_with_info(
-        new QLabel("PDF pixel density (PPI)"), PDF_TOOLTIP
-    );
-
-    auto layout = new QHBoxLayout();
-    layout->addWidget(pdf_pixel_density_widget);
-    layout->addWidget(this->options.pdf_pixel_density_spin_box);
-    layout->addStretch();
-
-    this->options.settings_layout->addLayout(layout);
-}
-
-void Window::add_double_page_spread_widget() {
-    auto widget = this->create_widget_with_info(
-        new QLabel("Double-page spread actions"), DOUBLE_PAGE_SPREAD_TOOLTIP
-    );
-    this->options.double_page_spread_combo_box = create_combo_box(
-        {"Rotate page", "Split into two pages", "Both", "None"}, "Rotate page"
-    );
-
-    auto combo_layout = new QHBoxLayout();
-    combo_layout->addWidget(widget);
-    combo_layout->addWidget(this->options.double_page_spread_combo_box);
-    combo_layout->addStretch();
-
-    // Rotation options
-    this->options.rotation_options_container = new QWidget();
-    auto rotation_layout
-        = create_container_layout(this->options.rotation_options_container);
-
-    auto rotation_label = new QLabel("Rotation direction");
-    rotation_layout->addWidget(rotation_label);
-
-    auto radio_group_layout = new QHBoxLayout();
-    this->options.clockwise_radio = new QRadioButton("Clockwise");
-    this->options.counter_clockwise_radio
-        = new QRadioButton("Counterclockwise");
-    this->options.clockwise_radio->setChecked(true);
-    radio_group_layout->addWidget(this->options.clockwise_radio);
-    radio_group_layout->addWidget(this->options.counter_clockwise_radio);
-    radio_group_layout->addStretch();
-
-    rotation_layout->addLayout(radio_group_layout);
-
-    this->options.settings_layout->addLayout(combo_layout);
-    this->options.settings_layout->addWidget(
-        this->options.rotation_options_container
-    );
-}
-
-void Window::add_remove_spine_widget() {
-    this->options.remove_spine_check_box = new QCheckBox("Remove spines");
-    this->options.remove_spine_check_box->setChecked(true);
-    auto remove_spine_widget = this->create_widget_with_info(
-        this->options.remove_spine_check_box, REMOVE_SPINE_TOOLTIP
-    );
-
-    auto layout = new QHBoxLayout();
-    layout->addWidget(remove_spine_widget);
-    layout->addStretch();
-
-    this->options.settings_layout->addLayout(layout);
-}
-
-void Window::add_contrast_widget() {
-    this->options.contrast_check_box = new QCheckBox("Stretch contrast");
-    this->options.contrast_check_box->setChecked(true);
-    auto contrast_widget = this->create_widget_with_info(
-        this->options.contrast_check_box, CONTRAST_TOOLTIP
-    );
-
-    auto layout = new QHBoxLayout();
-    layout->addWidget(contrast_widget);
-    layout->addStretch();
-
-    this->options.settings_layout->addLayout(layout);
 }
 
 void Window::add_display_presets_widget() {
@@ -556,159 +475,6 @@ void Window::add_display_presets_widget() {
     auto layout = new QHBoxLayout();
     layout->addWidget(label);
     layout->addWidget(this->options.display_preset_button);
-    layout->addStretch();
-
-    this->options.settings_layout->addLayout(layout);
-}
-
-void Window::add_scaling_widgets() {
-    this->options.enable_image_scaling_check_box = new QCheckBox("Scale pages");
-
-    this->options.scaling_options_container = new QWidget();
-    auto scaling_layout
-        = create_container_layout(this->options.scaling_options_container);
-
-    this->options.width_spin_box = create_spin_box_with_label(
-        scaling_layout, new QLabel("Width"), 100, 4'000, 100, 1440
-    );
-    this->options.height_spin_box = create_spin_box_with_label(
-        scaling_layout, new QLabel("Height"), 100, 4'000, 100, 1920
-    );
-
-    // Resampler
-    auto resampler_label_with_info = this->create_widget_with_info(
-        new QLabel("Resampler"), RESAMPLER_TOOLTIP
-    );
-    this->options.resampler_combo_box = create_combo_box_with_layout(
-        scaling_layout,
-        resampler_label_with_info,
-        {"Bicubic interpolation",
-         "Bilinear interpolation",
-         "Lanczos 2",
-         "Lanczos 3",
-         "Magic Kernel Sharp 2013",
-         "Magic Kernel Sharp 2021",
-         "Mitchell",
-         "Nearest neighbour"},
-        "Magic Kernel Sharp 2021"
-    );
-
-    scaling_layout->addStretch();
-
-    auto layout = new QHBoxLayout();
-    layout->addWidget(this->create_widget_with_info(
-        this->options.enable_image_scaling_check_box, SCALE_TOOLTIP
-    ));
-    layout->addStretch();
-
-    this->options.settings_layout->addLayout(layout);
-    this->options.settings_layout->addWidget(
-        this->options.scaling_options_container
-    );
-}
-
-void Window::add_quantization_widgets() {
-    this->options.enable_image_quantization_check_box
-        = new QCheckBox("Quantize pages");
-    this->options.enable_image_quantization_check_box->setChecked(true);
-
-    this->options.quantization_options_container = new QWidget();
-    auto quantization_layout
-        = create_container_layout(this->options.quantization_options_container);
-
-    auto bit_depth_label = this->create_widget_with_info(
-        new QLabel("Bit depth"), BIT_DEPTH_TOOLTIP
-    );
-    this->options.bit_depth_combo_box = create_combo_box_with_layout(
-        quantization_layout, bit_depth_label, {"1", "2", "4", "8", "16"}, "4"
-    );
-
-    auto dithering_label = this->create_widget_with_info(
-        new QLabel("Dithering"), DITHERING_TOOLTIP
-    );
-    this->options.dithering_spin_box = create_double_spin_box(
-        quantization_layout, dithering_label, 0.0, 1.0, 0.1, 1.0
-    );
-
-    quantization_layout->addStretch();
-
-    auto layout = new QHBoxLayout();
-    layout->addWidget(this->create_widget_with_info(
-        this->options.enable_image_quantization_check_box, QUANTIZE_TOOLTIP
-    ));
-    layout->addStretch();
-
-    this->options.settings_layout->addLayout(layout);
-    this->options.settings_layout->addWidget(
-        this->options.quantization_options_container
-    );
-}
-
-void Window::add_image_format_widgets() {
-    this->options.image_format_combo_box
-        = create_combo_box({"AVIF", "JPEG", "JPEG XL", "PNG", "WebP"}, "PNG");
-    auto image_format_label = this->create_widget_with_info(
-        new QLabel("Image format"), IMG_FORMAT_TOOLTIP
-    );
-
-    auto image_format_options_container = new QWidget();
-    auto image_format_layout
-        = create_container_layout(image_format_options_container);
-
-    this->options.image_compression_type_label = new QLabel("Compression type");
-    this->options.image_compression_type_combo_box
-        = create_combo_box_with_layout(
-            image_format_layout,
-            this->options.image_compression_type_label,
-            {"Lossless", "Lossy"},
-            "Lossless"
-        );
-    this->options.image_compression_type_label->setVisible(false);
-    this->options.image_compression_type_combo_box->setVisible(false);
-
-    this->options.image_compression_label = new QLabel("Compression effort");
-    this->options.image_compression_spin_box = create_spin_box_with_label(
-        image_format_layout, this->options.image_compression_label, 0, 9, 1, 6
-    );
-
-    this->options.image_quality_label_original = new QLabel("Quality");
-    this->options.image_quality_label_jpeg_xl
-        = create_combo_box({"Distance", "Quality"}, "Distance");
-    this->options.image_quality_label_jpeg_xl->setVisible(false);
-    image_format_layout->addWidget(this->options.image_quality_label_jpeg_xl);
-    this->options.image_quality_label
-        = this->options.image_quality_label_original;
-
-    this->options.image_quality_spin_box = create_double_spin_box(
-        image_format_layout, this->options.image_quality_label, 0, 100, 1, 50
-    );
-    this->options.image_quality_label->setVisible(false);
-    this->options.image_quality_spin_box->setDecimals(0);
-    this->options.image_quality_spin_box->setVisible(false);
-
-    image_format_layout->addStretch();
-
-    auto layout = new QHBoxLayout();
-    layout->addWidget(image_format_label);
-    layout->addWidget(this->options.image_format_combo_box);
-    layout->addStretch();
-
-    this->options.settings_layout->addLayout(layout);
-    this->options.settings_layout->addWidget(image_format_options_container);
-}
-
-void Window::add_parallel_workers_widget() {
-    auto label
-        = this->create_widget_with_info(new QLabel("Parallel workers"), "");
-
-    this->options.workers_spin_box = new QSpinBox();
-    auto threads = std::thread::hardware_concurrency();
-    this->options.workers_spin_box->setRange(1, threads);
-    this->options.workers_spin_box->setValue(threads);
-
-    auto layout = new QHBoxLayout();
-    layout->addWidget(label);
-    layout->addWidget(this->options.workers_spin_box);
     layout->addStretch();
 
     this->options.settings_layout->addLayout(layout);

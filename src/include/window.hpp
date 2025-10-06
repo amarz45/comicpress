@@ -190,16 +190,7 @@ class Window : public QMainWindow {
     void create_log_group();
     QGroupBox *log_group;
 
-    // Settings group
-    void add_pdf_pixel_density_widget();
-    void add_double_page_spread_widget();
-    void add_remove_spine_widget();
-    void add_contrast_widget();
     void add_display_presets_widget();
-    void add_scaling_widgets();
-    void add_quantization_widgets();
-    void add_image_format_widgets();
-    void add_parallel_workers_widget();
 
     // Helper methods
     PageTask
@@ -227,3 +218,29 @@ class Window : public QMainWindow {
 };
 
 std::string time_to_str(int64_t milliseconds);
+QSpinBox *create_spin_box(int lower, int upper, int step_size, int value);
+QComboBox *create_combo_box(QStringList items, QString current_text);
+QHBoxLayout *create_container_layout(QWidget *container);
+QSpinBox *create_spin_box_with_label(
+    QHBoxLayout *layout,
+    QWidget *widget,
+    int lower,
+    int upper,
+    int step_size,
+    int value
+);
+
+QComboBox *create_combo_box_with_layout(
+    QHBoxLayout *layout,
+    QWidget *widget,
+    QStringList items,
+    QString current_text
+);
+QDoubleSpinBox *create_double_spin_box(
+    QHBoxLayout *layout,
+    QWidget *widget,
+    double lower,
+    double upper,
+    double step_size,
+    double value
+);

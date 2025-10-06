@@ -44,7 +44,7 @@ executable(
 )
 
 executable(
-    'comicpress', 'src/main.cpp', 'src/window.cpp',
+    'comicpress', 'src/main.cpp', 'src/window.cpp', 'src/options.cpp',
     qt_processed_files,
     dependencies: [qt6_dep, pdfium_dep, libarchive_dep, vips_dep],
     include_directories: pdfium_inc,

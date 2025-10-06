@@ -1,6 +1,7 @@
 project('comicpress', 'cpp',
     default_options : [
         'warning_level=3',
+        'wpedantic=true',
         'werror=true',
         'cpp_std=c++20'
     ]

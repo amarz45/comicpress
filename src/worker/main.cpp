@@ -83,6 +83,13 @@ int main(int argc, char *argv[]) {
             args.at("-pdf_pixel_density"), "Invalid PDF pixel density"
         );
 
+        task.convert_pages_to_greyscale
+            = parse_arg<int>(
+                  args.at("-convert_pages_to_greyscale"),
+                  "Invalid convert pages to greyscale"
+              )
+           != 0;
+
         task.double_page_spread_action
             = (DoublePageSpreadActions)parse_arg<int>(
                 args.at("-double_page_spread_actions"),

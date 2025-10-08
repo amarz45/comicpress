@@ -4,6 +4,7 @@
 #include <QStyle>
 
 void add_pdf_pixel_density_widget(QStyle *style, Options *options);
+void add_convert_to_greyscale_widget(QStyle *style, Options *options);
 void add_double_page_spread_widget(QStyle *style, Options *options);
 void add_remove_spine_widget(QStyle *style, Options *options);
 void add_contrast_widget(QStyle *style, Options *options);

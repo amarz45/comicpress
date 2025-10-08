@@ -26,6 +26,7 @@ struct PageTask {
     DoublePageSpreadActions double_page_spread_action;
     RotationDirection rotation_direction;
     VipsKernel page_resampler;
+    bool convert_pages_to_greyscale;
     bool remove_spine;
     bool stretch_page_contrast;
     bool scale_pages;

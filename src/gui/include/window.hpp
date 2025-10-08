@@ -53,6 +53,7 @@ struct Options {
     QGroupBox *settings_group;
     QVBoxLayout *settings_layout;
     QSpinBox *pdf_pixel_density_spin_box;
+    QCheckBox *convert_to_greyscale;
     QComboBox *double_page_spread_combo_box;
     QCheckBox *remove_spine_check_box;
     QCheckBox *contrast_check_box;

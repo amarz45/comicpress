@@ -176,6 +176,7 @@ QGroupBox *Window::create_settings_group() {
     auto style = this->style();
 
     add_pdf_pixel_density_widget(style, &this->options);
+    add_convert_to_greyscale_widget(style, &this->options);
     add_double_page_spread_widget(style, &this->options);
     add_remove_spine_widget(style, &this->options);
     add_contrast_widget(style, &this->options);
@@ -365,6 +366,8 @@ void Window::start_next_task() {
                      task.path_in_archive
                  ) // Empty string if not set
               << "-pdf_pixel_density" << QString::number(task.pdf_pixel_density)
+              << "-convert_pages_to_greyscale"
+              << (task.convert_pages_to_greyscale ? "1" : "0")
               << "-double_page_spread_actions"
               << QString::number(task.double_page_spread_action)
               << "-rotation_direction"
@@ -411,6 +414,8 @@ Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
               .arg(page_num + 1, 4, 10, QChar('0'))
               .toStdString();
     task.pdf_pixel_density = this->options.pdf_pixel_density_spin_box->value();
+    task.convert_pages_to_greyscale
+        = this->options.convert_to_greyscale->isChecked();
     task.double_page_spread_action
         = (DoublePageSpreadActions)this->options.double_page_spread_combo_box
               ->currentIndex();

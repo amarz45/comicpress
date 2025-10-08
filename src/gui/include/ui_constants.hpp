@@ -8,6 +8,10 @@ static const char *PDF_TOOLTIP = R"(
     600 PPI.
 )";
 
+static const char *GREYSCALE_TOOLTIP = R"(
+    Lorem ipsum
+)";
+
 static const char *DOUBLE_PAGE_SPREAD_TOOLTIP = R"(
     Lorem ipsum
 )";

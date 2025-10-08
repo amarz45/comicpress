@@ -21,6 +21,22 @@ void add_pdf_pixel_density_widget(QStyle *style, Options *options) {
     options->settings_layout->addLayout(layout);
 }
 
+void add_convert_to_greyscale_widget(QStyle *style, Options *options) {
+    options->convert_to_greyscale = new QCheckBox();
+    options->convert_to_greyscale->setChecked(true);
+
+    auto widget = create_widget_with_info(
+        style, new QLabel("Convert pages to greyscale"), GREYSCALE_TOOLTIP
+    );
+
+    auto layout = new QHBoxLayout();
+    layout->addWidget(options->convert_to_greyscale);
+    layout->addWidget(widget);
+    layout->addStretch();
+
+    options->settings_layout->addLayout(layout);
+}
+
 void add_double_page_spread_widget(QStyle *style, Options *options) {
     auto widget = create_widget_with_info(
         style,

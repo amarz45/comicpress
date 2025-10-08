@@ -15,6 +15,8 @@ using Logger = const std::function<void(const std::string &)> &;
 
 namespace fs = std::filesystem;
 
+static bool should_image_stretch_contrast(vips::VImage img, PageTask task);
+
 static vips::VImage
 rotate_image(vips::VImage img, RotationDirection rotation_direction);
 static vips::VImage scale_image(
@@ -45,10 +47,9 @@ LoadPageReturn load_pdf_page(const PageTask &task) {
     }
 
     auto render_flags = FPDF_ANNOT | FPDF_NO_NATIVETEXT;
-    auto is_colour_display = false;
 
     auto render_page_greyscale = false;
-    if (!is_colour_display) {
+    if (task.convert_pages_to_greyscale) {
         render_page_greyscale
             = is_preview_greyscale(doc, page, task.page_number);
     }
@@ -74,9 +75,8 @@ LoadPageReturn load_pdf_page(const PageTask &task) {
         render_flags
     );
 
-    auto is_originally_greyscale = is_greyscale(img, 10.0);
-
-    if (!is_colour_display && !render_page_greyscale) {
+    auto stretch_page_contrast = should_image_stretch_contrast(img, task);
+    if (task.convert_pages_to_greyscale && !render_page_greyscale) {
         img = img.colourspace(VIPS_INTERPRETATION_B_W);
     }
 
@@ -84,8 +84,7 @@ LoadPageReturn load_pdf_page(const PageTask &task) {
     FPDF_CloseDocument(doc);
 
     return LoadPageReturn{
-        .image = img,
-        .is_originally_greyscale = is_originally_greyscale,
+        .image = img, .stretch_page_contrast = stretch_page_contrast
     };
 }
 
@@ -129,11 +128,13 @@ LoadPageReturn load_archive_image(const PageTask &task) {
         = vips::VImage::new_from_buffer(buffer.data(), buffer.size(), "");
     img = img.copy_memory();
 
-    auto is_originally_greyscale = is_greyscale(img, 10.0);
-    img = img.colourspace(VIPS_INTERPRETATION_B_W);
+    auto stretch_page_contrast = should_image_stretch_contrast(img, task);
+    if (task.convert_pages_to_greyscale) {
+        img = img.colourspace(VIPS_INTERPRETATION_B_W);
+    }
 
     return LoadPageReturn{
-        .image = img, .is_originally_greyscale = is_originally_greyscale
+        .image = img, .stretch_page_contrast = stretch_page_contrast
     };
 }
 
@@ -171,7 +172,7 @@ void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
             }
         }
 
-        if (task.stretch_page_contrast && page_info.is_originally_greyscale) {
+        if (page_info.stretch_page_contrast) {
             img = stretch_image_contrast(img);
         }
 
@@ -431,6 +432,11 @@ bool should_image_rotate(
     auto rotated_diff = std::abs(display_aspect - rotated_image_aspect);
 
     return rotated_diff < original_diff;
+}
+
+bool should_image_stretch_contrast(vips::VImage img, PageTask task) {
+    return task.stretch_page_contrast
+        && (!task.convert_pages_to_greyscale || is_greyscale(img, 10.0));
 }
 
 bool is_uniform_column(const vips::VImage &img, int col, double threshold) {

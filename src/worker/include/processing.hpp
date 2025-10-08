@@ -10,7 +10,7 @@ using Logger = const std::function<void(const std::string &)> &;
 
 struct LoadPageReturn {
     vips::VImage image;
-    bool is_originally_greyscale;
+    bool stretch_page_contrast;
 };
 
 LoadPageReturn load_pdf_page(const PageTask &task);

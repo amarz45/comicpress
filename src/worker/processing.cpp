@@ -15,6 +15,18 @@ using Logger = const std::function<void(const std::string &)> &;
 
 namespace fs = std::filesystem;
 
+static vips::VImage
+rotate_image(vips::VImage img, RotationDirection rotation_direction);
+static vips::VImage scale_image(
+    vips::VImage img,
+    double source_width,
+    double source_height,
+    double target_width,
+    double target_height,
+    VipsKernel resampler
+);
+static vips::VImage stretch_image_contrast(vips::VImage img);
+
 LoadPageReturn load_pdf_page(const PageTask &task) {
     FPDF_DOCUMENT doc = FPDF_LoadDocument(task.source_file.c_str(), nullptr);
     if (!doc) {
@@ -155,37 +167,22 @@ void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
                 img = remove_uniform_middle_columns(img);
             }
             if (rotate_option) {
-                double angle;
-                switch (task.rotation_direction) {
-                case CLOCKWISE:
-                    angle = 90.0;
-                    break;
-                case COUNTERCLOCKWISE:
-                    angle = -90.0;
-                    break;
-                }
-                img = img.rotate(angle);
+                img = rotate_image(img, task.rotation_direction);
             }
         }
 
-        if (page_info.is_originally_greyscale && task.stretch_page_contrast) {
-            auto min = img.min();
-            auto max = img.max();
-
-            if (min != max) {
-                auto scale = 255.0 / (max - min);
-                auto offset = -min * scale;
-                img = img.linear(scale, offset);
-            }
+        if (task.stretch_page_contrast && page_info.is_originally_greyscale) {
+            img = stretch_image_contrast(img);
         }
 
         if (task.scale_pages) {
-            auto width_ratio = (double)task.page_width / (double)img.width();
-            auto height_ratio = (double)task.page_height / (double)img.height();
-            double scale = std::min(width_ratio, height_ratio);
-            img = img.resize(
-                scale,
-                vips::VImage::option()->set("kernel", task.page_resampler)
+            img = scale_image(
+                img,
+                img.width(),
+                img.height(),
+                task.page_width,
+                task.page_height,
+                task.page_resampler
             );
         }
 
@@ -439,4 +436,43 @@ bool should_image_rotate(
 bool is_uniform_column(const vips::VImage &img, int col, double threshold) {
     vips::VImage column = img.extract_area(col, 0, 1, img.height());
     return column.max() - column.min() < threshold;
+}
+
+vips::VImage
+rotate_image(vips::VImage img, RotationDirection rotation_direction) {
+    double angle;
+    switch (rotation_direction) {
+    case CLOCKWISE:
+        angle = 90.0;
+        break;
+    case COUNTERCLOCKWISE:
+        angle = -90.0;
+        break;
+    }
+    return img.rotate(angle);
+}
+
+vips::VImage scale_image(
+    vips::VImage img,
+    double source_width,
+    double source_height,
+    double target_width,
+    double target_height,
+    VipsKernel resampler
+) {
+    auto width_ratio = target_width / source_width;
+    auto height_ratio = target_height / source_height;
+    double scale = std::min(width_ratio, height_ratio);
+    img = img.resize(scale, vips::VImage::option()->set("kernel", resampler));
+}
+
+vips::VImage stretch_image_contrast(vips::VImage img) {
+    auto min = img.min();
+    auto max = img.max();
+    if (min != max) {
+        auto scale = 255.0 / (max - min);
+        auto offset = -min * scale;
+        img = img.linear(scale, offset);
+    }
+    return img;
 }

@@ -463,7 +463,7 @@ vips::VImage scale_image(
     auto width_ratio = target_width / source_width;
     auto height_ratio = target_height / source_height;
     double scale = std::min(width_ratio, height_ratio);
-    img = img.resize(scale, vips::VImage::option()->set("kernel", resampler));
+    return img.resize(scale, vips::VImage::option()->set("kernel", resampler));
 }
 
 vips::VImage stretch_image_contrast(vips::VImage img) {

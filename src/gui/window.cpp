@@ -71,7 +71,7 @@ Window::Window(QWidget *parent) : QMainWindow(parent), eta_recent_intervals(5) {
 
 void Window::setup_ui() {
     auto container_layout = new QHBoxLayout(this->central_widget);
-    container_layout->setContentsMargins(20, 20, 20, 20);
+    container_layout->setContentsMargins(40, 20, 40, 20);
     auto content_widget = new QWidget();
     container_layout->setAlignment(Qt::AlignTop);
     content_widget->setSizePolicy(
@@ -89,6 +89,7 @@ void Window::setup_ui() {
     this->create_log_group();
 
     auto tabs = new QTabWidget();
+    tabs->setDocumentMode(true);
 
     auto io_scroll = new QScrollArea();
     io_scroll->setWidget(io_group);
@@ -118,6 +119,12 @@ void Window::setup_ui() {
 
     this->main_layout->addWidget(tabs);
     this->main_layout->addSpacing(20);
+
+    auto separator = new QFrame();
+    separator->setFrameShape(QFrame::HLine);
+    separator->setFrameShadow(QFrame::Sunken);
+    this->main_layout->addWidget(separator);
+
     this->main_layout->addWidget(this->progress_bars_group);
     this->main_layout->addWidget(log_group);
     this->main_layout->addItem(
@@ -134,6 +141,7 @@ QGroupBox *Window::create_io_group() {
     auto io_group = new QGroupBox();
     io_group->setFlat(true);
     auto io_layout = new QVBoxLayout(io_group);
+    io_layout->setContentsMargins(0, 10, 0, 0);
     auto file_buttons_layout = new QHBoxLayout();
 
     this->file_list = new QListWidget();
@@ -175,7 +183,7 @@ QGroupBox *Window::create_settings_group() {
     auto settings_group = new QGroupBox();
     settings_group->setFlat(true);
     this->options.settings_layout = new QFormLayout(settings_group);
-    this->options.settings_layout->setContentsMargins(0, 0, 0, 0);
+    this->options.settings_layout->setContentsMargins(0, 10, 0, 0);
     auto style = this->style();
 
     add_pdf_pixel_density_widget(style, &this->options);

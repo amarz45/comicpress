@@ -143,7 +143,7 @@ QGroupBox *Window::create_io_group() {
 
     this->add_files_button = new QPushButton("Add input files");
     this->remove_selected_button = new QPushButton("Remove selected");
-    this->clear_all_button = new QPushButton("Clear all");
+    this->clear_all_button = new QPushButton("Remove all");
 
     this->remove_selected_button->setVisible(false);
     this->clear_all_button->setVisible(false);

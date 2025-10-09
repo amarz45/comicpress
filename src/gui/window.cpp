@@ -25,6 +25,7 @@
 #include <QRadioButton>
 #include <QScrollArea>
 #include <QScroller>
+#include <QSizePolicy>
 #include <QSpinBox>
 #include <QStackedWidget>
 #include <QStandardPaths>
@@ -33,6 +34,7 @@
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QVector>
+#include <QWidget>
 #include <archive.h>
 #include <archive_entry.h>
 #include <chrono>
@@ -172,7 +174,7 @@ QGroupBox *Window::create_io_group() {
 QGroupBox *Window::create_settings_group() {
     auto settings_group = new QGroupBox();
     settings_group->setFlat(true);
-    this->options.settings_layout = new QVBoxLayout(settings_group);
+    this->options.settings_layout = new QFormLayout(settings_group);
     auto style = this->style();
 
     add_pdf_pixel_density_widget(style, &this->options);
@@ -186,7 +188,11 @@ QGroupBox *Window::create_settings_group() {
     add_image_format_widgets(style, &this->options);
     add_parallel_workers_widget(style, &this->options);
 
-    this->options.settings_layout->addStretch();
+    // Add stretch at the end using a spacer row
+    auto spacer = new QWidget();
+    spacer->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
+    this->options.settings_layout->addRow(new QLabel(""), spacer);
+
     return settings_group;
 }
 
@@ -266,12 +272,9 @@ void Window::add_display_presets_widget() {
     );
     this->options.display_preset_button->setMenu(display_menu);
 
-    auto layout = new QHBoxLayout();
-    layout->addWidget(label);
-    layout->addWidget(this->options.display_preset_button);
-    layout->addStretch();
-
-    this->options.settings_layout->addLayout(layout);
+    this->options.settings_layout->addRow(
+        label, this->options.display_preset_button
+    );
 }
 
 void Window::start_next_task() {

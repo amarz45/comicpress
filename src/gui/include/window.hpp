@@ -2,6 +2,7 @@
 
 #include <QCheckBox>
 #include <QComboBox>
+#include <QFormLayout>
 #include <QGroupBox>
 #include <QLabel>
 #include <QLineEdit>
@@ -51,7 +52,7 @@ class BoundedDeque {
 
 struct Options {
     QGroupBox *settings_group;
-    QVBoxLayout *settings_layout;
+    QFormLayout *settings_layout;
     QSpinBox *pdf_pixel_density_spin_box;
     QCheckBox *convert_to_greyscale;
     QComboBox *double_page_spread_combo_box;

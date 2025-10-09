@@ -7,7 +7,7 @@
 
 QHBoxLayout *create_container_layout(QWidget *container) {
     auto layout = new QHBoxLayout(container);
-    layout->setContentsMargins(50, 0, 0, 0);
+    layout->setContentsMargins(20, 0, 0, 0);
     layout->setSpacing(10);
     return layout;
 }

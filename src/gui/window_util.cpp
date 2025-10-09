@@ -80,20 +80,50 @@ QWidget *create_widget_with_info(
 
     auto has_tooltip = tooltip_text && strlen(tooltip_text) > 0;
 
-    auto info_area = new QLabel();
-    info_area->setFixedSize(16, 16);
-
     if (has_tooltip && style) {
+        auto info_area = new QLabel();
+        info_area->setFixedSize(16, 16);
+
         auto icon = style->standardIcon(
             QStyle::StandardPixmap::SP_MessageBoxInformation
         );
         auto formatted_tooltip = "<p>" + std::string(tooltip_text) + "</p>";
         info_area->setPixmap(icon.pixmap(16, 16));
         info_area->setToolTip(QString::fromStdString(formatted_tooltip));
+
+        layout->addWidget(info_area);
     }
 
-    layout->addWidget(info_area);
     layout->addWidget(main_widget);
+
+    return container;
+}
+
+QWidget *create_control_with_info(
+    QStyle *style, QWidget *main_widget, const char *tooltip_text
+) {
+    auto container = new QWidget();
+    auto layout = new QHBoxLayout(container);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(10);
+
+    auto has_tooltip = tooltip_text && strlen(tooltip_text) > 0;
+
+    layout->addWidget(main_widget);
+
+    if (has_tooltip && style) {
+        auto info_area = new QLabel();
+        info_area->setFixedSize(16, 16);
+
+        auto icon = style->standardIcon(
+            QStyle::StandardPixmap::SP_MessageBoxInformation
+        );
+        auto formatted_tooltip = "<p>" + std::string(tooltip_text) + "</p>";
+        info_area->setPixmap(icon.pixmap(16, 16));
+        info_area->setToolTip(QString::fromStdString(formatted_tooltip));
+
+        layout->addWidget(info_area);
+    }
 
     return container;
 }

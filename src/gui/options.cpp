@@ -16,40 +16,35 @@ void add_pdf_pixel_density_widget(QStyle *style, Options *options) {
     options->pdf_pixel_density_spin_box
         = create_spin_box(300, 4'800, 300, 1'200);
 
-    auto pdf_pixel_density_widget = create_widget_with_info(
-        style, new QLabel("PDF pixel density (PPI)"), PDF_TOOLTIP
+    auto label = new QLabel("PDF pixel density (PPI)");
+    auto control_container = create_control_with_info(
+        style, options->pdf_pixel_density_spin_box, PDF_TOOLTIP
     );
 
-    options->settings_layout->addRow(
-        pdf_pixel_density_widget, options->pdf_pixel_density_spin_box
-    );
+    options->settings_layout->addRow(label, control_container);
 }
 
 void add_convert_to_greyscale_widget(QStyle *style, Options *options) {
-    auto label_widget = create_widget_with_info(
-        style, new QLabel("Convert pages to greyscale"), GREYSCALE_TOOLTIP
-    );
+    auto label = new QLabel("Convert pages to greyscale");
     options->convert_to_greyscale = new QCheckBox("Enable");
     options->convert_to_greyscale->setChecked(true);
-
-    options->settings_layout->addRow(
-        label_widget, options->convert_to_greyscale
+    auto control_container = create_control_with_info(
+        style, options->convert_to_greyscale, GREYSCALE_TOOLTIP
     );
+
+    options->settings_layout->addRow(label, control_container);
 }
 
 void add_double_page_spread_widget(QStyle *style, Options *options) {
-    auto widget = create_widget_with_info(
-        style,
-        new QLabel("Double-page spread actions"),
-        DOUBLE_PAGE_SPREAD_TOOLTIP
-    );
+    auto label = new QLabel("Double-page spread actions");
     options->double_page_spread_combo_box = create_combo_box(
         {"Rotate page", "Split into two pages", "Both", "None"}, "Rotate page"
     );
-
-    options->settings_layout->addRow(
-        widget, options->double_page_spread_combo_box
+    auto control_container = create_control_with_info(
+        style, options->double_page_spread_combo_box, DOUBLE_PAGE_SPREAD_TOOLTIP
     );
+
+    options->settings_layout->addRow(label, control_container);
 
     // Rotation options
     options->rotation_options_container = new QWidget();
@@ -72,36 +67,35 @@ void add_double_page_spread_widget(QStyle *style, Options *options) {
 }
 
 void add_remove_spine_widget(QStyle *style, Options *options) {
-    auto label_widget = create_widget_with_info(
-        style, new QLabel("Remove spines"), REMOVE_SPINE_TOOLTIP
-    );
+    auto label = new QLabel("Remove spines");
     options->remove_spine_check_box = new QCheckBox("Enable");
     options->remove_spine_check_box->setChecked(true);
-
-    options->settings_layout->addRow(
-        label_widget, options->remove_spine_check_box
+    auto control_container = create_control_with_info(
+        style, options->remove_spine_check_box, REMOVE_SPINE_TOOLTIP
     );
+
+    options->settings_layout->addRow(label, control_container);
 }
 
 void add_contrast_widget(QStyle *style, Options *options) {
-    auto label_widget = create_widget_with_info(
-        style, new QLabel("Stretch contrast"), CONTRAST_TOOLTIP
-    );
+    auto label = new QLabel("Stretch contrast");
     options->contrast_check_box = new QCheckBox("Enable");
     options->contrast_check_box->setChecked(true);
+    auto control_container = create_control_with_info(
+        style, options->contrast_check_box, CONTRAST_TOOLTIP
+    );
 
-    options->settings_layout->addRow(label_widget, options->contrast_check_box);
+    options->settings_layout->addRow(label, control_container);
 }
 
 void add_scaling_widgets(QStyle *style, Options *options) {
-    auto label_widget = create_widget_with_info(
-        style, new QLabel("Scale pages"), SCALE_TOOLTIP
-    );
+    auto label = new QLabel("Scale pages");
     options->enable_image_scaling_check_box = new QCheckBox("Enable");
-
-    options->settings_layout->addRow(
-        label_widget, options->enable_image_scaling_check_box
+    auto enable_container = create_control_with_info(
+        style, options->enable_image_scaling_check_box, SCALE_TOOLTIP
     );
+
+    options->settings_layout->addRow(label, enable_container);
 
     options->scaling_options_container = new QWidget();
     auto scaling_layout = new QFormLayout(options->scaling_options_container);
@@ -126,9 +120,7 @@ void add_scaling_widgets(QStyle *style, Options *options) {
     scaling_layout->addRow(height_label, options->height_spin_box);
 
     // Resampler
-    auto resampler_label_with_info = create_widget_with_info(
-        style, new QLabel("Resampler"), RESAMPLER_TOOLTIP
-    );
+    auto resampler_label = new QLabel("Resampler");
     options->resampler_combo_box = new QComboBox();
     options->resampler_combo_box->addItems(
         {"Bicubic interpolation",
@@ -141,23 +133,23 @@ void add_scaling_widgets(QStyle *style, Options *options) {
          "Nearest neighbour"}
     );
     options->resampler_combo_box->setCurrentText("Magic Kernel Sharp 2021");
-    scaling_layout->addRow(
-        resampler_label_with_info, options->resampler_combo_box
+    auto resampler_container = create_control_with_info(
+        style, options->resampler_combo_box, RESAMPLER_TOOLTIP
     );
+    scaling_layout->addRow(resampler_label, resampler_container);
 
     options->settings_layout->addWidget(options->scaling_options_container);
 }
 
 void add_quantization_widgets(QStyle *style, Options *options) {
-    auto label_widget = create_widget_with_info(
-        style, new QLabel("Quantize pages"), QUANTIZE_TOOLTIP
-    );
+    auto label = new QLabel("Quantize pages");
     options->enable_image_quantization_check_box = new QCheckBox("Enable");
     options->enable_image_quantization_check_box->setChecked(true);
-
-    options->settings_layout->addRow(
-        label_widget, options->enable_image_quantization_check_box
+    auto enable_container = create_control_with_info(
+        style, options->enable_image_quantization_check_box, QUANTIZE_TOOLTIP
     );
+
+    options->settings_layout->addRow(label, enable_container);
 
     options->quantization_options_container = new QWidget();
     auto quantization_layout
@@ -167,23 +159,25 @@ void add_quantization_widgets(QStyle *style, Options *options) {
     quantization_layout->setLabelAlignment(Qt::AlignLeft);
 
     // Bit depth
-    auto bit_depth_label = create_widget_with_info(
-        style, new QLabel("Bit depth"), BIT_DEPTH_TOOLTIP
-    );
+    auto bit_depth_label = new QLabel("Bit depth");
     options->bit_depth_combo_box = new QComboBox();
     options->bit_depth_combo_box->addItems({"1", "2", "4", "8", "16"});
     options->bit_depth_combo_box->setCurrentText("4");
-    quantization_layout->addRow(bit_depth_label, options->bit_depth_combo_box);
+    auto bit_depth_container = create_control_with_info(
+        style, options->bit_depth_combo_box, BIT_DEPTH_TOOLTIP
+    );
+    quantization_layout->addRow(bit_depth_label, bit_depth_container);
 
     // Dithering
-    auto dithering_label = create_widget_with_info(
-        style, new QLabel("Dithering"), DITHERING_TOOLTIP
-    );
+    auto dithering_label = new QLabel("Dithering");
     options->dithering_spin_box = new QDoubleSpinBox();
     options->dithering_spin_box->setRange(0.0, 1.0);
     options->dithering_spin_box->setSingleStep(0.1);
     options->dithering_spin_box->setValue(1.0);
-    quantization_layout->addRow(dithering_label, options->dithering_spin_box);
+    auto dithering_container = create_control_with_info(
+        style, options->dithering_spin_box, DITHERING_TOOLTIP
+    );
+    quantization_layout->addRow(dithering_label, dithering_container);
 
     options->settings_layout->addWidget(
         options->quantization_options_container
@@ -193,12 +187,13 @@ void add_quantization_widgets(QStyle *style, Options *options) {
 void add_image_format_widgets(QStyle *style, Options *options) {
     options->image_format_combo_box
         = create_combo_box({"AVIF", "JPEG", "JPEG XL", "PNG", "WebP"}, "PNG");
-    auto image_format_label = create_widget_with_info(
-        style, new QLabel("Image format"), IMG_FORMAT_TOOLTIP
+    auto image_format_label = new QLabel("Image format");
+    auto image_format_container = create_control_with_info(
+        style, options->image_format_combo_box, IMG_FORMAT_TOOLTIP
     );
 
     options->settings_layout->addRow(
-        image_format_label, options->image_format_combo_box
+        image_format_label, image_format_container
     );
 
     auto image_format_options_container = new QWidget();
@@ -261,9 +256,8 @@ void add_image_format_widgets(QStyle *style, Options *options) {
     options->settings_layout->addWidget(image_format_options_container);
 }
 
-void add_parallel_workers_widget(QStyle *style, Options *options) {
-    auto label
-        = create_widget_with_info(style, new QLabel("Parallel workers"), "");
+void add_parallel_workers_widget(QStyle *, Options *options) {
+    auto label = new QLabel("Parallel workers");
 
     options->workers_spin_box = new QSpinBox();
     auto threads = std::thread::hardware_concurrency();

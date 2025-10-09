@@ -59,19 +59,14 @@ void add_double_page_spread_widget(QStyle *style, Options *options) {
     rotation_layout->setLabelAlignment(Qt::AlignLeft);
 
     auto rotation_label = new QLabel("Rotation direction");
+    options->rotation_direction_combo_box = new QComboBox();
+    options->rotation_direction_combo_box->addItems(
+        {"Clockwise", "Counterclockwise"}
+    );
 
-    auto radio_group_layout = new QHBoxLayout();
-    options->clockwise_radio = new QRadioButton("Clockwise");
-    options->counter_clockwise_radio = new QRadioButton("Counterclockwise");
-    options->clockwise_radio->setChecked(true);
-    radio_group_layout->addWidget(options->clockwise_radio);
-    radio_group_layout->addWidget(options->counter_clockwise_radio);
-    radio_group_layout->addStretch();
-
-    auto radio_widget = new QWidget();
-    radio_widget->setLayout(radio_group_layout);
-
-    rotation_layout->addRow(rotation_label, radio_widget);
+    rotation_layout->addRow(
+        rotation_label, options->rotation_direction_combo_box
+    );
 
     options->settings_layout->addWidget(options->rotation_options_container);
 }

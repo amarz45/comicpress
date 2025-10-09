@@ -79,8 +79,7 @@ struct Options {
     QComboBox *image_quality_label_jpeg_xl;
     QSpinBox *workers_spin_box;
     QWidget *rotation_options_container;
-    QRadioButton *clockwise_radio;
-    QRadioButton *counter_clockwise_radio;
+    QComboBox *rotation_direction_combo_box;
 };
 
 struct FileTimer {

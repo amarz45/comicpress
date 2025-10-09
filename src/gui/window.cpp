@@ -418,7 +418,8 @@ Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
     task.double_page_spread_action
         = (DoublePageSpreadActions)this->options.double_page_spread_combo_box
               ->currentIndex();
-    if (this->options.clockwise_radio->isChecked()) {
+    if (this->options.rotation_direction_combo_box->currentText()
+        == "Clockwise") {
         task.rotation_direction = CLOCKWISE;
     }
     else {

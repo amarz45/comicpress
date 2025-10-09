@@ -91,6 +91,12 @@ void Window::connect_signals() {
         this,
         &Window::on_cancel_button_clicked
     );
+    connect(
+        this->file_list,
+        &QListWidget::itemSelectionChanged,
+        this,
+        &Window::update_file_list_buttons
+    );
 }
 
 void Window::on_add_files_clicked() {

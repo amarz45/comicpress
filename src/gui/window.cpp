@@ -474,9 +474,17 @@ Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
 }
 
 void Window::update_file_list_buttons() {
-    bool has_items = this->file_list->count() > 0;
+    auto has_items = this->file_list->count() > 0;
     this->remove_selected_button->setVisible(has_items);
     this->clear_all_button->setVisible(has_items);
+
+    if (has_items) {
+        auto has_selection = !this->file_list->selectedItems().isEmpty();
+        this->remove_selected_button->setEnabled(has_selection);
+    }
+    else {
+        this->remove_selected_button->setEnabled(false);
+    }
 }
 
 void Window::set_display_preset(

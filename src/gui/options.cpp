@@ -56,6 +56,7 @@ void add_double_page_spread_widget(QStyle *style, Options *options) {
     auto rotation_layout = new QFormLayout(options->rotation_options_container);
     rotation_layout->setContentsMargins(20, 0, 0, 0);
     rotation_layout->setHorizontalSpacing(10);
+    rotation_layout->setLabelAlignment(Qt::AlignLeft);
 
     auto rotation_label = new QLabel("Rotation direction");
 
@@ -111,6 +112,7 @@ void add_scaling_widgets(QStyle *style, Options *options) {
     auto scaling_layout = new QFormLayout(options->scaling_options_container);
     scaling_layout->setContentsMargins(20, 0, 0, 0);
     scaling_layout->setHorizontalSpacing(10);
+    scaling_layout->setLabelAlignment(Qt::AlignLeft);
 
     // Width
     options->width_spin_box = new QSpinBox();
@@ -167,6 +169,7 @@ void add_quantization_widgets(QStyle *style, Options *options) {
         = new QFormLayout(options->quantization_options_container);
     quantization_layout->setContentsMargins(20, 0, 0, 0);
     quantization_layout->setHorizontalSpacing(10);
+    quantization_layout->setLabelAlignment(Qt::AlignLeft);
 
     // Bit depth
     auto bit_depth_label = create_widget_with_info(
@@ -207,6 +210,7 @@ void add_image_format_widgets(QStyle *style, Options *options) {
     auto image_format_layout = new QFormLayout(image_format_options_container);
     image_format_layout->setContentsMargins(20, 0, 0, 0);
     image_format_layout->setHorizontalSpacing(10);
+    image_format_layout->setLabelAlignment(Qt::AlignLeft);
 
     // Compression type
     options->image_compression_type_label = new QLabel("Compression type");

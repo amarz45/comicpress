@@ -145,8 +145,8 @@ QGroupBox *Window::create_io_group() {
     this->remove_selected_button = new QPushButton("Remove selected");
     this->clear_all_button = new QPushButton("Clear all");
 
-    this->remove_selected_button->setEnabled(false);
-    this->clear_all_button->setEnabled(false);
+    this->remove_selected_button->setVisible(false);
+    this->clear_all_button->setVisible(false);
 
     file_buttons_layout->addWidget(this->add_files_button);
     file_buttons_layout->addWidget(this->remove_selected_button);
@@ -475,8 +475,8 @@ Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
 
 void Window::update_file_list_buttons() {
     bool has_items = this->file_list->count() > 0;
-    this->remove_selected_button->setEnabled(has_items);
-    this->clear_all_button->setEnabled(has_items);
+    this->remove_selected_button->setVisible(has_items);
+    this->clear_all_button->setVisible(has_items);
 }
 
 void Window::set_display_preset(

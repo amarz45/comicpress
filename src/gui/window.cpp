@@ -139,7 +139,7 @@ QGroupBox *Window::create_io_group() {
     this->file_list = new QListWidget();
     this->file_list->setFont(QFont("monospace"));
     this->file_list->setSelectionMode(QAbstractItemView::ExtendedSelection);
-    this->file_list->setMaximumHeight(300);
+    this->file_list->setMaximumHeight(500);
 
     this->add_files_button = new QPushButton("Add input files");
     this->remove_selected_button = new QPushButton("Remove selected");

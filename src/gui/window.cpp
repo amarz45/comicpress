@@ -175,6 +175,7 @@ QGroupBox *Window::create_settings_group() {
     auto settings_group = new QGroupBox();
     settings_group->setFlat(true);
     this->options.settings_layout = new QFormLayout(settings_group);
+    this->options.settings_layout->setContentsMargins(0, 0, 0, 0);
     auto style = this->style();
 
     add_pdf_pixel_density_widget(style, &this->options);
@@ -187,11 +188,6 @@ QGroupBox *Window::create_settings_group() {
     add_quantization_widgets(style, &this->options);
     add_image_format_widgets(style, &this->options);
     add_parallel_workers_widget(style, &this->options);
-
-    // Add stretch at the end using a spacer row
-    auto spacer = new QWidget();
-    spacer->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
-    this->options.settings_layout->addRow(new QLabel(""), spacer);
 
     return settings_group;
 }

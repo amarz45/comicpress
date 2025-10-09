@@ -1,10 +1,15 @@
 #include "include/options.hpp"
 #include "include/ui_constants.hpp"
 #include "include/window_util.hpp"
+#include <QComboBox>
+#include <QDoubleSpinBox>
 #include <QFormLayout>
+#include <QHBoxLayout>
 #include <QLabel>
+#include <QSizePolicy>
 #include <QSpinBox>
 #include <QStyle>
+#include <QWidget>
 #include <thread>
 
 void add_pdf_pixel_density_widget(QStyle *style, Options *options) {
@@ -48,11 +53,11 @@ void add_double_page_spread_widget(QStyle *style, Options *options) {
 
     // Rotation options
     options->rotation_options_container = new QWidget();
-    auto rotation_layout
-        = create_container_layout(options->rotation_options_container);
+    auto rotation_layout = new QFormLayout(options->rotation_options_container);
+    rotation_layout->setContentsMargins(20, 0, 0, 0);
+    rotation_layout->setHorizontalSpacing(10);
 
     auto rotation_label = new QLabel("Rotation direction");
-    rotation_layout->addWidget(rotation_label);
 
     auto radio_group_layout = new QHBoxLayout();
     options->clockwise_radio = new QRadioButton("Clockwise");
@@ -62,7 +67,10 @@ void add_double_page_spread_widget(QStyle *style, Options *options) {
     radio_group_layout->addWidget(options->counter_clockwise_radio);
     radio_group_layout->addStretch();
 
-    rotation_layout->addLayout(radio_group_layout);
+    auto radio_widget = new QWidget();
+    radio_widget->setLayout(radio_group_layout);
+
+    rotation_layout->addRow(rotation_label, radio_widget);
 
     options->settings_layout->addWidget(options->rotation_options_container);
 }
@@ -100,23 +108,32 @@ void add_scaling_widgets(QStyle *style, Options *options) {
     );
 
     options->scaling_options_container = new QWidget();
-    auto scaling_layout
-        = create_container_layout(options->scaling_options_container);
+    auto scaling_layout = new QFormLayout(options->scaling_options_container);
+    scaling_layout->setContentsMargins(20, 0, 0, 0);
+    scaling_layout->setHorizontalSpacing(10);
 
-    options->width_spin_box = create_spin_box_with_label(
-        scaling_layout, new QLabel("Width"), 100, 4'000, 100, 1440
-    );
-    options->height_spin_box = create_spin_box_with_label(
-        scaling_layout, new QLabel("Height"), 100, 4'000, 100, 1920
-    );
+    // Width
+    options->width_spin_box = new QSpinBox();
+    options->width_spin_box->setRange(100, 4'000);
+    options->width_spin_box->setSingleStep(100);
+    options->width_spin_box->setValue(1440);
+    auto width_label = new QLabel("Width");
+    scaling_layout->addRow(width_label, options->width_spin_box);
+
+    // Height
+    options->height_spin_box = new QSpinBox();
+    options->height_spin_box->setRange(100, 4'000);
+    options->height_spin_box->setSingleStep(100);
+    options->height_spin_box->setValue(1920);
+    auto height_label = new QLabel("Height");
+    scaling_layout->addRow(height_label, options->height_spin_box);
 
     // Resampler
     auto resampler_label_with_info = create_widget_with_info(
         style, new QLabel("Resampler"), RESAMPLER_TOOLTIP
     );
-    options->resampler_combo_box = create_combo_box_with_layout(
-        scaling_layout,
-        resampler_label_with_info,
+    options->resampler_combo_box = new QComboBox();
+    options->resampler_combo_box->addItems(
         {"Bicubic interpolation",
          "Bilinear interpolation",
          "Lanczos 2",
@@ -124,11 +141,12 @@ void add_scaling_widgets(QStyle *style, Options *options) {
          "Magic Kernel Sharp 2013",
          "Magic Kernel Sharp 2021",
          "Mitchell",
-         "Nearest neighbour"},
-        "Magic Kernel Sharp 2021"
+         "Nearest neighbour"}
     );
-
-    scaling_layout->addStretch();
+    options->resampler_combo_box->setCurrentText("Magic Kernel Sharp 2021");
+    scaling_layout->addRow(
+        resampler_label_with_info, options->resampler_combo_box
+    );
 
     options->settings_layout->addWidget(options->scaling_options_container);
 }
@@ -146,23 +164,28 @@ void add_quantization_widgets(QStyle *style, Options *options) {
 
     options->quantization_options_container = new QWidget();
     auto quantization_layout
-        = create_container_layout(options->quantization_options_container);
+        = new QFormLayout(options->quantization_options_container);
+    quantization_layout->setContentsMargins(20, 0, 0, 0);
+    quantization_layout->setHorizontalSpacing(10);
 
+    // Bit depth
     auto bit_depth_label = create_widget_with_info(
         style, new QLabel("Bit depth"), BIT_DEPTH_TOOLTIP
     );
-    options->bit_depth_combo_box = create_combo_box_with_layout(
-        quantization_layout, bit_depth_label, {"1", "2", "4", "8", "16"}, "4"
-    );
+    options->bit_depth_combo_box = new QComboBox();
+    options->bit_depth_combo_box->addItems({"1", "2", "4", "8", "16"});
+    options->bit_depth_combo_box->setCurrentText("4");
+    quantization_layout->addRow(bit_depth_label, options->bit_depth_combo_box);
 
+    // Dithering
     auto dithering_label = create_widget_with_info(
         style, new QLabel("Dithering"), DITHERING_TOOLTIP
     );
-    options->dithering_spin_box = create_double_spin_box(
-        quantization_layout, dithering_label, 0.0, 1.0, 0.1, 1.0
-    );
-
-    quantization_layout->addStretch();
+    options->dithering_spin_box = new QDoubleSpinBox();
+    options->dithering_spin_box->setRange(0.0, 1.0);
+    options->dithering_spin_box->setSingleStep(0.1);
+    options->dithering_spin_box->setValue(1.0);
+    quantization_layout->addRow(dithering_label, options->dithering_spin_box);
 
     options->settings_layout->addWidget(
         options->quantization_options_container
@@ -181,39 +204,60 @@ void add_image_format_widgets(QStyle *style, Options *options) {
     );
 
     auto image_format_options_container = new QWidget();
-    auto image_format_layout
-        = create_container_layout(image_format_options_container);
+    auto image_format_layout = new QFormLayout(image_format_options_container);
+    image_format_layout->setContentsMargins(20, 0, 0, 0);
+    image_format_layout->setHorizontalSpacing(10);
 
+    // Compression type
     options->image_compression_type_label = new QLabel("Compression type");
-    options->image_compression_type_combo_box = create_combo_box_with_layout(
-        image_format_layout,
+    options->image_compression_type_combo_box = new QComboBox();
+    options->image_compression_type_combo_box->addItems({"Lossless", "Lossy"});
+    options->image_compression_type_combo_box->setCurrentText("Lossless");
+    image_format_layout->addRow(
         options->image_compression_type_label,
-        {"Lossless", "Lossy"},
-        "Lossless"
+        options->image_compression_type_combo_box
     );
     options->image_compression_type_label->setVisible(false);
     options->image_compression_type_combo_box->setVisible(false);
 
+    // Compression effort
     options->image_compression_label = new QLabel("Compression effort");
-    options->image_compression_spin_box = create_spin_box_with_label(
-        image_format_layout, options->image_compression_label, 0, 9, 1, 6
+    options->image_compression_spin_box = new QSpinBox();
+    options->image_compression_spin_box->setRange(0, 9);
+    options->image_compression_spin_box->setSingleStep(1);
+    options->image_compression_spin_box->setValue(6);
+    image_format_layout->addRow(
+        options->image_compression_label, options->image_compression_spin_box
     );
+
+    // Quality label container (for dynamic switching)
+    auto quality_label_container = new QWidget();
+    auto quality_label_hbox = new QHBoxLayout(quality_label_container);
+    quality_label_hbox->setContentsMargins(0, 0, 0, 0);
+    quality_label_hbox->setSpacing(0);
 
     options->image_quality_label_original = new QLabel("Quality");
-    options->image_quality_label_jpeg_xl
-        = create_combo_box({"Distance", "Quality"}, "Distance");
+    options->image_quality_label_jpeg_xl = new QComboBox();
+    options->image_quality_label_jpeg_xl->addItems({"Distance", "Quality"});
+    options->image_quality_label_jpeg_xl->setCurrentText("Distance");
     options->image_quality_label_jpeg_xl->setVisible(false);
-    image_format_layout->addWidget(options->image_quality_label_jpeg_xl);
-    options->image_quality_label = options->image_quality_label_original;
 
-    options->image_quality_spin_box = create_double_spin_box(
-        image_format_layout, options->image_quality_label, 0, 100, 1, 50
-    );
-    options->image_quality_label->setVisible(false);
+    quality_label_hbox->addWidget(options->image_quality_label_original);
+    quality_label_hbox->addWidget(options->image_quality_label_jpeg_xl);
+
+    // Quality spin box
+    options->image_quality_spin_box = new QDoubleSpinBox();
+    options->image_quality_spin_box->setRange(0, 100);
+    options->image_quality_spin_box->setSingleStep(1);
+    options->image_quality_spin_box->setValue(50);
     options->image_quality_spin_box->setDecimals(0);
     options->image_quality_spin_box->setVisible(false);
+    options->image_quality_label = options->image_quality_label_original;
+    options->image_quality_label->setVisible(false); // Initial hidden state
 
-    image_format_layout->addStretch();
+    image_format_layout->addRow(
+        quality_label_container, options->image_quality_spin_box
+    );
 
     options->settings_layout->addWidget(image_format_options_container);
 }

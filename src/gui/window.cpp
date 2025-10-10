@@ -447,7 +447,6 @@ Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
         task.rotation_direction = COUNTERCLOCKWISE;
     }
     task.remove_spine = this->options.remove_spine_check_box->isChecked();
-    //  TODO: Replace placeholders.
     task.stretch_page_contrast = this->options.contrast_check_box->isChecked();
     task.scale_pages
         = this->options.enable_image_scaling_check_box->isChecked();
@@ -480,8 +479,9 @@ Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
     }
     task.quantize_pages
         = this->options.enable_image_quantization_check_box->isChecked();
-    task.bit_depth = 4;
-    task.dither = 1.0;
+    task.bit_depth
+        = std::pow(2, this->options.bit_depth_combo_box->currentIndex());
+    task.dither = this->options.dithering_spin_box->value();
     task.image_format
         = this->options.image_format_combo_box->currentText().toStdString();
     task.is_lossy

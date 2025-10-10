@@ -1,23 +1,28 @@
 static const char *PDF_TOOLTIP = R"(
-    Sets the rendering resolution for PDF files. Higher values produce better
-    quality but use more memory and take longer to process. Values higher than
-    the target display’s pixel density still result in higher perceived quality
-    on that display. Generally, it’s exceedingly difficult to notice a
+    Sets the rendering resolution for PDF input files. Higher values produce
+    better quality but use more memory and take longer to process. Values higher
+    than the target display’s pixel density still result in higher perceived
+    quality on that display. Generally, it’s exceedingly difficult to notice a
     difference in quality for values greater than 1200 PPI. However, rasterizing
     a page in a PDF file takes roughly four times as long at 1200 PPI than at
     600 PPI.
 )";
 
 static const char *GREYSCALE_TOOLTIP = R"(
-    Lorem ipsum
+    Converts coloured pages to greyscale. This option is recommended for
+    ereaders that don’t support colour, since it reduces file size at no cost to
+    quality.
 )";
 
 static const char *DOUBLE_PAGE_SPREAD_TOOLTIP = R"(
-    Lorem ipsum
+    What to do when a double-page spread (when two pages are put together into a
+    single page).
 )";
 
 static const char *REMOVE_SPINE_TOOLTIP = R"(
-    Lorem ipsum
+    Remove spines which separate two pages in a double-page spread. This can
+    help to unify double-page spreads, but note that it might remove parts of
+    the actual pages.
 )";
 
 static const char *CONTRAST_TOOLTIP = R"(
@@ -56,7 +61,7 @@ static const char *BIT_DEPTH_TOOLTIP = R"(
 )";
 
 static const char *DITHERING_TOOLTIP = R"(
-    Sets the dither level, which is used to make quantized images look better.
+    Sets the dithering level, which is used to make quantized images look better.
     It’s highly recommended recommended to leave this at the default maximum
     value of 1.0 to significantly improve quality.
 )";

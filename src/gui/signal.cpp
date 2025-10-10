@@ -38,6 +38,18 @@ void Window::connect_signals() {
         &Window::on_double_page_spread_changed
     );
     connect(
+        this->options.convert_to_greyscale,
+        &QCheckBox::checkStateChanged,
+        this,
+        &Window::on_preset_option_modified
+    );
+    connect(
+        this->options.bit_depth_combo_box,
+        QOverload<int>::of(&QComboBox::currentIndexChanged),
+        this,
+        &Window::on_preset_option_modified
+    );
+    connect(
         this->options.width_spin_box,
         QOverload<int>::of(&QSpinBox::valueChanged),
         this,

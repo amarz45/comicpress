@@ -187,16 +187,28 @@ QGroupBox *Window::create_settings_group() {
     this->options.settings_layout->setContentsMargins(0, 10, 0, 0);
     auto style = this->style();
 
+    auto spacer = new QSpacerItem(0, 20);
+
+    // Preprocessing
+    add_parallel_workers_widget(style, &this->options);
+    this->add_display_presets_widget();
     add_pdf_pixel_density_widget(style, &this->options);
+
+    // Colour
+    this->options.settings_layout->addItem(spacer);
     add_convert_to_greyscale_widget(style, &this->options);
+    add_contrast_widget(style, &this->options);
+    add_quantization_widgets(style, &this->options);
+
+    // General
+    this->options.settings_layout->addItem(spacer);
+    add_scaling_widgets(style, &this->options);
     add_double_page_spread_widget(style, &this->options);
     add_remove_spine_widget(style, &this->options);
-    add_contrast_widget(style, &this->options);
-    this->add_display_presets_widget();
-    add_scaling_widgets(style, &this->options);
-    add_quantization_widgets(style, &this->options);
+
+    // Image format
+    this->options.settings_layout->addItem(spacer);
     add_image_format_widgets(style, &this->options);
-    add_parallel_workers_widget(style, &this->options);
 
     return settings_group;
 }

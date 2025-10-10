@@ -49,7 +49,7 @@ void add_double_page_spread_widget(QStyle *style, Options *options) {
     // Rotation options
     options->rotation_options_container = new QWidget();
     auto rotation_layout = new QFormLayout(options->rotation_options_container);
-    rotation_layout->setContentsMargins(20, 0, 0, 0);
+    rotation_layout->setContentsMargins(25, 0, 0, 0);
     rotation_layout->setHorizontalSpacing(10);
     rotation_layout->setLabelAlignment(Qt::AlignLeft);
 
@@ -99,7 +99,7 @@ void add_scaling_widgets(QStyle *style, Options *options) {
 
     options->scaling_options_container = new QWidget();
     auto scaling_layout = new QFormLayout(options->scaling_options_container);
-    scaling_layout->setContentsMargins(20, 0, 0, 0);
+    scaling_layout->setContentsMargins(25, 0, 0, 0);
     scaling_layout->setHorizontalSpacing(10);
     scaling_layout->setLabelAlignment(Qt::AlignLeft);
 
@@ -154,7 +154,7 @@ void add_quantization_widgets(QStyle *style, Options *options) {
     options->quantization_options_container = new QWidget();
     auto quantization_layout
         = new QFormLayout(options->quantization_options_container);
-    quantization_layout->setContentsMargins(20, 0, 0, 0);
+    quantization_layout->setContentsMargins(25, 0, 0, 0);
     quantization_layout->setHorizontalSpacing(10);
     quantization_layout->setLabelAlignment(Qt::AlignLeft);
 
@@ -198,7 +198,7 @@ void add_image_format_widgets(QStyle *style, Options *options) {
 
     auto image_format_options_container = new QWidget();
     auto image_format_layout = new QFormLayout(image_format_options_container);
-    image_format_layout->setContentsMargins(20, 0, 0, 0);
+    image_format_layout->setContentsMargins(25, 0, 0, 0);
     image_format_layout->setHorizontalSpacing(10);
     image_format_layout->setLabelAlignment(Qt::AlignLeft);
 

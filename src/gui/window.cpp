@@ -110,6 +110,7 @@ void Window::setup_ui() {
     auto action_layout = new QHBoxLayout(action_group);
     this->start_button = new QPushButton("Start");
     this->cancel_button = new QPushButton("Cancel");
+    this->start_button->setEnabled(false);
     this->cancel_button->setEnabled(false);
     action_layout->addStretch();
     action_layout->addWidget(this->start_button);
@@ -497,6 +498,7 @@ Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
 
 void Window::update_file_list_buttons() {
     auto has_items = this->file_list->count() > 0;
+    this->start_button->setEnabled(has_items);
     this->remove_selected_button->setVisible(has_items);
     this->clear_all_button->setVisible(has_items);
 

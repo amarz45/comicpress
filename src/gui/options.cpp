@@ -69,7 +69,6 @@ void add_double_page_spread_widget(QStyle *style, Options *options) {
 void add_remove_spine_widget(QStyle *style, Options *options) {
     auto label = new QLabel("Remove spines");
     options->remove_spine_check_box = new QCheckBox("Enable");
-    options->remove_spine_check_box->setChecked(true);
     auto control_container = create_control_with_info(
         style, options->remove_spine_check_box, REMOVE_SPINE_TOOLTIP
     );

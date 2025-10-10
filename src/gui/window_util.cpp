@@ -4,6 +4,7 @@
 #include <QLabel>
 #include <QSpinBox>
 #include <QWidget>
+#include <utility>
 
 QHBoxLayout *create_container_layout(QWidget *container) {
     auto layout = new QHBoxLayout(container);
@@ -97,6 +98,35 @@ QWidget *create_widget_with_info(
     layout->addWidget(main_widget);
 
     return container;
+}
+
+std::pair<QWidget *, QLabel *> create_control_with_info_pair(
+    QStyle *style, QWidget *main_widget, const char *tooltip_text
+) {
+    auto container = new QWidget();
+    auto layout = new QHBoxLayout(container);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(10);
+
+    auto has_tooltip = tooltip_text && strlen(tooltip_text) > 0;
+    layout->addWidget(main_widget);
+
+    auto info_area = new QLabel();
+
+    if (has_tooltip && style) {
+        info_area->setFixedSize(16, 16);
+
+        auto icon = style->standardIcon(
+            QStyle::StandardPixmap::SP_MessageBoxInformation
+        );
+        auto formatted_tooltip = "<p>" + std::string(tooltip_text) + "</p>";
+        info_area->setPixmap(icon.pixmap(16, 16));
+        info_area->setToolTip(QString::fromStdString(formatted_tooltip));
+
+        layout->addWidget(info_area);
+    }
+
+    return std::make_pair(container, info_area);
 }
 
 QWidget *create_control_with_info(

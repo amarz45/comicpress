@@ -209,16 +209,24 @@ void add_image_format_widgets(QStyle *style, Options *options) {
     image_format_layout->setLabelAlignment(Qt::AlignLeft);
 
     // Compression type
-    options->image_compression_type_label = new QLabel("Compression type");
+    auto compression_type_label = new QLabel("Compression type");
+    options->image_compression_type_label = compression_type_label;
     options->image_compression_type_combo_box = new QComboBox();
     options->image_compression_type_combo_box->addItems({"Lossless", "Lossy"});
     options->image_compression_type_combo_box->setCurrentText("Lossless");
-    image_format_layout->addRow(
-        options->image_compression_type_label,
-        options->image_compression_type_combo_box
-    );
     options->image_compression_type_label->setVisible(false);
     options->image_compression_type_combo_box->setVisible(false);
+    auto image_compression_type_pair = create_control_with_info_pair(
+        style,
+        options->image_compression_type_combo_box,
+        IMAGE_COMPRESSION_TYPE_TOOLTIP
+    );
+    image_format_layout->addRow(
+        options->image_compression_type_label, image_compression_type_pair.first
+    );
+    options->image_compression_type_tooltip
+        = image_compression_type_pair.second;
+    options->image_compression_type_tooltip->setVisible(false);
 
     // Compression effort
     options->image_compression_label = new QLabel("Compression effort");

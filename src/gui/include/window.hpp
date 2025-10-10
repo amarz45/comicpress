@@ -73,6 +73,7 @@ struct Options {
     QSpinBox *image_compression_spin_box;
     QComboBox *image_compression_type_combo_box;
     QLabel *image_compression_type_label;
+    QLabel *image_compression_type_tooltip;
     QDoubleSpinBox *image_quality_spin_box;
     QWidget *image_quality_label;
     QLabel *image_quality_label_original;

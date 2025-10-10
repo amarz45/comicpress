@@ -102,3 +102,11 @@ static const char *IMG_FORMAT_TOOLTIP = R"(
         </dd>
     </dl>
 )";
+
+static const char *IMAGE_COMPRESSION_TYPE_TOOLTIP = R"(
+    Sets the image compression type. <i>Lossless</i> is strongly recommended
+    when <i>Quantize pages</i> is enabled because it results in smaller file
+    sizes as well as better quality. If <i>Quantize pages</i> is disabled,
+    <i>Lossy</i> is recommended because it decreases file sizes significantly
+    with only a minor negative impact on quality.
+)";

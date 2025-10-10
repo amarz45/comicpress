@@ -318,6 +318,9 @@ void Window::on_image_format_changed() {
     this->options.image_compression_type_combo_box->setVisible(
         compression_type_visible
     );
+    this->options.image_compression_type_tooltip->setVisible(
+        compression_type_visible
+    );
     this->options.image_compression_label->setVisible(
         compression_effort_visible
     );

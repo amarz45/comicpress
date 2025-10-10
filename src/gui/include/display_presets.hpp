@@ -3,6 +3,7 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <vector>
 
 struct Display {
     const unsigned int width;
@@ -11,7 +12,7 @@ struct Display {
     const bool colour;
 };
 
-using ModelMap = std::map<std::string, Display>;
+using ModelMap = std::vector<std::pair<std::string, Display>>;
 using BrandMap = std::map<std::string, std::optional<ModelMap>>;
 
 const BrandMap DISPLAY_PRESETS = {

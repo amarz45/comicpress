@@ -195,10 +195,19 @@ void Window::on_display_preset_changed() {
 
     this->is_programmatically_changing_values = true;
 
-    auto display = DISPLAY_PRESETS.at(brand).value().at(model);
-    this->options.enable_image_scaling_check_box->setChecked(true);
-    this->options.width_spin_box->setValue(display.width);
-    this->options.height_spin_box->setValue(display.height);
+    const auto &models = DISPLAY_PRESETS.at(brand).value();
+    auto it = std::find_if(
+        models.begin(), models.end(), [&model](const auto &pair) {
+            return pair.first == model;
+        }
+    );
+
+    if (it != models.end()) {
+        const Display &display = it->second;
+        this->options.enable_image_scaling_check_box->setChecked(true);
+        this->options.width_spin_box->setValue(display.width);
+        this->options.height_spin_box->setValue(display.height);
+    }
 
     this->is_programmatically_changing_values = false;
 }

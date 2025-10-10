@@ -53,13 +53,14 @@ Window::Window(QWidget *parent) : QMainWindow(parent), eta_recent_intervals(5) {
     this->images_since_last_eta_recent = 0;
     this->last_progress_value = 0.0;
     this->is_processing_cancelled = false;
+    this->is_programmatically_changing_values = false;
 
     this->setWindowTitle("Comicpress");
     this->central_widget = new QWidget(this);
     this->setCentralWidget(central_widget);
 
     this->setup_ui();
-    this->on_display_preset_changed(true);
+    this->set_display_preset("Custom", "");
     this->on_enable_image_scaling_changed(
         this->options.enable_image_scaling_check_box->checkState()
     );
@@ -237,7 +238,7 @@ void Window::add_display_presets_widget() {
 
     if (auto custom_action = display_menu->addAction("Custom")) {
         connect(custom_action, &QAction::triggered, this, [this]() {
-            this->set_display_preset("Custom", "", true);
+            this->set_display_preset("Custom", "");
         });
     }
     display_menu->addSeparator();
@@ -265,7 +266,7 @@ void Window::add_display_presets_widget() {
                 &QAction::triggered,
                 this,
                 [this, brand, model_name]() {
-                    this->set_display_preset(brand, model_name, false);
+                    this->set_display_preset(brand, model_name);
                 }
             );
         }
@@ -496,15 +497,13 @@ void Window::update_file_list_buttons() {
     }
 }
 
-void Window::set_display_preset(
-    std::string brand, std::string model, bool first_time
-) {
+void Window::set_display_preset(std::string brand, std::string model) {
     this->display_preset.brand = brand;
     this->display_preset.model = model;
     QString text = model.empty() ? QString::fromStdString(brand)
                                  : QString::fromStdString(brand + " " + model);
     this->options.display_preset_button->setText(text);
-    this->on_display_preset_changed(first_time);
+    this->on_display_preset_changed();
 }
 
 void Window::create_archive(const QString &source_archive_path) {

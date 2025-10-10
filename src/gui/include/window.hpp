@@ -121,7 +121,8 @@ class Window : public QMainWindow {
     void on_clear_all_clicked();
     void on_browse_output_clicked();
     void on_double_page_spread_changed(const QString &text);
-    void on_display_preset_changed(bool first_time);
+    void on_display_preset_changed();
+    void on_preset_option_modified();
     void on_enable_image_scaling_changed(int state);
     void on_enable_image_quantization_changed(int state);
     void on_image_format_changed();
@@ -178,6 +179,7 @@ class Window : public QMainWindow {
     QMap<QString, FileTimer> file_timers;
     int max_concurrent_workers;
     bool is_processing_cancelled;
+    bool is_programmatically_changing_values;
 
     // Timer
     void update_time_labels();
@@ -198,8 +200,7 @@ class Window : public QMainWindow {
     create_task(fs::path source_file, fs::path output_dir, int page_num);
     void update_file_list_buttons();
     void connect_signals();
-    void
-    set_display_preset(std::string brand, std::string model, bool first_time);
+    void set_display_preset(std::string brand, std::string model);
     void create_archive(const QString &source_archive_path);
 
     int total_pages;

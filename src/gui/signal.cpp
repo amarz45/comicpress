@@ -38,6 +38,24 @@ void Window::connect_signals() {
         &Window::on_double_page_spread_changed
     );
     connect(
+        this->options.width_spin_box,
+        QOverload<int>::of(&QSpinBox::valueChanged),
+        this,
+        &Window::on_preset_option_modified
+    );
+    connect(
+        this->options.height_spin_box,
+        QOverload<int>::of(&QSpinBox::valueChanged),
+        this,
+        &Window::on_preset_option_modified
+    );
+    connect(
+        this->options.enable_image_scaling_check_box,
+        &QCheckBox::checkStateChanged,
+        this,
+        &Window::on_preset_option_modified
+    );
+    connect(
         this->options.enable_image_scaling_check_box,
         &QCheckBox::checkStateChanged,
         this,
@@ -156,24 +174,33 @@ void Window::on_double_page_spread_changed(const QString &text) {
     this->options.rotation_options_container->setVisible(should_show);
 }
 
-void Window::on_display_preset_changed(bool first_time) {
+void Window::on_preset_option_modified() {
+    if (this->is_programmatically_changing_values) {
+        return;
+    }
+
+    if (this->display_preset.brand != "Custom") {
+        this->set_display_preset("Custom", "");
+    }
+}
+
+void Window::on_display_preset_changed() {
     auto brand = this->display_preset.brand;
     auto model = this->display_preset.model;
-    auto is_custom = model.length() == 0;
+    auto is_custom = brand == "Custom";
 
-    this->options.enable_image_scaling_check_box->setEnabled(is_custom);
-    if (!first_time) {
-        this->options.enable_image_scaling_check_box->setChecked(true);
+    if (is_custom) {
+        return;
     }
 
-    if (!is_custom) {
-        auto display = DISPLAY_PRESETS.at(brand).value().at(model);
-        this->options.width_spin_box->setValue(display.width);
-        this->options.height_spin_box->setValue(display.height);
-    }
+    this->is_programmatically_changing_values = true;
 
-    this->options.width_spin_box->setEnabled(is_custom);
-    this->options.height_spin_box->setEnabled(is_custom);
+    auto display = DISPLAY_PRESETS.at(brand).value().at(model);
+    this->options.enable_image_scaling_check_box->setChecked(true);
+    this->options.width_spin_box->setValue(display.width);
+    this->options.height_spin_box->setValue(display.height);
+
+    this->is_programmatically_changing_values = false;
 }
 
 void Window::on_enable_image_scaling_changed(int state) {

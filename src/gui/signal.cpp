@@ -207,6 +207,10 @@ void Window::on_display_preset_changed() {
         this->options.enable_image_scaling_check_box->setChecked(true);
         this->options.width_spin_box->setValue(display.width);
         this->options.height_spin_box->setValue(display.height);
+        this->options.bit_depth_combo_box->setCurrentText(
+            QString::number(display.bit_depth)
+        );
+        this->options.convert_to_greyscale->setChecked(!display.colour);
     }
 
     this->is_programmatically_changing_values = false;

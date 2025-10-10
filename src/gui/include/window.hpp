@@ -127,7 +127,8 @@ class Window : public QMainWindow {
     void on_enable_image_quantization_changed(int state);
     void on_image_format_changed();
     void on_image_compression_changed(int state);
-    void on_image_compression_type_changed();
+    void on_image_compression_type_changed(bool is_explicit);
+    void on_image_compression_type_changed_explicit();
     void on_image_quality_changed(int state);
     void on_jpeg_xl_quality_type_changed();
 
@@ -215,4 +216,5 @@ class Window : public QMainWindow {
     int png_compression_effort = 6;
     int webp_compression_effort = 4;
     int webp_quality = 80;
+    bool compression_type_changed = false;
 };

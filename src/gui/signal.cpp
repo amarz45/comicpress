@@ -95,7 +95,7 @@ void Window::connect_signals() {
         this->options.image_compression_type_combo_box,
         &QComboBox::currentTextChanged,
         this,
-        &Window::on_image_compression_type_changed
+        &Window::on_image_compression_type_changed_explicit
     );
     connect(
         this->options.image_quality_spin_box,
@@ -236,6 +236,14 @@ void Window::on_enable_image_scaling_changed(int state) {
 void Window::on_enable_image_quantization_changed(int state) {
     bool is_checked = state == Qt::Checked;
     this->options.quantization_options_container->setEnabled(is_checked);
+    if (is_checked) {
+        this->options.image_compression_type_combo_box->setCurrentText(
+            "Lossless"
+        );
+    }
+    else if (!this->compression_type_changed) {
+        this->options.image_compression_type_combo_box->setCurrentText("Lossy");
+    }
 }
 
 void Window::on_image_format_changed() {
@@ -317,7 +325,7 @@ void Window::on_image_format_changed() {
         compression_effort_visible
     );
 
-    this->on_image_compression_type_changed();
+    this->on_image_compression_type_changed(false);
 }
 
 void Window::on_image_compression_changed(int state) {
@@ -336,7 +344,11 @@ void Window::on_image_compression_changed(int state) {
     }
 }
 
-void Window::on_image_compression_type_changed() {
+void Window::on_image_compression_type_changed_explicit() {
+    this->on_image_compression_type_changed(true);
+}
+
+void Window::on_image_compression_type_changed(bool is_explicit) {
     auto img_format = this->options.image_format_combo_box->currentText();
     auto compression_type
         = this->options.image_compression_type_combo_box->currentText();
@@ -345,6 +357,9 @@ void Window::on_image_compression_type_changed() {
        && (img_format == "JPEG" || compression_type == "Lossy");
     this->options.image_quality_label->setVisible(image_quality_visible);
     this->options.image_quality_spin_box->setVisible(image_quality_visible);
+    if (is_explicit) {
+        this->compression_type_changed = true;
+    }
 }
 
 void Window::on_image_quality_changed(int state) {

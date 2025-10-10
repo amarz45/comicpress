@@ -161,7 +161,13 @@ void add_quantization_widgets(QStyle *style, Options *options) {
     // Bit depth
     auto bit_depth_label = new QLabel("Bit depth");
     options->bit_depth_combo_box = new QComboBox();
-    options->bit_depth_combo_box->addItems({"1", "2", "4", "8", "16"});
+    options->bit_depth_combo_box->addItems(
+        {"1 (2 colours)",
+         "2 (4 colours)",
+         "4 (16 colours)",
+         "8 (256 colours)",
+         "16 (65\u202f536 colours)"}
+    );
     options->bit_depth_combo_box->setCurrentText("4");
     auto bit_depth_container = create_control_with_info(
         style, options->bit_depth_combo_box, BIT_DEPTH_TOOLTIP

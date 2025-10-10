@@ -53,13 +53,6 @@ static const char *BIT_DEPTH_TOOLTIP = R"(
     Determines the number of colours in the final images. A bit depth of 4 (16
     colours) is recommended in most cases because most ereaders only have 16
     colours.
-    <br><br>
-    <b>Bit depth → Colours</b><br>
-    1 → 2<br>
-    2 → 4<br>
-    4 → 16<br>
-    8 → 256<br>
-    16 → 65 536
 )";
 
 static const char *DITHERING_TOOLTIP = R"(

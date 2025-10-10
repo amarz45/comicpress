@@ -190,7 +190,6 @@ QGroupBox *Window::create_settings_group() {
     auto spacer = new QSpacerItem(0, 20);
 
     // Preprocessing
-    add_parallel_workers_widget(style, &this->options);
     this->add_display_presets_widget();
     add_pdf_pixel_density_widget(style, &this->options);
 
@@ -206,9 +205,10 @@ QGroupBox *Window::create_settings_group() {
     add_double_page_spread_widget(style, &this->options);
     add_remove_spine_widget(style, &this->options);
 
-    // Image format
+    // Other
     this->options.settings_layout->addItem(spacer);
     add_image_format_widgets(style, &this->options);
+    add_parallel_workers_widget(style, &this->options);
 
     return settings_group;
 }

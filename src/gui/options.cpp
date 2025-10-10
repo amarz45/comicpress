@@ -16,7 +16,7 @@ void add_pdf_pixel_density_widget(QStyle *style, Options *options) {
     options->pdf_pixel_density_spin_box
         = create_spin_box(300, 4'800, 300, 1'200);
 
-    auto label = new QLabel("PDF pixel density (PPI)");
+    auto label = new QLabel("PDF input pixel density (PPI)");
     auto control_container = create_control_with_info(
         style, options->pdf_pixel_density_spin_box, PDF_TOOLTIP
     );

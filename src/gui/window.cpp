@@ -38,6 +38,7 @@
 #include <archive.h>
 #include <archive_entry.h>
 #include <chrono>
+#include <format>
 #include <fpdfview.h>
 #include <fstream>
 #include <vips/resample.h>
@@ -425,15 +426,17 @@ void Window::handle_task_finished() {
 PageTask
 Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
     PageTask task;
+    auto source_qstr = QString::fromStdString(source_file.string());
+
     task.source_file = source_file;
     task.output_dir = output_dir;
     task.page_number = page_num;
-    // TODO: Fix this abomination.
-    task.output_base_name
-        = QString("%1 %2")
-              .arg(QString::fromStdString(source_file.stem().string()))
-              .arg(page_num + 1, 4, 10, QChar('0'))
-              .toStdString();
+
+    auto total_pages = this->total_pages_per_archive.value(source_qstr, 0);
+    auto padding_width
+        = static_cast<int>(std::floor(std::log10(total_pages))) + 1;
+    task.output_base_name = std::format("{:0{}}", page_num, padding_width);
+
     task.pdf_pixel_density = this->options.pdf_pixel_density_spin_box->value();
     task.convert_pages_to_greyscale
         = this->options.convert_to_greyscale->isChecked();

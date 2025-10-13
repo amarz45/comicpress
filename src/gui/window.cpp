@@ -189,7 +189,7 @@ QGroupBox *Window::create_settings_group() {
     this->options.settings_layout->setContentsMargins(0, 10, 0, 0);
     auto style = this->style();
 
-    auto spacer = new QSpacerItem(0, 20);
+    auto spacer = new QSpacerItem(0, 25);
 
     // Preprocessing
     this->add_display_presets_widget();

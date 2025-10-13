@@ -170,9 +170,11 @@ QGroupBox *Window::create_io_group() {
 
     auto output_layout = new QHBoxLayout();
 
-    this->output_dir_field = new QLineEdit(
+    auto documents_dir = QDir(
         QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)
     );
+    this->output_dir_field
+        = new QLineEdit(documents_dir.filePath("Comicpress"));
     this->browse_output_button = new QPushButton("Browse output folder");
     output_layout->addWidget(this->browse_output_button);
     output_layout->addWidget(this->output_dir_field);

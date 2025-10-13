@@ -235,7 +235,7 @@ void Window::on_enable_image_scaling_changed(int state) {
 
 void Window::on_enable_image_quantization_changed(int state) {
     bool is_checked = state == Qt::Checked;
-    this->options.quantization_options_container->setEnabled(is_checked);
+    this->options.quantization_options_container->setVisible(is_checked);
     if (is_checked) {
         this->options.image_compression_type_combo_box->setCurrentText(
             "Lossless"

@@ -432,6 +432,16 @@ void Window::on_start_button_clicked() {
         return;
     }
 
+    // Create unique base temp directory for this run
+    char temp_template[] = "/tmp/comicpress_XXXXXX";
+    char *temp_base_cstr = mkdtemp(temp_template);
+    if (!temp_base_cstr) {
+        this->log_output->setVisible(true);
+        log_output->append("Failed to create temporary directory.");
+        return;
+    }
+    this->temp_base_dir = temp_base_cstr;
+
     this->options.settings_group->setEnabled(false);
     start_button->setEnabled(false);
     cancel_button->setEnabled(true);
@@ -497,7 +507,7 @@ void Window::on_start_button_clicked() {
                 }
 
                 auto temp_archive_dir
-                    = fs::temp_directory_path() / source_file.stem();
+                    = fs::path(this->temp_base_dir) / source_file.stem();
                 fs::create_directories(temp_archive_dir);
                 archive_task_counts[file_qstr] = page_count;
                 this->total_pages_per_archive[file_qstr] = page_count;
@@ -513,7 +523,7 @@ void Window::on_start_button_clicked() {
             }
             else if (extension == ".cbz" || extension == ".cbr") {
                 auto temp_archive_dir
-                    = fs::temp_directory_path() / source_file.stem();
+                    = fs::path(this->temp_base_dir) / source_file.stem();
                 fs::create_directories(temp_archive_dir);
 
                 auto archive = archive_read_new();
@@ -585,6 +595,21 @@ void Window::on_start_button_clicked() {
         start_button->setEnabled(true);
         cancel_button->setEnabled(false);
         this->progress_bar->setVisible(false);
+
+        // Clean up base temp dir on early exit
+        if (!this->temp_base_dir.empty()) {
+            try {
+                fs::remove_all(this->temp_base_dir);
+            }
+            catch (const std::exception &e) {
+                log_output->setVisible(true);
+                log_output->append(
+                    QString("Error cleaning up temp directory: %1")
+                        .arg(e.what())
+                );
+            }
+            this->temp_base_dir.clear();
+        }
         return;
     }
 
@@ -644,6 +669,20 @@ void Window::on_cancel_button_clicked() {
     this->options.settings_group->setEnabled(true);
     start_button->setEnabled(true);
     cancel_button->setEnabled(false);
+
+    // Clean up base temp dir on cancel
+    if (!this->temp_base_dir.empty()) {
+        try {
+            fs::remove_all(this->temp_base_dir);
+        }
+        catch (const std::exception &e) {
+            log_output->setVisible(true);
+            log_output->append(
+                QString("Error cleaning up temp directory: %1").arg(e.what())
+            );
+        }
+        this->temp_base_dir.clear();
+    }
 }
 
 void Window::on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus) {
@@ -720,6 +759,21 @@ void Window::on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus) {
             this->options.settings_group->setEnabled(true);
             start_button->setEnabled(true);
             cancel_button->setEnabled(false);
+
+            // Clean up base temp dir on success
+            if (!this->temp_base_dir.empty()) {
+                try {
+                    fs::remove_all(this->temp_base_dir);
+                }
+                catch (const std::exception &e) {
+                    log_output->setVisible(true);
+                    log_output->append(
+                        QString("Error cleaning up temp directory: %1")
+                            .arg(e.what())
+                    );
+                }
+                this->temp_base_dir.clear();
+            }
         }
         else {
             start_next_task();

@@ -179,9 +179,12 @@ class Window : public QMainWindow {
     QMap<QString, QLabel *> file_eta_overall_labels;
     QMap<QString, QLabel *> file_eta_recent_labels;
     QMap<QString, FileTimer> file_timers;
+    QMap<QString, fs::path> archive_temp_dirs;
     int max_concurrent_workers;
     bool is_processing_cancelled;
     bool is_programmatically_changing_values;
+
+    fs::path create_unique_temp_dir(const std::string &stem);
 
     // Timer
     void update_time_labels();
@@ -218,4 +221,6 @@ class Window : public QMainWindow {
     int webp_compression_effort = 4;
     int webp_quality = 80;
     bool compression_type_changed = false;
+
+    std::string temp_base_dir;
 };

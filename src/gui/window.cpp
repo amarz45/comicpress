@@ -55,6 +55,7 @@ Window::Window(QWidget *parent) : QMainWindow(parent), eta_recent_intervals(5) {
     this->last_progress_value = 0.0;
     this->is_processing_cancelled = false;
     this->is_programmatically_changing_values = false;
+    this->temp_base_dir = "";
 
     this->setWindowTitle("Comicpress");
     this->central_widget = new QWidget(this);
@@ -525,7 +526,7 @@ void Window::set_display_preset(std::string brand, std::string model) {
 
 void Window::create_archive(const QString &source_archive_path) {
     auto source_path = fs::path(source_archive_path.toStdString());
-    auto temp_dir = fs::temp_directory_path() / source_path.stem();
+    auto temp_dir = fs::path(this->temp_base_dir) / source_path.stem();
     auto final_filename = source_path.filename().replace_extension(".cbz");
     auto final_output_path
         = fs::path(output_dir_field->text().toStdString()) / final_filename;

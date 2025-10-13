@@ -5,6 +5,7 @@
 #include <archive.h>
 #include <archive_entry.h>
 #include <fpdfview.h>
+#include <stdexcept>
 
 void Window::connect_signals() {
     connect(
@@ -467,8 +468,31 @@ void Window::on_start_button_clicked() {
     this->log_group->setVisible(true);
     this->progress_bar->setVisible(true);
 
-    fs::path output_dir = fs::path(output_dir_field->text().toStdString());
+    auto now = std::chrono::system_clock::now();
+    auto now_time = std::chrono::system_clock::to_time_t(now);
+    auto local_time = std::localtime(&now_time);
+    std::ostringstream oss;
+#if defined(_WIN32)
+    oss << std::put_time(local_time, "%Y-%m-%d %H_%M_%S");
+#else
+    oss << std::put_time(local_time, "%Y-%m-%d %H:%M:%S");
+#endif
+
+    auto output_base_dir
+        = fs::path(output_dir_field->text().toStdString()) / oss.str();
+
+    auto output_dir = output_base_dir;
+    auto i = 1;
+    while (fs::exists(output_dir)) {
+        if (i > 1000) {
+            throw std::runtime_error("Failed to create output directory.");
+        }
+        output_dir = std::string(output_dir) + "_" + std::to_string(i);
+        i += 1;
+    }
+
     fs::create_directories(output_dir);
+    this->output_path = output_dir;
 
     QCoreApplication::processEvents();
 
@@ -616,7 +640,6 @@ void Window::on_start_button_clicked() {
     this->progress_bar->setMaximum(total_pages);
 
     // Timer
-    auto now = std::chrono::system_clock::now();
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                   now.time_since_epoch()
     )
@@ -682,6 +705,11 @@ void Window::on_cancel_button_clicked() {
             );
         }
         this->temp_base_dir.clear();
+    }
+
+    if (fs::exists(this->output_path) && fs::is_directory(this->output_path)
+        && fs::is_empty(this->output_path)) {
+        fs::remove_all(this->output_path);
     }
 }
 

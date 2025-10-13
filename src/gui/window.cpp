@@ -530,8 +530,7 @@ void Window::create_archive(const QString &source_archive_path) {
     auto source_path = fs::path(source_archive_path.toStdString());
     auto temp_dir = fs::path(this->temp_base_dir) / source_path.stem();
     auto final_filename = source_path.filename().replace_extension(".cbz");
-    auto final_output_path
-        = fs::path(output_dir_field->text().toStdString()) / final_filename;
+    auto final_output_path = output_path / final_filename;
 
     QCoreApplication::processEvents();
 

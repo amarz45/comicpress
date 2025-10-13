@@ -151,6 +151,7 @@ class Window : public QMainWindow {
     QPushButton *remove_selected_button;
     QPushButton *clear_all_button;
     QLineEdit *output_dir_field;
+    fs::path output_path;
     QPushButton *browse_output_button;
     QGroupBox *progress_bars_group;
     QVBoxLayout *progress_bars_layout;

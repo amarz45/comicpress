@@ -6,7 +6,6 @@
 #include <functional>
 #include <stdexcept>
 #include <string>
-#include <vips/vips.h>
 #include <vips/vips8>
 
 #include "../include/task.hpp"
@@ -228,14 +227,14 @@ void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
             return;
         }
 
+        VipsBlob *png_blob;
         if (task.quantize_pages) {
-            VipsBlob *png_blob = img.pngsave_buffer(
+            png_blob = img.pngsave_buffer(
                 png_palette_options->set("compression", 0)
             );
             size_t buffer_size = 0;
             const void *buffer_data = vips_blob_get(png_blob, &buffer_size);
             img = vips::VImage::new_from_buffer(buffer_data, buffer_size, "");
-            g_boxed_free(VIPS_TYPE_BLOB, png_blob);
         }
 
         auto options = vips::VImage::option();
@@ -281,6 +280,10 @@ void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
                 options = options->set("lossless", true);
             }
             img.webpsave(output_path.c_str(), options);
+        }
+
+        if (task.quantize_pages) {
+            vips_area_unref(VIPS_AREA(png_blob));
         }
     }
     catch (const vips::VError &e) {

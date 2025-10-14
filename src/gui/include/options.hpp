@@ -11,6 +11,7 @@ class DensitySpinBox : public QSpinBox {
         setRange(1, 4'800);
         setValue(300);
         setSingleStep(300);
+        setSuffix("\u202fPPI");
     }
 
   protected:

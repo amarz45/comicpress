@@ -15,10 +15,33 @@ using Logger = const std::function<void(const std::string &)> &;
 
 namespace fs = std::filesystem;
 
+static vips::VImage get_vips_img_from_pdf_page(
+    FPDF_DOCUMENT doc,
+    FPDF_PAGE page,
+    int page_number,
+    int colour_mode,
+    int bands,
+    double ppi,
+    unsigned int render_flags
+);
+static vips::VImage remove_uniform_middle_columns(const vips::VImage &img);
+
+static bool
+is_preview_greyscale(FPDF_DOCUMENT doc, FPDF_PAGE page, int page_number);
+static bool is_greyscale(vips::VImage img, int threshold);
+static bool should_image_rotate(
+    double image_width,
+    double image_height,
+    double display_width,
+    double display_height
+);
+static bool
+is_uniform_column(const vips::VImage &img, int col, double threshold);
 static bool should_image_stretch_contrast(vips::VImage img, PageTask task);
 
 static vips::VImage
 rotate_image(vips::VImage img, RotationDirection rotation_direction);
+
 static vips::VImage scale_image(
     vips::VImage img,
     double source_width,
@@ -27,6 +50,7 @@ static vips::VImage scale_image(
     double target_height,
     VipsKernel resampler
 );
+
 static vips::VImage stretch_image_contrast(vips::VImage img);
 
 LoadPageReturn load_pdf_page(const PageTask &task) {

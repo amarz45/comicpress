@@ -28,7 +28,7 @@ endif
 qt6 = import('qt6')
 
 qt_processed_files = qt6.preprocess(
-    moc_headers: ['src/gui/include/window.hpp']
+    moc_headers: ['src/gui/include/window.hpp', 'src/gui/include/options.hpp']
 )
 
 # Worker executable, this does the actual image processing.

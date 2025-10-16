@@ -227,7 +227,7 @@ void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
             return;
         }
 
-        VipsBlob *png_blob;
+        VipsBlob *png_blob = nullptr;
         if (task.quantize_pages) {
             png_blob = img.pngsave_buffer(
                 png_palette_options->set("compression", 0)
@@ -282,7 +282,7 @@ void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
             img.webpsave(output_path.c_str(), options);
         }
 
-        if (task.quantize_pages) {
+        if (png_blob != nullptr) {
             vips_area_unref(VIPS_AREA(png_blob));
         }
     }
@@ -473,7 +473,7 @@ bool is_uniform_column(const vips::VImage &img, int col, double threshold) {
 
 vips::VImage
 rotate_image(vips::VImage img, RotationDirection rotation_direction) {
-    double angle;
+    double angle = 0.0;
     switch (rotation_direction) {
     case CLOCKWISE:
         angle = 90.0;

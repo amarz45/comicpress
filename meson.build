@@ -14,9 +14,7 @@ cpp = meson.get_compiler('cpp')
 vips_dep = dependency('vips-cpp')
 qt6_dep = dependency('qt6', modules: ['Widgets'])
 libarchive_dep = dependency('libarchive')
-
 pdfium_dep = dependency('pdfium', required: false)
-pdfium_inc = include_directories('/usr/include')
 
 if not pdfium_dep.found()
     pdfium_dep = cpp.find_library('pdfium')
@@ -32,7 +30,6 @@ executable(
     'src/worker/main.cpp',
     'src/worker/processing.cpp',
     dependencies: [vips_dep, pdfium_dep, libarchive_dep],
-    include_directories: pdfium_inc,
     install: true,
 )
 
@@ -46,6 +43,5 @@ executable(
     'src/gui/window_util.cpp',
     qt_processed_files,
     dependencies: [qt6_dep, pdfium_dep, libarchive_dep, vips_dep],
-    include_directories: pdfium_inc,
     install: true,
 )

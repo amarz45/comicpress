@@ -2,7 +2,6 @@
 #include "../include/task.hpp"
 #include "include/display_presets.hpp"
 #include "include/options.hpp"
-#include "include/ui_constants.hpp"
 #include "include/window_util.hpp"
 #include "qboxlayout.h"
 #include "qnamespace.h"

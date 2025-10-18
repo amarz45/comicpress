@@ -12,6 +12,7 @@
 #include <QWidget>
 #include <thread>
 
+#if defined(PDFIUM_ENABLED)
 void add_pdf_pixel_density_widget(QStyle *style, Options *options) {
     options->pdf_pixel_density_spin_box = new DensitySpinBox();
 
@@ -22,6 +23,7 @@ void add_pdf_pixel_density_widget(QStyle *style, Options *options) {
 
     options->settings_layout->addRow(label, control_container);
 }
+#endif
 
 void add_convert_to_greyscale_widget(QStyle *style, Options *options) {
     auto label = new QLabel("Convert pages to greyscale");

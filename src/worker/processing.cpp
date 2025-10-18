@@ -2,7 +2,9 @@
 #include <archive.h>
 #include <archive_entry.h>
 #include <filesystem>
+#if defined(PDFIUM_ENABLED)
 #include <fpdfview.h>
+#endif
 #include <functional>
 #include <stdexcept>
 #include <string>
@@ -15,6 +17,7 @@ using Logger = const std::function<void(const std::string &)> &;
 
 namespace fs = std::filesystem;
 
+#if defined(PDFIUM_ENABLED)
 static vips::VImage get_vips_img_from_pdf_page(
     FPDF_DOCUMENT doc,
     FPDF_PAGE page,
@@ -24,10 +27,12 @@ static vips::VImage get_vips_img_from_pdf_page(
     double ppi,
     unsigned int render_flags
 );
-static vips::VImage remove_uniform_middle_columns(const vips::VImage &img);
 
 static bool
 is_preview_greyscale(FPDF_DOCUMENT doc, FPDF_PAGE page, int page_number);
+#endif
+
+static vips::VImage remove_uniform_middle_columns(const vips::VImage &img);
 static bool is_greyscale(vips::VImage img, int threshold);
 static bool should_image_rotate(
     double image_width,
@@ -53,6 +58,7 @@ static vips::VImage scale_image(
 
 static vips::VImage stretch_image_contrast(vips::VImage img);
 
+#if defined(PDFIUM_ENABLED)
 LoadPageReturn load_pdf_page(const PageTask &task) {
     FPDF_DOCUMENT doc = FPDF_LoadDocument(task.source_file.c_str(), nullptr);
     if (!doc) {
@@ -111,6 +117,7 @@ LoadPageReturn load_pdf_page(const PageTask &task) {
         .image = img, .stretch_page_contrast = stretch_page_contrast
     };
 }
+#endif
 
 LoadPageReturn load_archive_image(const PageTask &task) {
     auto archive = archive_read_new();
@@ -292,6 +299,7 @@ void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
     }
 }
 
+#if defined(PDFIUM_ENABLED)
 vips::VImage get_vips_img_from_pdf_page(
     FPDF_DOCUMENT doc,
     FPDF_PAGE page,
@@ -342,6 +350,7 @@ vips::VImage get_vips_img_from_pdf_page(
 
     return img;
 }
+#endif
 
 vips::VImage remove_uniform_middle_columns(const vips::VImage &img) {
     double max_fraction = 0.1;
@@ -428,6 +437,7 @@ vips::VImage remove_uniform_middle_columns(const vips::VImage &img) {
     }
 }
 
+#if defined(PDFIUM_ENABLED)
 bool is_preview_greyscale(FPDF_DOCUMENT doc, FPDF_PAGE page, int page_number) {
     auto render_flags = FPDF_ANNOT | FPDF_NO_NATIVETEXT;
     auto preview_img = get_vips_img_from_pdf_page(
@@ -435,6 +445,7 @@ bool is_preview_greyscale(FPDF_DOCUMENT doc, FPDF_PAGE page, int page_number) {
     );
     return is_greyscale(preview_img, 10);
 }
+#endif
 
 bool is_greyscale(vips::VImage img, int threshold) {
     if (img.bands() < 3) {

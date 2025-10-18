@@ -4,7 +4,9 @@
 #include <QFileDialog>
 #include <archive.h>
 #include <archive_entry.h>
+#if defined(PDFIUM_ENABLED)
 #include <fpdfview.h>
+#endif
 #include <stdexcept>
 
 void Window::connect_signals() {
@@ -132,7 +134,14 @@ void Window::connect_signals() {
 
 void Window::on_add_files_clicked() {
     auto files = QFileDialog::getOpenFileNames(
-        this, "Select input files", "", "Supported files (*.pdf *.cbz *.cbr)"
+        this,
+        "Select input files",
+        "",
+#if defined(PDFIUM_ENABLED)
+        "Supported files (*.pdf *.cbz *.cbr)"
+#else
+        "Supported files (*.cbz *.cbr)"
+#endif
     );
 
     if (files.isEmpty()) {
@@ -505,47 +514,7 @@ void Window::on_start_button_clicked() {
         );
 
         try {
-            if (extension == ".pdf") {
-                FPDF_DOCUMENT doc
-                    = FPDF_LoadDocument(source_file.c_str(), nullptr);
-                if (!doc) {
-                    log_output->setVisible(true);
-                    log_output->append(
-                        QString(
-                            "Error: Cannot open PDF document %1. Error code: %2"
-                        )
-                            .arg(file_qstr)
-                            .arg(FPDF_GetLastError())
-                    );
-                    continue;
-                }
-
-                auto page_count = FPDF_GetPageCount(doc);
-                if (page_count == 0) {
-                    log_output->setVisible(true);
-                    log_output->append(
-                        "PDF " + file_qstr + " contains no pages."
-                    );
-                    FPDF_CloseDocument(doc);
-                    continue;
-                }
-
-                auto temp_archive_dir
-                    = fs::path(this->temp_base_dir) / source_file.stem();
-                fs::create_directories(temp_archive_dir);
-                archive_task_counts[file_qstr] = page_count;
-                this->total_pages_per_archive[file_qstr] = page_count;
-                this->total_pages += page_count;
-                this->pages_processed_per_archive[file_qstr] = 0;
-
-                for (int i = 0; i < page_count; i += 1) {
-                    auto task
-                        = this->create_task(source_file, temp_archive_dir, i);
-                    task_queue.enqueue(task);
-                }
-                FPDF_CloseDocument(doc);
-            }
-            else if (extension == ".cbz" || extension == ".cbr") {
+            if (extension == ".cbz" || extension == ".cbr") {
                 auto temp_archive_dir
                     = fs::path(this->temp_base_dir) / source_file.stem();
                 fs::create_directories(temp_archive_dir);
@@ -604,6 +573,48 @@ void Window::on_start_button_clicked() {
                 archive_read_close(archive);
                 archive_read_free(archive);
             }
+#if defined(PDFIUM_ENABLED)
+            else if (extension == ".pdf") {
+                FPDF_DOCUMENT doc
+                    = FPDF_LoadDocument(source_file.c_str(), nullptr);
+                if (!doc) {
+                    log_output->setVisible(true);
+                    log_output->append(
+                        QString(
+                            "Error: Cannot open PDF document %1. Error code: %2"
+                        )
+                            .arg(file_qstr)
+                            .arg(FPDF_GetLastError())
+                    );
+                    continue;
+                }
+
+                auto page_count = FPDF_GetPageCount(doc);
+                if (page_count == 0) {
+                    log_output->setVisible(true);
+                    log_output->append(
+                        "PDF " + file_qstr + " contains no pages."
+                    );
+                    FPDF_CloseDocument(doc);
+                    continue;
+                }
+
+                auto temp_archive_dir
+                    = fs::path(this->temp_base_dir) / source_file.stem();
+                fs::create_directories(temp_archive_dir);
+                archive_task_counts[file_qstr] = page_count;
+                this->total_pages_per_archive[file_qstr] = page_count;
+                this->total_pages += page_count;
+                this->pages_processed_per_archive[file_qstr] = 0;
+
+                for (int i = 0; i < page_count; i += 1) {
+                    auto task
+                        = this->create_task(source_file, temp_archive_dir, i);
+                    task_queue.enqueue(task);
+                }
+                FPDF_CloseDocument(doc);
+            }
+#endif
         }
         catch (const std::exception &e) {
             log_output->setVisible(true);

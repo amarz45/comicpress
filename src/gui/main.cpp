@@ -1,12 +1,17 @@
 #include <QApplication>
 #include <QWidget>
+
+#if defined(PDFIUM_ENABLED)
 #include <fpdfview.h>
+#endif
 
 #include "include/window.hpp"
 
 int main(int argc, char **argv) {
+#if defined(PDFIUM_ENABLED)
     // PDFium is needed here to discover the number of pages in PDF files.
     FPDF_InitLibrary();
+#endif
 
     QApplication app(argc, argv);
 
@@ -18,6 +23,8 @@ int main(int argc, char **argv) {
     window.show();
     auto result = app.exec();
 
+#if defined(PDFIUM_ENABLED)
     FPDF_DestroyLibrary();
+#endif
     return result;
 }

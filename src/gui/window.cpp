@@ -38,7 +38,9 @@
 #include <archive_entry.h>
 #include <chrono>
 #include <format>
+#if defined(PDFIUM_ENABLED)
 #include <fpdfview.h>
+#endif
 #include <fstream>
 #include <vips/resample.h>
 
@@ -195,7 +197,9 @@ QGroupBox *Window::create_settings_group() {
 
     // Preprocessing
     this->add_display_presets_widget();
+#if defined(PDFIUM_ENABLED)
     add_pdf_pixel_density_widget(style, &this->options);
+#endif
 
     // Colour
     this->options.settings_layout->addItem(spacer);
@@ -389,7 +393,9 @@ void Window::start_next_task() {
               << QString::fromStdString(
                      task.path_in_archive
                  ) // Empty string if not set
+#if defined(PDFIUM_ENABLED)
               << "-pdf_pixel_density" << QString::number(task.pdf_pixel_density)
+#endif
               << "-convert_pages_to_greyscale"
               << (task.convert_pages_to_greyscale ? "1" : "0")
               << "-double_page_spread_actions"
@@ -439,7 +445,9 @@ Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
         = static_cast<int>(std::floor(std::log10(total_pages))) + 1;
     task.output_base_name = std::format("{:0{}}", page_num + 1, padding_width);
 
+#if defined(PDFIUM_ENABLED)
     task.pdf_pixel_density = this->options.pdf_pixel_density_spin_box->value();
+#endif
     task.convert_pages_to_greyscale
         = this->options.convert_to_greyscale->isChecked();
     task.double_page_spread_action

@@ -53,7 +53,9 @@ class BoundedDeque {
 struct Options {
     QGroupBox *settings_group;
     QFormLayout *settings_layout;
+#if defined(PDFIUM_ENABLED)
     QSpinBox *pdf_pixel_density_spin_box;
+#endif
     QCheckBox *convert_to_greyscale;
     QComboBox *double_page_spread_combo_box;
     QCheckBox *remove_spine_check_box;

@@ -14,14 +14,26 @@ cpp = meson.get_compiler('cpp')
 vips_dep = dependency('vips-cpp')
 qt6_dep = dependency('qt6', modules: ['Widgets'])
 libarchive_dep = dependency('libarchive')
-pdfium_dep = dependency('pdfium', required: false)
 
-if not pdfium_dep.found()
-    pdfium_dep = cpp.find_library('pdfium')
+pdfium_opt = get_option('pdfium')
+pdfium_dep = dependency('', required: false)
+
+if pdfium_opt.allowed()
+    pdfium_dep = dependency('pdfium', required: false)
+    if not pdfium_dep.found()
+        pdfium_dep = cpp.find_library('pdfium', required: false)
+    endif
+endif
+
+if pdfium_dep.found()
+    add_project_arguments('-DPDFIUM_ENABLED', language: 'cpp')
+elif pdfium_opt.enabled()
+    error(
+        'PDFium support was explicitly enabled but the library was not found.',
+    )
 endif
 
 qt6 = import('qt6')
-
 qt_processed_files = qt6.preprocess(moc_headers: ['src/gui/include/window.hpp', 'src/gui/include/options.hpp'])
 
 # Worker executable, this does the actual image processing.

@@ -1,3 +1,4 @@
+#if defined(PDFIUM_ENABLED)
 static const char *PDF_TOOLTIP = R"(
     Sets the rendering resolution for PDF input files. Higher values produce
     better quality but use more memory and take longer to process. Values higher
@@ -7,6 +8,7 @@ static const char *PDF_TOOLTIP = R"(
     a page in a PDF file takes roughly four times as long at 1200 PPI than at
     600 PPI.
 )";
+#endif
 
 static const char *GREYSCALE_TOOLTIP = R"(
     Converts coloured pages to greyscale. This option is recommended for

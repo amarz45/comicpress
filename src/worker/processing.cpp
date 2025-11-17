@@ -59,6 +59,8 @@ static vips::VImage scale_image(
 static vips::VImage stretch_image_contrast(vips::VImage img);
 
 #if defined(PDFIUM_ENABLED)
+const auto PDF_DEFAULT_RENDER_FLAGS = FPDF_ANNOT | FPDF_NO_NATIVETEXT;
+
 LoadPageReturn load_pdf_page(const PageTask &task) {
     FPDF_DOCUMENT doc = FPDF_LoadDocument(task.source_file.c_str(), nullptr);
     if (!doc) {
@@ -76,7 +78,7 @@ LoadPageReturn load_pdf_page(const PageTask &task) {
         );
     }
 
-    auto render_flags = FPDF_ANNOT | FPDF_NO_NATIVETEXT;
+    auto render_flags = PDF_DEFAULT_RENDER_FLAGS;
 
     auto render_page_greyscale = false;
     if (task.convert_pages_to_greyscale) {
@@ -439,7 +441,8 @@ vips::VImage remove_uniform_middle_columns(const vips::VImage &img) {
 
 #if defined(PDFIUM_ENABLED)
 bool is_preview_greyscale(FPDF_DOCUMENT doc, FPDF_PAGE page, int page_number) {
-    auto render_flags = FPDF_ANNOT | FPDF_NO_NATIVETEXT;
+    auto render_flags = PDF_DEFAULT_RENDER_FLAGS | FPDF_RENDER_NO_SMOOTHTEXT
+                      | FPDF_RENDER_NO_SMOOTHIMAGE | FPDF_RENDER_NO_SMOOTHPATH;
     auto preview_img = get_vips_img_from_pdf_page(
         doc, page, page_number, FPDFBitmap_BGR, 3, 10.0, render_flags
     );

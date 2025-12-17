@@ -1,7 +1,7 @@
 project(
     'comicpress',
     'cpp',
-    default_options: ['warning_level=3', 'werror=true', 'cpp_std=c++23'],
+    default_options: ['warning_level=3', 'werror=true', 'cpp_std=c++26'],
 )
 
 if get_option('buildtype') == 'release'

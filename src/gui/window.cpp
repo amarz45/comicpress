@@ -443,7 +443,10 @@ Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
     auto total_pages = this->total_pages_per_archive.value(source_qstr, 0);
     auto padding_width
         = static_cast<int>(std::floor(std::log10(total_pages))) + 1;
-    task.output_base_name = std::format("{:0{}}", page_num + 1, padding_width);
+    task.output_base_name
+        = QString("%1")
+              .arg(page_num + 1, padding_width, 10, QChar('0'))
+              .toStdString();
 
 #if defined(PDFIUM_ENABLED)
     task.pdf_pixel_density = this->options.pdf_pixel_density_spin_box->value();

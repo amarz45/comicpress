@@ -77,6 +77,8 @@ const BrandMap DISPLAY_PRESETS = {
          {"Touch", {600, 800, BitDepthIndex::FOUR, false}},
      }},
 
+    {"Meebook", ModelMap{{"M103", {1404, 1872, BitDepthIndex::FOUR, false}}}},
+
     {"reMarkable",
      ModelMap{
          {"1", {1404, 1872, BitDepthIndex::FOUR, false}},

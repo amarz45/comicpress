@@ -37,7 +37,6 @@
 #include <archive.h>
 #include <archive_entry.h>
 #include <chrono>
-#include <format>
 #if defined(PDFIUM_ENABLED)
 #include <fpdfview.h>
 #endif

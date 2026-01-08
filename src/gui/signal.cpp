@@ -481,11 +481,7 @@ void Window::on_start_button_clicked() {
     auto now_time = std::chrono::system_clock::to_time_t(now);
     auto local_time = std::localtime(&now_time);
     std::ostringstream oss;
-#if defined(_WIN32)
-    oss << std::put_time(local_time, "%Y-%m-%d %H_%M_%S");
-#else
-    oss << std::put_time(local_time, "%Y-%m-%d %H:%M:%S");
-#endif
+    oss << std::put_time(local_time, "%Y-%m-%d %H-%M-%S");
 
     auto output_base_dir
         = fs::path(output_dir_field->text().toStdString()) / oss.str();

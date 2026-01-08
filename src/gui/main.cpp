@@ -6,8 +6,13 @@
 #endif
 
 #include "include/window.hpp"
+#include "../worker/include/worker.hpp"
 
 int main(int argc, char **argv) {
+    if (argc > 1) {
+        return worker_main(argc, argv);
+    }
+
 #if defined(PDFIUM_ENABLED)
     // PDFium is needed here to discover the number of pages in PDF files.
     FPDF_InitLibrary();

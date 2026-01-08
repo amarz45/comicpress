@@ -377,8 +377,7 @@ void Window::start_next_task() {
         &Window::on_worker_finished
     );
 
-    QString program
-        = QCoreApplication::applicationDirPath() + "/comicpress-worker";
+    QString program = QCoreApplication::applicationFilePath();
     QStringList arguments;
     arguments << "-source_file"
               << QString::fromStdString(task.source_file.string())

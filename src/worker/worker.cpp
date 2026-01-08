@@ -1,5 +1,6 @@
 #include "../include/task.hpp"
 #include "include/processing.hpp"
+#include "include/worker.hpp"
 
 #if defined(PDFIUM_ENABLED)
 #include <fpdfview.h>
@@ -44,7 +45,7 @@ T parse_arg(const std::string &arg_str, const std::string &error_msg) {
 // This is the main entry point for the worker executable. It takes task details
 // as command-line arguments, performs the processing, and prints logs to
 // standard output for the main application to capture.
-int main(int argc, char *argv[]) {
+int worker_main(int argc, char *argv[]) {
     // I’m commenting out this stupid ahh check for now.
     // if (argc != 43) {
     //    std::cerr << "Worker error: Expected exactly 42 arguments (23 "

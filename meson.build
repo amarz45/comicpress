@@ -36,15 +36,6 @@ endif
 qt6 = import('qt6')
 qt_processed_files = qt6.preprocess(moc_headers: ['src/gui/include/window.hpp', 'src/gui/include/options.hpp'])
 
-# Worker executable, this does the actual image processing.
-executable(
-    'comicpress-worker',
-    'src/worker/main.cpp',
-    'src/worker/processing.cpp',
-    dependencies: [vips_dep, pdfium_dep, libarchive_dep],
-    install: true,
-)
-
 executable(
     'comicpress',
     'src/gui/main.cpp',
@@ -53,7 +44,9 @@ executable(
     'src/gui/time.cpp',
     'src/gui/options.cpp',
     'src/gui/window_util.cpp',
+    'src/worker/worker.cpp',
+    'src/worker/processing.cpp',
     qt_processed_files,
-    dependencies: [qt6_dep, pdfium_dep, libarchive_dep, vips_dep],
+    dependencies: [qt6_dep, vips_dep, pdfium_dep, libarchive_dep],
     install: true,
 )

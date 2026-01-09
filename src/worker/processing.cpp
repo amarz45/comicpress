@@ -33,7 +33,7 @@ is_preview_greyscale(FPDF_DOCUMENT doc, FPDF_PAGE page, int page_number);
 #endif
 
 static vips::VImage remove_uniform_middle_columns(const vips::VImage &img);
-static bool is_greyscale(vips::VImage img, int threshold);
+static bool is_greyscale(vips::VImage img, double threshold);
 static bool should_image_rotate(
     double image_width,
     double image_height,
@@ -450,7 +450,7 @@ bool is_preview_greyscale(FPDF_DOCUMENT doc, FPDF_PAGE page, int page_number) {
 }
 #endif
 
-bool is_greyscale(vips::VImage img, int threshold) {
+bool is_greyscale(vips::VImage img, double threshold) {
     if (img.bands() < 3) {
         return true;
     }
@@ -510,7 +510,24 @@ vips::VImage scale_image(
     auto width_ratio = target_width / source_width;
     auto height_ratio = target_height / source_height;
     double scale = std::min(width_ratio, height_ratio);
-    return img.resize(scale, vips::VImage::option()->set("kernel", resampler));
+
+    std::string colourspace;
+    if (img.interpretation() == VIPS_INTERPRETATION_B_W) {
+        colourspace = "sgrey";
+    }
+    else {
+        colourspace = "srgb";
+    }
+
+    img = img.icc_import(
+        vips::VImage::option()->set("embedded", true)->set("pcs", VIPS_PCS_XYZ)
+    );
+    img = img.resize(scale, vips::VImage::option()->set("kernel", resampler));
+
+    img = img.icc_export(
+        vips::VImage::option()->set("output_profile", colourspace.c_str())
+    );
+    return img;
 }
 
 vips::VImage stretch_image_contrast(vips::VImage img) {

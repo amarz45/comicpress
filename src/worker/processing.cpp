@@ -2,6 +2,7 @@
 #include <archive.h>
 #include <archive_entry.h>
 #include <filesystem>
+#include <vips/image.h>
 #if defined(PDFIUM_ENABLED)
 #include <fpdfview.h>
 #endif
@@ -53,7 +54,8 @@ static vips::VImage scale_image(
     double source_height,
     double target_width,
     double target_height,
-    VipsKernel resampler
+    VipsKernel resampler,
+    bool linear_resample
 );
 
 static vips::VImage stretch_image_contrast(vips::VImage img);
@@ -216,7 +218,8 @@ void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
                 img.height(),
                 task.page_width,
                 task.page_height,
-                task.page_resampler
+                task.page_resampler,
+                false
             );
         }
 
@@ -505,28 +508,69 @@ vips::VImage scale_image(
     double source_height,
     double target_width,
     double target_height,
-    VipsKernel resampler
+    VipsKernel resampler,
+    bool linear_resample
 ) {
+    auto gap = 0.0;
     auto width_ratio = target_width / source_width;
     auto height_ratio = target_height / source_height;
     double scale = std::min(width_ratio, height_ratio);
 
-    std::string colourspace;
-    if (img.interpretation() == VIPS_INTERPRETATION_B_W) {
-        colourspace = "sgrey";
+    if (!linear_resample) {
+        return img.resize(
+            scale,
+            vips::VImage::option()->set("kernel", resampler)->set("gap", gap)
+        );
+    }
+
+    auto bands = img.bands();
+    auto has_alpha = img.has_alpha();
+    auto has_icc = img.get_typeof(VIPS_META_ICC_NAME) != 0;
+
+    if (has_icc) {
+        img = img.icc_import(vips::VImage::option()->set("pcs", VIPS_PCS_XYZ));
     }
     else {
-        colourspace = "srgb";
+        img = img.colourspace(VIPS_INTERPRETATION_XYZ);
     }
 
-    img = img.icc_import(
-        vips::VImage::option()->set("embedded", true)->set("pcs", VIPS_PCS_XYZ)
-    );
-    img = img.resize(scale, vips::VImage::option()->set("kernel", resampler));
+    if (has_alpha) {
+        img.premultiply();
+    }
 
-    img = img.icc_export(
-        vips::VImage::option()->set("output_profile", colourspace.c_str())
+    img = img.resize(
+        scale, vips::VImage::option()->set("kernel", resampler)->set("gap", gap)
     );
+
+    if (has_alpha) {
+        img.unpremultiply();
+    }
+
+    if (has_icc) {
+        std::string colourspace;
+        if (bands == 1) {
+            colourspace = "sgrey";
+        }
+        else {
+            colourspace = "srgb";
+        }
+        img = img.icc_export(
+            vips::VImage::option()
+                ->set("pcs", VIPS_PCS_XYZ)
+                ->set("output_profile", colourspace.c_str())
+        );
+    }
+    else {
+        VipsInterpretation interpretation;
+        if (bands == 1) {
+            interpretation = VIPS_INTERPRETATION_B_W;
+        }
+        else {
+            interpretation = VIPS_INTERPRETATION_sRGB;
+        }
+        img = img.colourspace(interpretation);
+    }
+
     return img;
 }
 

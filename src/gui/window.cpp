@@ -99,7 +99,7 @@ void Window::setup_ui() {
     io_scroll->setWidgetResizable(true);
     io_scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     io_scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    tabs->addTab(io_scroll, "Input/output");
+    tabs->addTab(io_scroll, "Files");
 
     auto settings_scroll = new QScrollArea();
     settings_scroll->setWidget(this->options.settings_group);

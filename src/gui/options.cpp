@@ -271,7 +271,7 @@ void add_image_format_widgets(QStyle *style, Options *options) {
 }
 
 void add_parallel_workers_widget(QStyle *, Options *options) {
-    auto label = new QLabel("Parallel workers");
+    auto label = new QLabel("Parallel jobs");
 
     options->workers_spin_box = new QSpinBox();
     auto threads = std::thread::hardware_concurrency();

@@ -290,7 +290,7 @@ void Window::add_display_presets_widget() {
     }
 
     auto label = create_widget_with_info(
-        this->style(), new QLabel("Display preset"), ""
+        this->style(), new QLabel("Device preset"), ""
     );
     this->options.display_preset_button->setMenu(display_menu);
 

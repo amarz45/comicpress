@@ -17,13 +17,13 @@ static const char *GREYSCALE_TOOLTIP = R"(
 )";
 
 static const char *DOUBLE_PAGE_SPREAD_TOOLTIP = R"(
-    What to do when a double-page spread (when two pages are put together into a
+    What to do when a two-page spread (when two pages are put together into a
     single page).
 )";
 
 static const char *REMOVE_SPINE_TOOLTIP = R"(
-    Remove spines which separate two pages in a double-page spread. This can
-    help to unify double-page spreads, but note that it might remove parts of
+    Remove spines which separate two pages in a two-page spread. This can
+    help to unify two-page spreads, but note that it might remove parts of
     the actual pages.
 )";
 

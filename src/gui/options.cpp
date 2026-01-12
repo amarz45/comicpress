@@ -16,7 +16,7 @@
 void add_pdf_pixel_density_widget(QStyle *style, Options *options) {
     options->pdf_pixel_density_spin_box = new DensitySpinBox();
 
-    auto label = new QLabel("PDF input pixel density");
+    auto label = new QLabel("PDF pixel density");
     auto control_container = create_control_with_info(
         style, options->pdf_pixel_density_spin_box, PDF_TOOLTIP
     );
@@ -37,7 +37,7 @@ void add_convert_to_greyscale_widget(QStyle *style, Options *options) {
 }
 
 void add_double_page_spread_widget(QStyle *style, Options *options) {
-    auto label = new QLabel("Double-page spread actions");
+    auto label = new QLabel("Two-page spreads");
     options->double_page_spread_combo_box = create_combo_box(
         {"Rotate page", "Split into two pages", "Both", "None"}, "Rotate page"
     );
@@ -108,7 +108,7 @@ void add_scaling_widgets(QStyle *style, Options *options) {
     options->width_spin_box->setRange(100, 4'000);
     options->width_spin_box->setSingleStep(100);
     options->width_spin_box->setValue(1440);
-    auto width_label = new QLabel("Width");
+    auto width_label = new QLabel("Max width");
     scaling_layout->addRow(width_label, options->width_spin_box);
 
     // Height
@@ -116,7 +116,7 @@ void add_scaling_widgets(QStyle *style, Options *options) {
     options->height_spin_box->setRange(100, 4'000);
     options->height_spin_box->setSingleStep(100);
     options->height_spin_box->setValue(1920);
-    auto height_label = new QLabel("Height");
+    auto height_label = new QLabel("Max height");
     scaling_layout->addRow(height_label, options->height_spin_box);
 
     // Resampler

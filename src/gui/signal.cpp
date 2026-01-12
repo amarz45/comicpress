@@ -368,8 +368,15 @@ void Window::on_image_compression_type_changed(bool is_explicit) {
     auto image_quality_visible
         = img_format != "PNG"
        && (img_format == "JPEG" || compression_type == "Lossy");
+    auto jpeg_xl_quality_tooltip_visible
+        = img_format == "JPEG XL" && compression_type == "Lossy";
+
     this->options.image_quality_label->setVisible(image_quality_visible);
     this->options.image_quality_spin_box->setVisible(image_quality_visible);
+    this->options.image_quality_jpeg_xl_tooltip->setVisible(
+        jpeg_xl_quality_tooltip_visible
+    );
+
     if (is_explicit) {
         this->compression_type_changed = true;
     }

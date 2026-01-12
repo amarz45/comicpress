@@ -263,9 +263,14 @@ void add_image_format_widgets(QStyle *style, Options *options) {
     options->image_quality_label = options->image_quality_label_original;
     options->image_quality_label->setVisible(false); // Initial hidden state
 
-    image_format_layout->addRow(
-        quality_label_container, options->image_quality_spin_box
+    auto image_quality_jpeg_xl_pair = create_control_with_info_pair(
+        style, options->image_quality_spin_box, IMAGE_QUALITY_JPEG_XL_TOOLTIP
     );
+    image_format_layout->addRow(
+        quality_label_container, image_quality_jpeg_xl_pair.first
+    );
+    options->image_quality_jpeg_xl_tooltip = image_quality_jpeg_xl_pair.second;
+    options->image_quality_jpeg_xl_tooltip->setVisible(false);
 
     options->settings_layout->addWidget(image_format_options_container);
 }

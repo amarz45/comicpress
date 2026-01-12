@@ -112,3 +112,10 @@ static const char *IMAGE_COMPRESSION_TYPE_TOOLTIP = R"(
     <i>Lossy</i> is recommended because it decreases file sizes significantly
     with only a minor negative impact on quality.
 )";
+
+static const char *IMAGE_QUALITY_JPEG_XL_TOOLTIP = R"(
+    <i>Distance</i> is the recommended option because it is JPEG XL’s native
+    perceptual quality metric. <i>Quality</i> is a compatibility scale similar
+    to other image formats. For <i>Distance</i>, lower values produce higher
+    quality, with 0 producing the highest quality.
+)";

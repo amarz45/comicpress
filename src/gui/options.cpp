@@ -59,7 +59,11 @@ void add_convert_to_greyscale_widget(QStyle *style, Options *options) {
 void add_double_page_spread_widget(QStyle *style, Options *options) {
     auto label = new QLabel("Two-page spreads");
     options->double_page_spread_combo_box = create_combo_box(
-        {"Rotate page", "Split into two pages", "Both", "None"}, "Rotate page"
+        {"Rotate page",
+         "Split into two pages",
+         "Rotate and split",
+         "Do nothing"},
+        "Do nothing"
     );
     auto control_container = create_control_with_info(
         style, options->double_page_spread_combo_box, DOUBLE_PAGE_SPREAD_TOOLTIP

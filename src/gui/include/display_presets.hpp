@@ -10,7 +10,7 @@ enum BitDepthIndex {
     TWO = 1,
     FOUR = 2,
     EIGHT = 3,
-    SIXTEEEN = 4,
+    SIXTEEN = 4,
 };
 
 struct Display {

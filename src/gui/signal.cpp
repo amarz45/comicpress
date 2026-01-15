@@ -226,15 +226,15 @@ void Window::on_preset_option_modified() {
         return;
     }
 
-    if (this->display_preset.brand != "Custom") {
-        this->set_display_preset("Custom", "");
+    if (this->display_preset.brand != "None") {
+        this->set_display_preset("None", "");
     }
 }
 
 void Window::on_display_preset_changed() {
     auto brand = this->display_preset.brand;
     auto model = this->display_preset.model;
-    auto is_custom = brand == "Custom";
+    auto is_custom = brand == "None";
 
     if (is_custom) {
         return;

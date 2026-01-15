@@ -62,7 +62,7 @@ Window::Window(QWidget *parent) : QMainWindow(parent), eta_recent_intervals(5) {
     this->setCentralWidget(central_widget);
 
     this->setup_ui();
-    this->set_display_preset("Custom", "");
+    this->set_display_preset("None", "");
     this->on_enable_image_scaling_changed(
         this->options.enable_image_scaling_check_box->checkState()
     );
@@ -251,9 +251,9 @@ void Window::add_display_presets_widget() {
     this->options.display_preset_button = new QPushButton(display_preset);
     auto display_menu = new QMenu(this);
 
-    if (auto custom_action = display_menu->addAction("Custom")) {
+    if (auto custom_action = display_menu->addAction("None")) {
         connect(custom_action, &QAction::triggered, this, [this]() {
-            this->set_display_preset("Custom", "");
+            this->set_display_preset("None", "");
         });
     }
     display_menu->addSeparator();

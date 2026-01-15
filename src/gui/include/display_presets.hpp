@@ -24,7 +24,7 @@ using ModelMap = std::vector<std::pair<std::string, Display>>;
 using BrandMap = std::map<std::string, std::optional<ModelMap>>;
 
 const BrandMap DISPLAY_PRESETS = {
-    {"Custom", std::nullopt},
+    {"None", std::nullopt},
 
     {"Kindle",
      ModelMap{

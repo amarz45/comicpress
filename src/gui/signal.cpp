@@ -77,6 +77,12 @@ void Window::connect_signals() {
         &Window::on_preset_option_modified
     );
     connect(
+        this->options.advanced_options_check_box,
+        &QCheckBox::checkStateChanged,
+        this,
+        &Window::on_advanced_options_changed
+    );
+    connect(
         this->options.enable_image_scaling_check_box,
         &QCheckBox::checkStateChanged,
         this,
@@ -263,6 +269,37 @@ void Window::on_display_preset_changed() {
     this->is_programmatically_changing_values = false;
 }
 
+void Window::on_advanced_options_changed(int state) {
+    bool is_checked = state == Qt::Checked;
+
+    this->options.quantize_pages_label->setVisible(is_checked);
+    this->options.quantize_pages_container->setVisible(is_checked);
+
+    this->options.scale_pages_label->setVisible(is_checked);
+    this->options.scale_pages_container->setVisible(is_checked);
+
+    this->options.image_format_label->setVisible(is_checked);
+    this->options.image_format_container->setVisible(is_checked);
+
+    if (is_checked) {
+        this->on_enable_image_quantization_changed(
+            this->options.enable_image_quantization_check_box->checkState()
+        );
+        this->on_enable_image_scaling_changed(
+            this->options.enable_image_scaling_check_box->checkState()
+        );
+        this->on_image_format_changed();
+    }
+    else {
+        this->options.quantization_options_container->setVisible(false);
+        this->options.scaling_options_container->setVisible(false);
+        this->options.image_format_options_container->setVisible(false);
+    }
+
+    this->options.workers_label->setVisible(is_checked);
+    this->options.workers_spin_box->setVisible(is_checked);
+}
+
 void Window::on_enable_image_scaling_changed(int state) {
     bool is_checked = state == Qt::Checked;
     this->options.scaling_options_container->setVisible(is_checked);
@@ -282,6 +319,7 @@ void Window::on_enable_image_quantization_changed(int state) {
 }
 
 void Window::on_image_format_changed() {
+    this->options.image_format_options_container->setVisible(true);
     auto img_format = this->options.image_format_combo_box->currentText();
 
     auto compression_min = 0;

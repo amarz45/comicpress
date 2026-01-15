@@ -204,14 +204,31 @@ QGroupBox *Window::create_settings_group() {
     add_double_page_spread_widget(style, &this->options);
     add_remove_spine_widget(style, &this->options);
 
-    // Colour
     this->options.settings_layout->addItem(new QSpacerItem(0, 25));
+    this->options.advanced_options_check_box = new QCheckBox();
+    auto advanced_options_label = new QLabel("Show advanced options");
+    QFont font = advanced_options_label->font();
+    font.setBold(true);
+    advanced_options_label->setFont(font);
+    auto container = new QWidget();
+    auto container_layout = new QHBoxLayout(container);
+    container_layout->setContentsMargins(0, 0, 0, 0);
+    container_layout->addWidget(this->options.advanced_options_check_box);
+    container_layout->addWidget(advanced_options_label);
+    container_layout->addStretch();
+    this->options.settings_layout->addRow(container);
+
+    // Colour
     add_quantization_widgets(style, &this->options);
     add_scaling_widgets(style, &this->options);
 
     this->options.settings_layout->addItem(new QSpacerItem(0, 25));
     add_image_format_widgets(style, &this->options);
     add_parallel_workers_widget(style, &this->options);
+
+    this->on_advanced_options_changed(
+        this->options.advanced_options_check_box->checkState()
+    );
 
     return settings_group;
 }

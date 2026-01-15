@@ -114,10 +114,12 @@ void add_contrast_widget(QStyle *style, Options *options) {
 
 void add_scaling_widgets(QStyle *style, Options *options) {
     auto label = new QLabel("Scale pages");
+    options->scale_pages_label = label;
     options->enable_image_scaling_check_box = new QCheckBox("Enable");
     auto enable_container = create_control_with_info(
         style, options->enable_image_scaling_check_box, SCALE_TOOLTIP
     );
+    options->scale_pages_container = enable_container;
 
     options->settings_layout->addRow(label, enable_container);
 
@@ -167,11 +169,14 @@ void add_scaling_widgets(QStyle *style, Options *options) {
 
 void add_quantization_widgets(QStyle *style, Options *options) {
     auto label = new QLabel("Quantize pages");
+    options->quantize_pages_label = label;
+
     options->enable_image_quantization_check_box = new QCheckBox("Enable");
     options->enable_image_quantization_check_box->setChecked(true);
     auto enable_container = create_control_with_info(
         style, options->enable_image_quantization_check_box, QUANTIZE_TOOLTIP
     );
+    options->quantize_pages_container = enable_container;
 
     options->settings_layout->addRow(label, enable_container);
 
@@ -218,15 +223,18 @@ void add_image_format_widgets(QStyle *style, Options *options) {
     options->image_format_combo_box
         = create_combo_box({"AVIF", "JPEG", "JPEG XL", "PNG", "WebP"}, "PNG");
     auto image_format_label = new QLabel("Image format");
+    options->image_format_label = image_format_label;
     auto image_format_container = create_control_with_info(
         style, options->image_format_combo_box, IMG_FORMAT_TOOLTIP
     );
+    options->image_format_container = image_format_container;
 
     options->settings_layout->addRow(
         image_format_label, image_format_container
     );
 
     auto image_format_options_container = new QWidget();
+    options->image_format_options_container = image_format_options_container;
     auto image_format_layout = new QFormLayout(image_format_options_container);
     image_format_layout->setContentsMargins(25, 0, 0, 0);
     image_format_layout->setHorizontalSpacing(10);
@@ -301,6 +309,7 @@ void add_image_format_widgets(QStyle *style, Options *options) {
 
 void add_parallel_workers_widget(QStyle *, Options *options) {
     auto label = new QLabel("Parallel jobs");
+    options->workers_label = label;
 
     options->workers_spin_box = new QSpinBox();
     auto threads = std::thread::hardware_concurrency();

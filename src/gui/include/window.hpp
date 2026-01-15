@@ -53,6 +53,7 @@ class BoundedDeque {
 struct Options {
     QGroupBox *settings_group;
     QFormLayout *settings_layout;
+    QCheckBox *advanced_options_check_box;
 #if defined(PDFIUM_ENABLED)
     QComboBox *pdf_pixel_density_combo_box;
     QWidget *pdf_options_container;
@@ -63,15 +64,22 @@ struct Options {
     QCheckBox *remove_spine_check_box;
     QCheckBox *contrast_check_box;
     QPushButton *display_preset_button;
+    QLabel *scale_pages_label;
+    QWidget *scale_pages_container;
     QCheckBox *enable_image_scaling_check_box;
     QWidget *scaling_options_container;
     QSpinBox *width_spin_box;
     QSpinBox *height_spin_box;
     QComboBox *resampler_combo_box;
     QCheckBox *enable_image_quantization_check_box;
+    QLabel *quantize_pages_label;
+    QWidget *quantize_pages_container;
     QWidget *quantization_options_container;
     QComboBox *bit_depth_combo_box;
     QDoubleSpinBox *dithering_spin_box;
+    QLabel *image_format_label;
+    QWidget *image_format_container;
+    QWidget *image_format_options_container;
     QComboBox *image_format_combo_box;
     QLabel *image_compression_label;
     QSpinBox *image_compression_spin_box;
@@ -83,6 +91,7 @@ struct Options {
     QWidget *image_quality_label;
     QLabel *image_quality_label_original;
     QComboBox *image_quality_label_jpeg_xl;
+    QLabel *workers_label;
     QSpinBox *workers_spin_box;
     QWidget *rotation_options_container;
     QComboBox *rotation_direction_combo_box;
@@ -130,6 +139,7 @@ class Window : public QMainWindow {
     void on_double_page_spread_changed(const QString &text);
     void on_display_preset_changed();
     void on_preset_option_modified();
+    void on_advanced_options_changed(int state);
     void on_enable_image_scaling_changed(int state);
     void on_enable_image_quantization_changed(int state);
     void on_image_format_changed();

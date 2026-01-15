@@ -217,7 +217,7 @@ void Window::on_pdf_pixel_density_combo_box_changed(const QString &text) {
 }
 
 void Window::on_double_page_spread_changed(const QString &text) {
-    bool should_show = (text == "Rotate page" || text == "Both");
+    bool should_show = (text == "Rotate page" || text == "Rotate and split");
     this->options.rotation_options_container->setVisible(should_show);
 }
 

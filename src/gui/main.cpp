@@ -5,8 +5,8 @@
 #include <fpdfview.h>
 #endif
 
-#include "include/window.hpp"
 #include "../worker/include/worker.hpp"
+#include "include/window.hpp"
 
 int main(int argc, char **argv) {
     if (argc > 1) {
@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
     QApplication app(argc, argv);
 
     auto font = app.font();
-    font.setPointSize(14);
+    // font.setPointSize(14);
     app.setFont(font);
 
     Window window;

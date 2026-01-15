@@ -15,13 +15,33 @@
 #if defined(PDFIUM_ENABLED)
 void add_pdf_pixel_density_widget(QStyle *style, Options *options) {
     options->pdf_pixel_density_spin_box = new DensitySpinBox();
+    options->pdf_pixel_density_spin_box->setVisible(false);
 
     auto label = new QLabel("PDF pixel density");
+
+    options->pdf_pixel_density_combo_box = create_combo_box(
+        {"Standard (300\u202fPPI, fast)",
+         "High (600\u202fPPI)",
+         "Ultra (1200\u202fPPI, recommended)",
+         "Custom"},
+        "Standard (300\u202fPPI, fast)"
+    );
+
     auto control_container = create_control_with_info(
-        style, options->pdf_pixel_density_spin_box, PDF_TOOLTIP
+        style, options->pdf_pixel_density_combo_box, PDF_TOOLTIP
     );
 
     options->settings_layout->addRow(label, control_container);
+
+    options->pdf_options_container = new QWidget();
+    auto pdf_layout = new QFormLayout(options->pdf_options_container);
+    pdf_layout->setContentsMargins(25, 0, 0, 0);
+    pdf_layout->setHorizontalSpacing(10);
+    pdf_layout->setLabelAlignment(Qt::AlignLeft);
+
+    pdf_layout->addRow(options->pdf_pixel_density_spin_box);
+
+    options->settings_layout->addWidget(options->pdf_options_container);
 }
 #endif
 

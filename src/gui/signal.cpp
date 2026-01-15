@@ -35,6 +35,12 @@ void Window::connect_signals() {
         &Window::on_browse_output_clicked
     );
     connect(
+        this->options.pdf_pixel_density_combo_box,
+        &QComboBox::currentTextChanged,
+        this,
+        &Window::on_pdf_pixel_density_combo_box_changed
+    );
+    connect(
         this->options.double_page_spread_combo_box,
         &QComboBox::currentTextChanged,
         this,
@@ -188,6 +194,25 @@ void Window::on_browse_output_clicked() {
 
     if (!dir.isEmpty()) {
         this->output_dir_field->setText(dir);
+    }
+}
+
+void Window::on_pdf_pixel_density_combo_box_changed(const QString &text) {
+    auto spin = this->options.pdf_pixel_density_spin_box;
+    if (text == "Custom") {
+        spin->setVisible(true);
+        return;
+    }
+
+    spin->setVisible(false);
+    if (text == "Standard (300\u202fPPI, fast)") {
+        spin->setValue(300);
+    }
+    else if (text == "High (600\u202fPPI)") {
+        spin->setValue(600);
+    }
+    else if (text == "Ultra (1200\u202fPPI, recommended)") {
+        spin->setValue(1200);
     }
 }
 
@@ -582,13 +607,12 @@ void Window::on_start_button_clicked() {
                     = FPDF_LoadDocument(source_file.c_str(), nullptr);
                 if (!doc) {
                     log_output->setVisible(true);
-                    log_output->append(
-                        QString(
-                            "Error: Cannot open PDF document %1. Error code: %2"
-                        )
-                            .arg(file_qstr)
-                            .arg(FPDF_GetLastError())
-                    );
+                    log_output->append(QString(
+                                           "Error: Cannot open PDF "
+                                           "document %1. Error code: %2"
+                    )
+                                           .arg(file_qstr)
+                                           .arg(FPDF_GetLastError()));
                     continue;
                 }
 

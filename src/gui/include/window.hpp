@@ -54,6 +54,8 @@ struct Options {
     QGroupBox *settings_group;
     QFormLayout *settings_layout;
 #if defined(PDFIUM_ENABLED)
+    QComboBox *pdf_pixel_density_combo_box;
+    QWidget *pdf_options_container;
     QSpinBox *pdf_pixel_density_spin_box;
 #endif
     QCheckBox *convert_to_greyscale;
@@ -124,6 +126,7 @@ class Window : public QMainWindow {
     void on_remove_selected_clicked();
     void on_clear_all_clicked();
     void on_browse_output_clicked();
+    void on_pdf_pixel_density_combo_box_changed(const QString &text);
     void on_double_page_spread_changed(const QString &text);
     void on_display_preset_changed();
     void on_preset_option_modified();

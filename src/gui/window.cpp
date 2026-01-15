@@ -197,20 +197,18 @@ QGroupBox *Window::create_settings_group() {
 #if defined(PDFIUM_ENABLED)
     add_pdf_pixel_density_widget(style, &this->options);
 #endif
-
-    // Colour
     this->options.settings_layout->addItem(new QSpacerItem(0, 25));
     add_convert_to_greyscale_widget(style, &this->options);
     add_contrast_widget(style, &this->options);
-    add_quantization_widgets(style, &this->options);
-
-    // General
     this->options.settings_layout->addItem(new QSpacerItem(0, 25));
-    add_scaling_widgets(style, &this->options);
     add_double_page_spread_widget(style, &this->options);
     add_remove_spine_widget(style, &this->options);
 
-    // Other
+    // Colour
+    this->options.settings_layout->addItem(new QSpacerItem(0, 25));
+    add_quantization_widgets(style, &this->options);
+    add_scaling_widgets(style, &this->options);
+
     this->options.settings_layout->addItem(new QSpacerItem(0, 25));
     add_image_format_widgets(style, &this->options);
     add_parallel_workers_widget(style, &this->options);

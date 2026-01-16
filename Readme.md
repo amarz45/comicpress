@@ -15,3 +15,11 @@ Comicpress is similar to [KCC](https://github.com/ciromattia/kcc), but different
 - Comicpress’s image processing operations are more customizable than in KCC. Scaling, quantization, and dithering can easily be adjusted or turned off.
 - Comicpress generally has an easier-to-use user interface than KCC.
 - There are a few features present in KCC that are not in Comicpress, such as automatically cropping out margins. I plan to eventually add these in the future.
+
+## Build Instructions
+
+```
+git clone --depth=1 https://github.com/amarz45/comicpress
+CXX=clang++ meson setup build --buildtype=release
+ninja -C build
+```

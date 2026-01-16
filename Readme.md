@@ -18,7 +18,7 @@ Comicpress is similar to [KCC](https://github.com/ciromattia/kcc), but different
 
 ## Build Instructions
 
-```
+```sh
 git clone --depth=1 https://github.com/amarz45/comicpress
 CXX=clang++ meson setup build --buildtype=release
 ninja -C build

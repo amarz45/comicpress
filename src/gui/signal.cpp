@@ -272,6 +272,9 @@ void Window::on_display_preset_changed() {
 void Window::on_advanced_options_changed(int state) {
     bool is_checked = state == Qt::Checked;
 
+    this->options.linear_light_resampling_label->setVisible(is_checked);
+    this->options.linear_light_resampling_container->setVisible(is_checked);
+
     this->options.quantize_pages_label->setVisible(is_checked);
     this->options.quantize_pages_container->setVisible(is_checked);
 

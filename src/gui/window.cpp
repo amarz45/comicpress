@@ -219,6 +219,7 @@ QGroupBox *Window::create_settings_group() {
     this->options.settings_layout->addRow(container);
 
     // Colour
+    add_linear_light_resampling_widget(style, &this->options);
     add_quantization_widgets(style, &this->options);
     add_scaling_widgets(style, &this->options);
 
@@ -412,8 +413,11 @@ void Window::start_next_task() {
               << "-double_page_spread_actions"
               << QString::number(task.double_page_spread_action)
               << "-rotation_direction"
-              << QString::number(task.rotation_direction) << "-remove_spine"
-              << QString::number(task.remove_spine) << "-stretch_page_contrast"
+              << QString::number(task.rotation_direction)
+              << "-linear_light_resampling"
+              << QString::number(task.linear_light_resampling)
+              << "-remove_spine" << QString::number(task.remove_spine)
+              << "-stretch_page_contrast"
               << (task.stretch_page_contrast ? "1" : "0") << "-scale_pages"
               << (task.scale_pages ? "1" : "0") << "-page_width"
               << QString::number(task.page_width) << "-page_height"
@@ -475,6 +479,8 @@ Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
         task.rotation_direction = COUNTERCLOCKWISE;
     }
     task.remove_spine = this->options.remove_spine_check_box->isChecked();
+    task.linear_light_resampling
+        = this->options.linear_light_resampling_check_box->isChecked();
     task.stretch_page_contrast = this->options.contrast_check_box->isChecked();
     task.scale_pages
         = this->options.enable_image_scaling_check_box->isChecked();

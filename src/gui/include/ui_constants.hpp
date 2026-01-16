@@ -21,6 +21,12 @@ static const char *DOUBLE_PAGE_SPREAD_TOOLTIP = R"(
     single page).
 )";
 
+static const char *LINEAR_LIGHT_RESAMPLING_TOOLTIP = R"(
+    Resample images in a linear colourspace instead of a gamma-encoded
+    colourspace. This improves colour accuracy when scaling images but
+    significantly increases processing time.
+)";
+
 static const char *REMOVE_SPINE_TOOLTIP = R"(
     Remove spines which separate two pages in a two-page spread. This can
     help to unify two-page spreads, but note that it might remove parts of

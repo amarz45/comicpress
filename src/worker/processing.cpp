@@ -219,7 +219,7 @@ void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
                 task.page_width,
                 task.page_height,
                 task.page_resampler,
-                false
+                task.linear_light_resampling
             );
         }
 

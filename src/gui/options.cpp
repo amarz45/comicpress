@@ -1,6 +1,7 @@
 #include "include/options.hpp"
 #include "include/ui_constants.hpp"
 #include "include/window_util.hpp"
+#include "qcheckbox.h"
 #include <QComboBox>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
@@ -89,6 +90,21 @@ void add_double_page_spread_widget(QStyle *style, Options *options) {
     );
 
     options->settings_layout->addWidget(options->rotation_options_container);
+}
+
+void add_linear_light_resampling_widget(QStyle *style, Options *options) {
+    auto label = new QLabel("Linear-light resampling");
+    options->linear_light_resampling_label = label;
+
+    auto check_box = new QCheckBox("Enable");
+    options->linear_light_resampling_check_box = check_box;
+
+    auto control_container = create_control_with_info(
+        style, check_box, LINEAR_LIGHT_RESAMPLING_TOOLTIP
+    );
+    options->linear_light_resampling_container = control_container;
+
+    options->settings_layout->addRow(label, control_container);
 }
 
 void add_remove_spine_widget(QStyle *style, Options *options) {

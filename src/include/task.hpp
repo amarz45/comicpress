@@ -31,6 +31,7 @@ struct PageTask {
     bool convert_pages_to_greyscale;
     bool remove_spine;
     bool stretch_page_contrast;
+    bool linear_light_resampling;
     bool scale_pages;
     bool quantize_pages;
     bool is_lossy;

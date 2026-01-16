@@ -1,6 +1,6 @@
+#include "include/worker.hpp"
 #include "../include/task.hpp"
 #include "include/processing.hpp"
-#include "include/worker.hpp"
 
 #if defined(PDFIUM_ENABLED)
 #include <fpdfview.h>
@@ -108,6 +108,12 @@ int worker_main(int argc, char *argv[]) {
         task.rotation_direction = (RotationDirection)parse_arg<int>(
             args.at("-rotation_direction"), "Invalid rotation direction"
         );
+
+        task.linear_light_resampling = parse_arg<int>(
+                                           args.at("-linear_light_resampling"),
+                                           "Invalid linear light resampling"
+                                       )
+                                    != 0;
 
         task.remove_spine
             = parse_arg<int>(args.at("-remove_spine"), "Invalid remove spine")

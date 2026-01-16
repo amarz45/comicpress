@@ -61,6 +61,9 @@ struct Options {
 #endif
     QCheckBox *convert_to_greyscale;
     QComboBox *double_page_spread_combo_box;
+    QLabel *linear_light_resampling_label;
+    QCheckBox *linear_light_resampling_check_box;
+    QWidget *linear_light_resampling_container;
     QCheckBox *remove_spine_check_box;
     QCheckBox *contrast_check_box;
     QPushButton *display_preset_button;

@@ -577,7 +577,7 @@ vips::VImage stretch_image_contrast(vips::VImage img) {
     auto max = img.max();
     if (max - min != 0) {
         auto scale = 255.0 / (max - min);
-        auto offset = -min * scale;
+        auto offset = -min * scale + 0.5;
         img = img.linear(scale, offset);
     }
     return img;

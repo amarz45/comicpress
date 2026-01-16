@@ -207,10 +207,6 @@ void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
             }
         }
 
-        if (page_info.stretch_page_contrast) {
-            img = stretch_image_contrast(img);
-        }
-
         if (task.scale_pages) {
             img = scale_image(
                 img,
@@ -221,6 +217,10 @@ void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
                 task.page_resampler,
                 task.linear_light_resampling
             );
+        }
+
+        if (page_info.stretch_page_contrast) {
+            img = stretch_image_contrast(img);
         }
 
         auto png_palette_options = vips::VImage::option()

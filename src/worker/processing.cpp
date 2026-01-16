@@ -523,18 +523,29 @@ vips::VImage scale_image(
         );
     }
 
-    auto bands = img.bands();
-    auto has_alpha = img.has_alpha();
-    auto has_icc = img.get_typeof(VIPS_META_ICC_NAME) != 0;
+    VipsInterpretation interpretation_linear;
+    VipsInterpretation interpretation_gamma;
+    std::string colourspace_gamma;
+    if (img.bands() < 3) {
+        interpretation_linear = VIPS_INTERPRETATION_GREY16;
+        interpretation_gamma = VIPS_INTERPRETATION_B_W;
+        colourspace_gamma = "sgrey";
+    }
+    else {
+        interpretation_linear = VIPS_INTERPRETATION_scRGB;
+        interpretation_gamma = VIPS_INTERPRETATION_sRGB;
+        colourspace_gamma = "srgb";
+    }
 
+    auto has_icc = img.get_typeof(VIPS_META_ICC_NAME) != 0;
     if (has_icc) {
         img = img.icc_import(vips::VImage::option()->set("pcs", VIPS_PCS_XYZ));
     }
     else {
-        img = img.colourspace(VIPS_INTERPRETATION_XYZ);
+        img = img.colourspace(interpretation_linear);
     }
 
-    if (has_alpha) {
+    if (img.has_alpha()) {
         img.premultiply();
     }
 
@@ -542,33 +553,20 @@ vips::VImage scale_image(
         scale, vips::VImage::option()->set("kernel", resampler)->set("gap", gap)
     );
 
-    if (has_alpha) {
+    if (img.has_alpha()) {
         img.unpremultiply();
     }
 
     if (has_icc) {
         std::string colourspace;
-        if (bands == 1) {
-            colourspace = "sgrey";
-        }
-        else {
-            colourspace = "srgb";
-        }
         img = img.icc_export(
             vips::VImage::option()
                 ->set("pcs", VIPS_PCS_XYZ)
-                ->set("output_profile", colourspace.c_str())
+                ->set("output_profile", colourspace_gamma.c_str())
         );
     }
     else {
-        VipsInterpretation interpretation;
-        if (bands == 1) {
-            interpretation = VIPS_INTERPRETATION_B_W;
-        }
-        else {
-            interpretation = VIPS_INTERPRETATION_sRGB;
-        }
-        img = img.colourspace(interpretation);
+        img = img.colourspace(interpretation_gamma);
     }
 
     return img;

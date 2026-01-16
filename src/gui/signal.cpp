@@ -305,7 +305,10 @@ void Window::on_advanced_options_changed(int state) {
 
 void Window::on_enable_image_scaling_changed(int state) {
     bool is_checked = state == Qt::Checked;
-    this->options.scaling_options_container->setVisible(is_checked);
+    bool parent_visible = this->options.scale_pages_container->isVisible();
+    this->options.scaling_options_container->setVisible(
+        is_checked && parent_visible
+    );
 }
 
 void Window::on_enable_image_quantization_changed(int state) {

@@ -138,7 +138,9 @@ class Window : public QMainWindow {
     void on_remove_selected_clicked();
     void on_clear_all_clicked();
     void on_browse_output_clicked();
+#if defined(PDFIUM_ENABLED)
     void on_pdf_pixel_density_combo_box_changed(const QString &text);
+#endif
     void on_double_page_spread_changed(const QString &text);
     void on_display_preset_changed();
     void on_preset_option_modified();

@@ -34,12 +34,14 @@ void Window::connect_signals() {
         this,
         &Window::on_browse_output_clicked
     );
+#if defined(PDFIUM_ENABLED)
     connect(
         this->options.pdf_pixel_density_combo_box,
         &QComboBox::currentTextChanged,
         this,
         &Window::on_pdf_pixel_density_combo_box_changed
     );
+#endif
     connect(
         this->options.double_page_spread_combo_box,
         &QComboBox::currentTextChanged,
@@ -202,7 +204,7 @@ void Window::on_browse_output_clicked() {
         this->output_dir_field->setText(dir);
     }
 }
-
+#if defined(PDFIUM_ENABLED)
 void Window::on_pdf_pixel_density_combo_box_changed(const QString &text) {
     auto spin = this->options.pdf_pixel_density_spin_box;
     if (text == "Custom") {
@@ -221,6 +223,7 @@ void Window::on_pdf_pixel_density_combo_box_changed(const QString &text) {
         spin->setValue(1200);
     }
 }
+#endif
 
 void Window::on_double_page_spread_changed(const QString &text) {
     bool should_show = (text == "Rotate page" || text == "Rotate and split");

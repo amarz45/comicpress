@@ -529,19 +529,42 @@ Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
     return task;
 }
 
+#include <iostream>
+
 void Window::update_file_list_buttons() {
-    auto has_items = this->file_list->count() > 0;
+    auto count = this->file_list->count();
+    auto has_items = count > 0;
+
     this->start_button->setEnabled(has_items);
     this->remove_selected_button->setVisible(has_items);
     this->clear_all_button->setVisible(has_items);
 
-    if (has_items) {
-        auto has_selection = !this->file_list->selectedItems().isEmpty();
-        this->remove_selected_button->setEnabled(has_selection);
+    auto pdf_inputs_exist = false;
+    for (auto i = 0; i < count; i += 1) {
+        auto path_variant = this->file_list->item(i)->data(Qt::UserRole);
+        auto path = fs::path(path_variant.toString().toStdString());
+        auto extension = path.extension().string();
+        std::transform(
+            extension.begin(), extension.end(), extension.begin(), ::tolower
+        );
+        if (extension == ".pdf") {
+            pdf_inputs_exist = true;
+            break;
+        }
     }
-    else {
+
+    this->options.pdf_pixel_density_label->setVisible(pdf_inputs_exist);
+    this->options.pdf_pixel_density_combo_box->setVisible(pdf_inputs_exist);
+    this->options.pdf_pixel_density_tooltip->setVisible(pdf_inputs_exist);
+    this->options.pdf_options_container->setVisible(pdf_inputs_exist);
+
+    if (!has_items) {
         this->remove_selected_button->setEnabled(false);
+        return;
     }
+
+    auto has_selection = !this->file_list->selectedItems().isEmpty();
+    this->remove_selected_button->setEnabled(has_selection);
 }
 
 void Window::set_display_preset(std::string brand, std::string model) {

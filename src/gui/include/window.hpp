@@ -55,6 +55,8 @@ struct Options {
     QFormLayout *settings_layout;
     QCheckBox *advanced_options_check_box;
 #if defined(PDFIUM_ENABLED)
+    QLabel *pdf_pixel_density_label;
+    QLabel *pdf_pixel_density_tooltip;
     QComboBox *pdf_pixel_density_combo_box;
     QWidget *pdf_options_container;
     QSpinBox *pdf_pixel_density_spin_box;

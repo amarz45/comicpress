@@ -19,6 +19,7 @@ void add_pdf_pixel_density_widget(QStyle *style, Options *options) {
     options->pdf_pixel_density_spin_box->setVisible(false);
 
     auto label = new QLabel("PDF pixel density");
+    options->pdf_pixel_density_label = label;
 
     options->pdf_pixel_density_combo_box = create_combo_box(
         {"Standard (300\u202fPPI, fast)",
@@ -28,11 +29,11 @@ void add_pdf_pixel_density_widget(QStyle *style, Options *options) {
         "Standard (300\u202fPPI, fast)"
     );
 
-    auto control_container = create_control_with_info(
+    auto control_pair = create_control_with_info_pair(
         style, options->pdf_pixel_density_combo_box, PDF_TOOLTIP
     );
-
-    options->settings_layout->addRow(label, control_container);
+    options->settings_layout->addRow(label, control_pair.first);
+    options->pdf_pixel_density_tooltip = control_pair.second;
 
     options->pdf_options_container = new QWidget();
     auto pdf_layout = new QFormLayout(options->pdf_options_container);
@@ -41,6 +42,11 @@ void add_pdf_pixel_density_widget(QStyle *style, Options *options) {
     pdf_layout->setLabelAlignment(Qt::AlignLeft);
 
     pdf_layout->addRow(options->pdf_pixel_density_spin_box);
+
+    options->pdf_pixel_density_label->setVisible(false);
+    options->pdf_pixel_density_combo_box->setVisible(false);
+    options->pdf_pixel_density_tooltip->setVisible(false);
+    options->pdf_options_container->setVisible(false);
 
     options->settings_layout->addWidget(options->pdf_options_container);
 }

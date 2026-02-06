@@ -529,8 +529,6 @@ Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
     return task;
 }
 
-#include <iostream>
-
 void Window::update_file_list_buttons() {
     auto count = this->file_list->count();
     auto has_items = count > 0;

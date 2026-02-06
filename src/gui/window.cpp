@@ -537,6 +537,7 @@ void Window::update_file_list_buttons() {
     this->remove_selected_button->setVisible(has_items);
     this->clear_all_button->setVisible(has_items);
 
+#if defined(PDFIUM_ENABLED)
     auto pdf_inputs_exist = false;
     for (auto i = 0; i < count; i += 1) {
         auto path_variant = this->file_list->item(i)->data(Qt::UserRole);
@@ -551,7 +552,6 @@ void Window::update_file_list_buttons() {
         }
     }
 
-#if defined(PDFIUM_ENABLED)
     this->options.pdf_pixel_density_label->setVisible(pdf_inputs_exist);
     this->options.pdf_pixel_density_combo_box->setVisible(pdf_inputs_exist);
     this->options.pdf_pixel_density_tooltip->setVisible(pdf_inputs_exist);

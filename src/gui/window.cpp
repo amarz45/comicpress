@@ -553,10 +553,12 @@ void Window::update_file_list_buttons() {
         }
     }
 
+#if defined(PDFIUM_ENABLED)
     this->options.pdf_pixel_density_label->setVisible(pdf_inputs_exist);
     this->options.pdf_pixel_density_combo_box->setVisible(pdf_inputs_exist);
     this->options.pdf_pixel_density_tooltip->setVisible(pdf_inputs_exist);
     this->options.pdf_options_container->setVisible(pdf_inputs_exist);
+#endif
 
     if (!has_items) {
         this->remove_selected_button->setEnabled(false);

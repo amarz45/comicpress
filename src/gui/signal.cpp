@@ -627,7 +627,9 @@ void Window::on_start_button_clicked() {
                 archive = archive_read_new();
                 archive_read_support_filter_all(archive);
                 archive_read_support_format_all(archive);
-                archive_read_open_filename(archive, source_file.c_str(), 10240);
+                archive_read_open_filename(
+                    archive, source_file.string().c_str(), 10240
+                );
 
                 int i = 0;
                 while (archive_read_next_header(archive, &entry)

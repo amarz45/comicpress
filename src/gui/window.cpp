@@ -587,7 +587,7 @@ void Window::create_archive(const QString &source_archive_path) {
     auto a = archive_write_new();
     archive_write_set_format_zip(a);
     archive_write_set_options(a, "compression-level=0");
-    archive_write_open_filename(a, final_output_path.c_str());
+    archive_write_open_filename(a, final_output_path.string().c_str());
 
     try {
         for (const auto &dir_entry :
@@ -597,7 +597,9 @@ void Window::create_archive(const QString &source_archive_path) {
                 fs::path relative_path = fs::relative(path, temp_dir);
 
                 struct archive_entry *entry = archive_entry_new();
-                archive_entry_set_pathname(entry, relative_path.c_str());
+                archive_entry_set_pathname(
+                    entry, relative_path.string().c_str()
+                );
                 archive_entry_set_size(entry, fs::file_size(path));
                 archive_entry_set_filetype(entry, AE_IFREG);
                 archive_entry_set_perm(entry, 0644);

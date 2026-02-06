@@ -571,7 +571,7 @@ void Window::on_start_button_clicked() {
         if (i > 1000) {
             throw std::runtime_error("Failed to create output directory.");
         }
-        output_dir = std::string(output_dir) + "_" + std::to_string(i);
+        output_dir = output_dir.string() + "_" + std::to_string(i);
         i += 1;
     }
 
@@ -597,7 +597,9 @@ void Window::on_start_button_clicked() {
                 auto archive = archive_read_new();
                 archive_read_support_filter_all(archive);
                 archive_read_support_format_all(archive);
-                archive_read_open_filename(archive, source_file.c_str(), 10240);
+                archive_read_open_filename(
+                    archive, source_file.string().c_str(), 10240
+                );
 
                 int page_count = 0;
                 struct archive_entry *entry;

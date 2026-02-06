@@ -64,7 +64,8 @@ static vips::VImage stretch_image_contrast(vips::VImage img);
 const auto PDF_DEFAULT_RENDER_FLAGS = FPDF_ANNOT | FPDF_NO_NATIVETEXT;
 
 LoadPageReturn load_pdf_page(const PageTask &task) {
-    FPDF_DOCUMENT doc = FPDF_LoadDocument(task.source_file.c_str(), nullptr);
+    FPDF_DOCUMENT doc
+        = FPDF_LoadDocument(task.source_file.string().c_str(), nullptr);
     if (!doc) {
         throw std::runtime_error(
             "PDFium: Cannot open document. Error code: "
@@ -128,8 +129,9 @@ LoadPageReturn load_archive_image(const PageTask &task) {
     archive_read_support_filter_all(archive);
     archive_read_support_format_all(archive);
 
-    auto archive_open
-        = archive_read_open_filename(archive, task.source_file.c_str(), 10240);
+    auto archive_open = archive_read_open_filename(
+        archive, task.source_file.string().c_str(), 10240
+    );
 
     if (archive_open != ARCHIVE_OK) {
         std::string err = archive_error_string(archive);
@@ -176,7 +178,7 @@ LoadPageReturn load_archive_image(const PageTask &task) {
 void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
     try {
         auto base_path = task.output_dir / task.output_base_name;
-        auto png_path = std::string(base_path) + ".png";
+        auto png_path = base_path.string() + ".png";
         fs::create_directories(base_path.parent_path());
 
         bool rotate_option;
@@ -251,7 +253,7 @@ void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
 
         auto options = vips::VImage::option();
         if (task.image_format == "AVIF") {
-            auto output_path = std::string(base_path) + ".avif";
+            auto output_path = base_path.string() + ".avif";
             options
                 = options->set("compression", VIPS_FOREIGN_HEIF_COMPRESSION_AV1)
                       ->set("effort", task.compression_effort)
@@ -265,11 +267,11 @@ void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
             img.heifsave(output_path.c_str(), options);
         }
         else if (task.image_format == "JPEG") {
-            auto output_path = std::string(base_path) + ".jpg";
+            auto output_path = base_path.string() + ".jpg";
             img.jpegsave(output_path.c_str(), options->set("Q", task.quality));
         }
         else if (task.image_format == "JPEG XL") {
-            auto output_path = std::string(base_path) + ".jxl";
+            auto output_path = base_path.string() + ".jxl";
             options = options->set("effort", task.compression_effort);
             if (!task.is_lossy) {
                 options = options->set("distance", 0.0);
@@ -283,7 +285,7 @@ void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
             img.jxlsave(output_path.c_str(), options);
         }
         else if (task.image_format == "WebP") {
-            auto output_path = std::string(base_path) + ".webp";
+            auto output_path = base_path.string() + ".webp";
             options = options->set("effort", task.compression_effort);
             if (task.is_lossy) {
                 options = options->set("Q", task.quality);

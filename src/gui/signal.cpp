@@ -522,14 +522,24 @@ void Window::on_start_button_clicked() {
     }
 
     // Create unique base temp directory for this run
-    char temp_template[] = "/tmp/comicpress_XXXXXX";
-    char *temp_base_cstr = mkdtemp(temp_template);
-    if (!temp_base_cstr) {
+    auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                      std::chrono::system_clock::now().time_since_epoch()
+    )
+                      .count();
+    fs::path temp_base_path
+        = fs::temp_directory_path() / ("comicpress_" + std::to_string(now_ms));
+
+    try {
+        fs::create_directories(temp_base_path);
+        this->temp_base_dir = temp_base_path.string();
+    }
+    catch (const std::exception &e) {
         this->log_output->setVisible(true);
-        log_output->append("Failed to create temporary directory.");
+        log_output->append(
+            QString("Failed to create temporary directory: %1").arg(e.what())
+        );
         return;
     }
-    this->temp_base_dir = temp_base_cstr;
 
     this->options.settings_group->setEnabled(false);
     start_button->setEnabled(false);

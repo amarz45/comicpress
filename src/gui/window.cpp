@@ -190,6 +190,12 @@ QGroupBox *Window::create_settings_group() {
     settings_group->setFlat(true);
     this->options.settings_layout = new QFormLayout(settings_group);
     this->options.settings_layout->setContentsMargins(0, 10, 0, 0);
+    this->options.settings_layout->setFieldGrowthPolicy(
+        QFormLayout::FieldsStayAtSizeHint
+    );
+    this->options.settings_layout->setLabelAlignment(
+        Qt::AlignRight | Qt::AlignVCenter
+    );
     auto style = this->style();
 
     // Preprocessing

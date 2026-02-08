@@ -17,6 +17,8 @@ QComboBox *create_combo_box(QStringList items, QString current_text) {
     auto combo_box = new QComboBox();
     combo_box->addItems(items);
     combo_box->setCurrentText(current_text);
+    // Fix: Prevent combo box from expanding to fill width
+    combo_box->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
     return combo_box;
 }
 
@@ -45,6 +47,8 @@ QDoubleSpinBox *create_double_spin_box(
     spin_box->setRange(lower, upper);
     spin_box->setSingleStep(step_size);
     spin_box->setValue(value);
+    // Fix: Prevent spin box from expanding to fill width
+    spin_box->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
     layout->addWidget(spin_box);
     return spin_box;
 }
@@ -54,6 +58,8 @@ QSpinBox *create_spin_box(int lower, int upper, int step_size, int value) {
     spin_box->setRange(lower, upper);
     spin_box->setSingleStep(step_size);
     spin_box->setValue(value);
+    // Fix: Prevent spin box from expanding to fill width
+    spin_box->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
     return spin_box;
 }
 
@@ -96,6 +102,8 @@ QWidget *create_widget_with_info(
     }
 
     layout->addWidget(main_widget);
+    // Fix: Add stretch to prevent expansion
+    layout->addStretch();
 
     return container;
 }
@@ -125,6 +133,9 @@ std::pair<QWidget *, QLabel *> create_control_with_info_pair(
 
         layout->addWidget(info_area);
     }
+
+    // Fix: Add stretch to prevent expansion and keep tooltip next to control
+    layout->addStretch();
 
     return std::make_pair(container, info_area);
 }

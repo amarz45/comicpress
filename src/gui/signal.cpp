@@ -665,7 +665,7 @@ void Window::on_start_button_clicked() {
 #if defined(PDFIUM_ENABLED)
             else if (extension == ".pdf") {
                 FPDF_DOCUMENT doc
-                    = FPDF_LoadDocument(source_file.c_str(), nullptr);
+                    = FPDF_LoadDocument(source_file.string().c_str(), nullptr);
                 if (!doc) {
                     log_output->setVisible(true);
                     log_output->append(QString(

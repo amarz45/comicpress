@@ -1,10 +1,3 @@
-#include <QApplication>
-#include <QWidget>
-
-#if defined(PDFIUM_ENABLED)
-#include <fpdfview.h>
-#endif
-
 #include "../worker/include/worker.hpp"
 #include "include/window.hpp"
 

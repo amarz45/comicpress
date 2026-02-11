@@ -2,7 +2,6 @@
 
 #include <filesystem>
 #include <string>
-#include <vips/vips8>
 
 namespace fs = std::filesystem;
 

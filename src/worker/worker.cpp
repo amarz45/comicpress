@@ -2,14 +2,10 @@
 #include "../include/task.hpp"
 #include "include/processing.hpp"
 
-#if defined(PDFIUM_ENABLED)
-#include <fpdfview.h>
-#endif
 #include <iostream>
 #include <map>
 #include <stdexcept>
 #include <string>
-#include <vips/vips8>
 
 // Helper function to parse arguments with error handling and cleanup
 template <typename T>

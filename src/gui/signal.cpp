@@ -1,10 +1,5 @@
 #include "include/display_presets.hpp"
 #include "include/window.hpp"
-#include <archive.h>
-#include <archive_entry.h>
-#if defined(PDFIUM_ENABLED)
-#include <fpdfview.h>
-#endif
 #include <stdexcept>
 
 void Window::connect_signals() {

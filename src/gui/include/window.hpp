@@ -1,11 +1,6 @@
 #pragma once
 
-#include <QList>
 #include <QMainWindow>
-#include <QMap>
-#include <QProcess>
-#include <QQueue>
-#include <QString>
 #include <deque>
 #include <optional>
 #include <qtconfigmacros.h>

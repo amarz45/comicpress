@@ -5,14 +5,8 @@
 #include "include/window_util.hpp"
 #include "qboxlayout.h"
 #include "qnamespace.h"
-#include <archive.h>
-#include <archive_entry.h>
 #include <chrono>
-#if defined(PDFIUM_ENABLED)
-#include <fpdfview.h>
-#endif
 #include <fstream>
-#include <vips/resample.h>
 
 namespace fs = std::filesystem;
 

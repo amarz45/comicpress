@@ -1,15 +1,8 @@
 #include <algorithm>
-#include <archive.h>
-#include <archive_entry.h>
 #include <filesystem>
-#include <vips/image.h>
-#if defined(PDFIUM_ENABLED)
-#include <fpdfview.h>
-#endif
 #include <functional>
 #include <stdexcept>
 #include <string>
-#include <vips/vips8>
 
 #include "../include/task.hpp"
 #include "include/processing.hpp"

@@ -1,0 +1,5 @@
+CompileFlags:
+    Remove: [-fpch-preprocess, -include]
+    Add: [-include=../pch/pch.hpp]
+Diagnostics:
+    Suppress: [module_odr_violation_function]

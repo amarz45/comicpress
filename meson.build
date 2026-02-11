@@ -4,12 +4,16 @@ project(
     default_options: ['warning_level=3', 'werror=true', 'cpp_std=c++26'],
 )
 
+cpp = meson.get_compiler('cpp')
+
 if get_option('buildtype') == 'release'
     add_project_arguments('-flto', language: 'cpp')
     add_project_link_arguments('-flto', language: 'cpp')
 endif
 
-cpp = meson.get_compiler('cpp')
+if cpp.get_id() == 'clang'
+    add_project_arguments(['-Xclang', '-fno-pch-timestamp'], language: 'cpp')
+endif
 
 vips_dep = dependency('vips-cpp')
 qt6_dep = dependency('qt6', modules: ['Widgets'])

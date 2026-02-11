@@ -2,15 +2,6 @@
 #include "include/ui_constants.hpp"
 #include "include/window_util.hpp"
 #include "qcheckbox.h"
-#include <QComboBox>
-#include <QDoubleSpinBox>
-#include <QFormLayout>
-#include <QHBoxLayout>
-#include <QLabel>
-#include <QSizePolicy>
-#include <QSpinBox>
-#include <QStyle>
-#include <QWidget>
 #include <thread>
 
 #if defined(PDFIUM_ENABLED)

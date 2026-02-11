@@ -48,5 +48,6 @@ executable(
     'src/worker/processing.cpp',
     qt_processed_files,
     dependencies: [qt6_dep, vips_dep, pdfium_dep, libarchive_dep],
+    cpp_pch: 'pch/pch.hpp',
     install: true,
 )

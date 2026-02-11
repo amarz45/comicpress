@@ -1,6 +1,7 @@
 #pragma once
 
 #include "window.hpp"
+#include <QSpinBox>
 #include <QStyle>
 
 class DensitySpinBox : public QSpinBox {

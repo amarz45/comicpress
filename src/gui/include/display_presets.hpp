@@ -13,14 +13,14 @@ enum BitDepthIndex {
     SIXTEEN = 4,
 };
 
-struct Display {
+struct DisplaySpec {
     const unsigned int width;
     const unsigned int height;
     const BitDepthIndex bit_depth_index;
     const bool colour;
 };
 
-using ModelMap = std::vector<std::pair<std::string, Display>>;
+using ModelMap = std::vector<std::pair<std::string, DisplaySpec>>;
 using BrandMap = std::map<std::string, std::optional<ModelMap>>;
 
 const BrandMap DISPLAY_PRESETS = {

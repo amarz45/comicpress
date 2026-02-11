@@ -1,31 +1,40 @@
 #pragma once
 
-#include <QCheckBox>
-#include <QComboBox>
-#include <QFormLayout>
-#include <QGroupBox>
-#include <QLabel>
-#include <QLineEdit>
-#include <QListWidget>
+#include <QList>
 #include <QMainWindow>
 #include <QMap>
 #include <QProcess>
-#include <QProgressBar>
-#include <QPushButton>
 #include <QQueue>
-#include <QRadioButton>
-#include <QSpinBox>
-#include <QStackedWidget>
-#include <QTabWidget>
-#include <QTextEdit>
-#include <QTimer>
-#include <QVBoxLayout>
+#include <QString>
 #include <deque>
 #include <optional>
+#include <qtconfigmacros.h>
 #include <string>
 
 #include "../../include/task.hpp"
-#include "qpushbutton.h"
+
+QT_BEGIN_NAMESPACE
+class QCheckBox;
+class QComboBox;
+class QDoubleSpinBox;
+class QFormLayout;
+class QGroupBox;
+class QLabel;
+class QLineEdit;
+class QListWidget;
+class QMainWindow;
+class QProcess;
+class QProgressBar;
+class QPushButton;
+class QRadioButton;
+class QSpinBox;
+class QStackedWidget;
+class QTabWidget;
+class QTextEdit;
+class QTimer;
+class QVBoxLayout;
+class QWidget;
+QT_END_NAMESPACE
 
 class BoundedDeque {
     size_t max_size;

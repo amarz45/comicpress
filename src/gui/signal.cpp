@@ -1,7 +1,19 @@
 #include "include/display_presets.hpp"
 #include "include/window.hpp"
+#include <QCheckBox>
+#include <QComboBox>
 #include <QCoreApplication>
 #include <QFileDialog>
+#include <QGroupBox>
+#include <QLabel>
+#include <QLineEdit>
+#include <QListWidget>
+#include <QProgressBar>
+#include <QPushButton>
+#include <QSpinBox>
+#include <QTextEdit>
+#include <QTimer>
+#include <QVBoxLayout>
 #include <archive.h>
 #include <archive_entry.h>
 #if defined(PDFIUM_ENABLED)
@@ -259,7 +271,7 @@ void Window::on_display_preset_changed() {
     );
 
     if (it != models.end()) {
-        const Display &display = it->second;
+        const DisplaySpec &display = it->second;
         this->options.enable_image_scaling_check_box->setChecked(true);
         this->options.width_spin_box->setValue(display.width);
         this->options.height_spin_box->setValue(display.height);

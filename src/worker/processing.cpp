@@ -541,7 +541,7 @@ vips::VImage scale_image(
     }
 
     if (img.has_alpha()) {
-        img.premultiply();
+        img = img.premultiply();
     }
 
     img = img.resize(
@@ -549,7 +549,7 @@ vips::VImage scale_image(
     );
 
     if (img.has_alpha()) {
-        img.unpremultiply();
+        img = img.unpremultiply();
     }
 
     if (has_icc) {

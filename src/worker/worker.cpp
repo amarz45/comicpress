@@ -48,7 +48,7 @@ int worker_main(int argc, char *argv[]) {
 
     // Parse arguments into a map
     std::map<std::string, std::string> args;
-    for (int i = 1; i < argc; i += 2) {
+    for (int i = 1; i + 1 < argc; i += 2) {
         std::string flag = argv[i];
         std::string value = argv[i + 1];
         args[flag] = value;

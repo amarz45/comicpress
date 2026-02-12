@@ -553,7 +553,6 @@ vips::VImage scale_image(
     }
 
     if (has_icc) {
-        std::string colourspace;
         img = img.icc_export(
             vips::VImage::option()
                 ->set("pcs", VIPS_PCS_XYZ)

@@ -428,7 +428,9 @@ Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
 
     auto total_pages = this->total_pages_per_archive.value(source_qstr, 0);
     auto padding_width
-        = static_cast<int>(std::floor(std::log10(total_pages))) + 1;
+        = total_pages > 0
+            ? static_cast<int>(std::floor(std::log10(total_pages))) + 1
+            : 1;
     task.output_base_name
         = QString("%1")
               .arg(page_num + 1, padding_width, 10, QChar('0'))

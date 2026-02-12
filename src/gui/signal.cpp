@@ -447,25 +447,25 @@ void Window::on_image_compression_type_changed(bool is_explicit) {
     }
 }
 
-void Window::on_image_quality_changed(int state) {
+void Window::on_image_quality_changed(double value) {
     auto img_format = this->options.image_format_combo_box->currentText();
     if (img_format == "AVIF") {
-        this->avif_quality = state;
+        this->avif_quality = static_cast<int>(value);
     }
     else if (img_format == "JPEG") {
-        this->jpeg_quality = state;
+        this->jpeg_quality = static_cast<int>(value);
     }
     else if (img_format == "JPEG XL") {
         if (this->options.image_quality_label_jpeg_xl->currentText()
             == "Distance") {
-            this->jpeg_xl_distance = state;
+            this->jpeg_xl_distance = value;
         }
         else {
-            this->jpeg_xl_quality = state;
+            this->jpeg_xl_quality = static_cast<int>(value);
         }
     }
     else if (img_format == "WebP") {
-        this->webp_quality = state;
+        this->webp_quality = static_cast<int>(value);
     }
 }
 

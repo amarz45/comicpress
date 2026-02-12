@@ -157,7 +157,7 @@ class Window : public QMainWindow {
     void on_image_compression_changed(int state);
     void on_image_compression_type_changed(bool is_explicit);
     void on_image_compression_type_changed_explicit();
-    void on_image_quality_changed(int state);
+    void on_image_quality_changed(double value);
     void on_jpeg_xl_quality_type_changed();
 
   private:

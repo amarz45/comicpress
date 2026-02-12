@@ -21,10 +21,6 @@ T parse_arg(const std::string &arg_str, const std::string &error_msg) {
             return std::stod(arg_str);
         }
         else {
-            static_assert(
-                std::is_same_v<T, int> || std::is_same_v<T, float>,
-                "Unsupported type for parse_arg"
-            );
             throw std::invalid_argument("Unsupported type");
         }
     }

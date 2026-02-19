@@ -1,3 +1,5 @@
+            rotate_option = true;
+            break;
 #include <algorithm>
 #include <filesystem>
 #include <functional>
@@ -177,8 +179,6 @@ void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
         bool rotate_option;
         switch (task.double_page_spread_action) {
         case ROTATE:
-            rotate_option = true;
-            break;
         case BOTH:
             rotate_option = true;
             break;

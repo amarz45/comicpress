@@ -1,5 +1,3 @@
-            rotate_option = true;
-            break;
 #include <algorithm>
 #include <filesystem>
 #include <functional>

@@ -22,7 +22,7 @@ static vips::VImage get_vips_img_from_pdf_page(
 );
 
 static bool
-is_preview_greyscale(FPDF_DOCUMENT doc, FPDF_PAGE page, int page_number);
+is_preview_greyscale(FPDF_PAGE page, int page_number);
 #endif
 
 static vips::VImage remove_uniform_middle_columns(const vips::VImage &img);
@@ -78,7 +78,7 @@ LoadPageReturn load_pdf_page(const PageTask &task) {
     auto render_page_greyscale = false;
     if (task.convert_pages_to_greyscale) {
         render_page_greyscale
-            = is_preview_greyscale(doc, page, task.page_number);
+            = is_preview_greyscale(page, task.page_number);
     }
 
     auto colour_mode = FPDFBitmap_BGR;
@@ -432,11 +432,11 @@ vips::VImage remove_uniform_middle_columns(const vips::VImage &img) {
 }
 
 #if defined(PDFIUM_ENABLED)
-bool is_preview_greyscale(FPDF_DOCUMENT doc, FPDF_PAGE page, int page_number) {
+bool is_preview_greyscale(FPDF_PAGE page, int page_number) {
     auto render_flags = PDF_DEFAULT_RENDER_FLAGS | FPDF_RENDER_NO_SMOOTHTEXT
                       | FPDF_RENDER_NO_SMOOTHIMAGE | FPDF_RENDER_NO_SMOOTHPATH;
     auto preview_img = get_vips_img_from_pdf_page(
-        doc, page, page_number, FPDFBitmap_BGR, 3, 10.0, render_flags
+        page, page_number, FPDFBitmap_BGR, 3, 10.0, render_flags
     );
     return is_greyscale(preview_img, 10);
 }

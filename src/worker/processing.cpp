@@ -73,45 +73,52 @@ LoadPageReturn load_pdf_page(const PageTask &task) {
         );
     }
 
-    auto render_flags = PDF_DEFAULT_RENDER_FLAGS;
+    try {
+        auto render_flags = PDF_DEFAULT_RENDER_FLAGS;
 
-    auto render_page_greyscale = false;
-    if (task.convert_pages_to_greyscale) {
-        render_page_greyscale
-            = is_preview_greyscale(page, task.page_number);
+        auto render_page_greyscale = false;
+        if (task.convert_pages_to_greyscale) {
+            render_page_greyscale
+                = is_preview_greyscale(page, task.page_number);
+        }
+
+        auto colour_mode = FPDFBitmap_BGR;
+        auto bands = 3;
+        if (render_page_greyscale) {
+            colour_mode = FPDFBitmap_Gray;
+            bands = 1;
+            render_flags |= FPDF_GRAYSCALE;
+        }
+        else {
+            render_flags |= FPDF_REVERSE_BYTE_ORDER;
+        }
+
+        auto img = get_vips_img_from_pdf_page(
+            page,
+            task.page_number,
+            colour_mode,
+            bands,
+            task.pdf_pixel_density,
+            render_flags
+        );
+
+        auto stretch_page_contrast = should_image_stretch_contrast(img, task);
+        if (task.convert_pages_to_greyscale && !render_page_greyscale) {
+            img = img.colourspace(VIPS_INTERPRETATION_B_W);
+        }
+
+        FPDF_ClosePage(page);
+        FPDF_CloseDocument(doc);
+
+        return LoadPageReturn{
+            .image = img, .stretch_page_contrast = stretch_page_contrast
+        };
     }
-
-    auto colour_mode = FPDFBitmap_BGR;
-    auto bands = 3;
-    if (render_page_greyscale) {
-        colour_mode = FPDFBitmap_Gray;
-        bands = 1;
-        render_flags |= FPDF_GRAYSCALE;
+    catch (...) {
+        FPDF_ClosePage(page);
+        FPDF_CloseDocument(doc);
+        throw;
     }
-    else {
-        render_flags |= FPDF_REVERSE_BYTE_ORDER;
-    }
-
-    auto img = get_vips_img_from_pdf_page(
-        page,
-        task.page_number,
-        colour_mode,
-        bands,
-        task.pdf_pixel_density,
-        render_flags
-    );
-
-    auto stretch_page_contrast = should_image_stretch_contrast(img, task);
-    if (task.convert_pages_to_greyscale && !render_page_greyscale) {
-        img = img.colourspace(VIPS_INTERPRETATION_B_W);
-    }
-
-    FPDF_ClosePage(page);
-    FPDF_CloseDocument(doc);
-
-    return LoadPageReturn{
-        .image = img, .stretch_page_contrast = stretch_page_contrast
-    };
 }
 #endif
 

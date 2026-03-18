@@ -13,7 +13,6 @@ namespace fs = std::filesystem;
 
 #if defined(PDFIUM_ENABLED)
 static vips::VImage get_vips_img_from_pdf_page(
-    FPDF_DOCUMENT doc,
     FPDF_PAGE page,
     int page_number,
     int colour_mode,
@@ -94,7 +93,6 @@ LoadPageReturn load_pdf_page(const PageTask &task) {
     }
 
     auto img = get_vips_img_from_pdf_page(
-        doc,
         page,
         task.page_number,
         colour_mode,
@@ -299,7 +297,6 @@ void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
 
 #if defined(PDFIUM_ENABLED)
 vips::VImage get_vips_img_from_pdf_page(
-    FPDF_DOCUMENT doc,
     FPDF_PAGE page,
     int page_number,
     int colour_mode,
@@ -317,7 +314,6 @@ vips::VImage get_vips_img_from_pdf_page(
         width, height, colour_mode, nullptr, width * bands
     );
     if (!bitmap) {
-        FPDF_CloseDocument(doc);
         throw std::runtime_error(
             "PDFium: Failed to create bitmap for page "
             + std::to_string(page_number)

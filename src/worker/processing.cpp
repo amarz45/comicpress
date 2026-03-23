@@ -143,9 +143,35 @@ LoadPageReturn load_archive_image(const PageTask &task) {
     while (archive_read_next_header(archive, &entry) == ARCHIVE_OK) {
         auto path_name = std::string(archive_entry_pathname(entry));
         if (path_name == task.path_in_archive) {
+            if (!archive_entry_size_is_set(entry)) {
+                archive_read_close(archive);
+                archive_read_free(archive);
+                throw std::runtime_error(
+                    "LibArchive: Unknown entry size for '"
+                    + task.path_in_archive + "'"
+                );
+            }
             auto size = archive_entry_size(entry);
-            buffer.resize(size);
-            archive_read_data(archive, buffer.data(), size);
+            if (size <= 0) {
+                archive_read_close(archive);
+                archive_read_free(archive);
+                throw std::runtime_error(
+                    "LibArchive: Invalid entry size for '"
+                    + task.path_in_archive + "'"
+                );
+            }
+            buffer.resize(static_cast<size_t>(size));
+            auto bytes_read
+                = archive_read_data(archive, buffer.data(), buffer.size());
+            if (bytes_read < 0) {
+                archive_read_close(archive);
+                archive_read_free(archive);
+                throw std::runtime_error(
+                    "LibArchive: Read error for '" + task.path_in_archive
+                    + "': " + archive_error_string(archive)
+                );
+            }
+            buffer.resize(static_cast<size_t>(bytes_read));
             break;
         }
     }

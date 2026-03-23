@@ -174,6 +174,7 @@ LoadPageReturn load_archive_image(const PageTask &task) {
 }
 
 void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
+    VipsBlob *png_blob = nullptr;
     try {
         auto base_path = task.output_dir / task.output_base_name;
         auto png_path = base_path.string() + ".png";
@@ -237,7 +238,6 @@ void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
             return;
         }
 
-        VipsBlob *png_blob = nullptr;
         if (task.quantize_pages) {
             png_blob = img.pngsave_buffer(
                 png_palette_options->set("compression", 0)
@@ -297,6 +297,9 @@ void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
         }
     }
     catch (const vips::VError &e) {
+        if (png_blob != nullptr) {
+            vips_area_unref(VIPS_AREA(png_blob));
+        }
         log("  -> VIPS Error processing in-memory image "
             + task.output_base_name + ": " + e.what());
     }

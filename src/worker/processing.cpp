@@ -21,8 +21,7 @@ static vips::VImage get_vips_img_from_pdf_page(
     unsigned int render_flags
 );
 
-static bool
-is_preview_greyscale(FPDF_PAGE page, int page_number);
+static bool is_preview_greyscale(FPDF_PAGE page, int page_number);
 #endif
 
 static vips::VImage remove_uniform_middle_columns(const vips::VImage &img);

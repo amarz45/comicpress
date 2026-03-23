@@ -165,7 +165,7 @@ QGroupBox *Window::create_settings_group() {
 
     // Preprocessing
     this->add_display_presets_widget();
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
     add_pdf_pixel_density_widget(style, &this->options);
 #endif
     this->options.settings_layout->addItem(new QSpacerItem(0, 25));
@@ -376,7 +376,7 @@ void Window::start_next_task() {
               << QString::fromStdString(
                      task.path_in_archive
                  ) // Empty string if not set
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
               << "-pdf_pixel_density" << QString::number(task.pdf_pixel_density)
 #endif
               << "-convert_pages_to_greyscale"
@@ -436,7 +436,7 @@ Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
               .arg(page_num + 1, padding_width, 10, QChar('0'))
               .toStdString();
 
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
     task.pdf_pixel_density = this->options.pdf_pixel_density_spin_box->value();
 #endif
     task.convert_pages_to_greyscale
@@ -510,7 +510,7 @@ void Window::update_file_list_buttons() {
     this->remove_selected_button->setVisible(has_items);
     this->clear_all_button->setVisible(has_items);
 
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
     auto pdf_inputs_exist = false;
     for (auto i = 0; i < count; i += 1) {
         auto path_variant = this->file_list->item(i)->data(Qt::UserRole);

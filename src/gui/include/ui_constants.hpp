@@ -1,4 +1,4 @@
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
 static const char *PDF_TOOLTIP = R"(
     Sets the rendering resolution for PDF input files. Higher values produce
     better quality but use more memory and take longer to process. Values higher

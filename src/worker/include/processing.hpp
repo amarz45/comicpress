@@ -12,7 +12,7 @@ struct LoadPageReturn {
     bool stretch_page_contrast;
 };
 
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
 LoadPageReturn load_pdf_page(const PageTask &task);
 #endif
 LoadPageReturn load_archive_image(const PageTask &task);

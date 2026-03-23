@@ -27,7 +27,7 @@ void Window::connect_signals() {
         this,
         &Window::on_browse_output_clicked
     );
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
     connect(
         this->options.pdf_pixel_density_combo_box,
         &QComboBox::currentTextChanged,
@@ -144,7 +144,7 @@ void Window::on_add_files_clicked() {
         this,
         "Select input files",
         "",
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
         "Supported files (*.pdf *.cbz *.cbr)"
 #else
         "Supported files (*.cbz *.cbr)"
@@ -197,7 +197,7 @@ void Window::on_browse_output_clicked() {
         this->output_dir_field->setText(dir);
     }
 }
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
 void Window::on_pdf_pixel_density_combo_box_changed(const QString &text) {
     auto spin = this->options.pdf_pixel_density_spin_box;
     if (text == "Custom") {
@@ -655,7 +655,7 @@ void Window::on_start_button_clicked() {
                 archive_read_close(archive);
                 archive_read_free(archive);
             }
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
             else if (extension == ".pdf") {
                 FPDF_DOCUMENT doc
                     = FPDF_LoadDocument(source_file.string().c_str(), nullptr);

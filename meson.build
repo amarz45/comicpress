@@ -30,7 +30,7 @@ if pdfium_opt.allowed()
 endif
 
 if pdfium_dep.found()
-    add_project_arguments('-DPDFIUM_ENABLED', language: 'cpp')
+    add_project_arguments('-DPDF_ENABLED', language: 'cpp')
 elif pdfium_opt.enabled()
     error(
         'PDFium support was explicitly enabled but the library was not found.',

@@ -4,7 +4,7 @@
 #include "qcheckbox.h"
 #include <thread>
 
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
 void add_pdf_pixel_density_widget(QStyle *style, Options *options) {
     options->pdf_pixel_density_spin_box = new DensitySpinBox();
     options->pdf_pixel_density_spin_box->setVisible(false);

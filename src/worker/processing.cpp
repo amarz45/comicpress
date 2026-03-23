@@ -11,7 +11,7 @@ using Logger = const std::function<void(const std::string &)> &;
 
 namespace fs = std::filesystem;
 
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
 static vips::VImage get_vips_img_from_pdf_page(
     FPDF_PAGE page,
     int page_number,
@@ -52,7 +52,7 @@ static vips::VImage scale_image(
 
 static vips::VImage stretch_image_contrast(vips::VImage img);
 
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
 const auto PDF_DEFAULT_RENDER_FLAGS = FPDF_ANNOT | FPDF_NO_NATIVETEXT;
 
 LoadPageReturn load_pdf_page(const PageTask &task) {
@@ -331,7 +331,7 @@ void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
     }
 }
 
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
 vips::VImage get_vips_img_from_pdf_page(
     FPDF_PAGE page,
     int page_number,
@@ -467,7 +467,7 @@ vips::VImage remove_uniform_middle_columns(const vips::VImage &img) {
     }
 }
 
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
 bool is_preview_greyscale(FPDF_PAGE page, int page_number) {
     auto render_flags = PDF_DEFAULT_RENDER_FLAGS | FPDF_RENDER_NO_SMOOTHTEXT
                       | FPDF_RENDER_NO_SMOOTHIMAGE | FPDF_RENDER_NO_SMOOTHPATH;

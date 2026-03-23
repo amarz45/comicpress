@@ -6,7 +6,7 @@ int main(int argc, char **argv) {
         return worker_main(argc, argv);
     }
 
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
     // PDFium is needed here to discover the number of pages in PDF files.
     FPDF_InitLibrary();
 #endif
@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
     window.show();
     auto result = app.exec();
 
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
     FPDF_DestroyLibrary();
 #endif
     return result;

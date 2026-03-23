@@ -17,7 +17,7 @@ struct PageTask {
     double dither;
     double quality;
     int page_number = -1;
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
     int pdf_pixel_density;
 #endif
     int page_width;

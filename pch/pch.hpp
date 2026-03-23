@@ -40,7 +40,7 @@
 // Other libraries
 #include <archive.h>
 #include <archive_entry.h>
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
 #include <fpdfview.h>
 #endif
 #include <vips/vips8>

@@ -26,7 +26,7 @@ T parse_arg(const std::string &arg_str, const std::string &error_msg) {
     }
     catch (const std::exception &e) {
         std::cerr << "Worker error: " << error_msg << " - " << e.what() << "\n";
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
         FPDF_DestroyLibrary();
 #endif
         vips_shutdown();
@@ -60,7 +60,7 @@ int worker_main(int argc, char *argv[]) {
         return 1;
     }
     vips_concurrency_set(1);
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
     FPDF_InitLibrary();
 #endif
 
@@ -78,7 +78,7 @@ int worker_main(int argc, char *argv[]) {
         task.path_in_archive
             = args.at("-path_in_archive"); // Can be empty string
 
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
         task.pdf_pixel_density = parse_arg<int>(
             args.at("-pdf_pixel_density"), "Invalid PDF pixel density"
         );
@@ -159,7 +159,7 @@ int worker_main(int argc, char *argv[]) {
     catch (const std::out_of_range &e) {
         std::cerr << "Worker error: Missing required argument - " << e.what()
                   << "\n";
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
         FPDF_DestroyLibrary();
 #endif
         vips_shutdown();
@@ -175,7 +175,7 @@ int worker_main(int argc, char *argv[]) {
             page_info = load_archive_image(task);
         }
         else {
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
             page_info = load_pdf_page(task);
 #else
             exit(1);
@@ -188,7 +188,7 @@ int worker_main(int argc, char *argv[]) {
             "Worker error processing task for "
             + task.source_file.stem().string() + ": " + e.what()
         );
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
         FPDF_DestroyLibrary();
 #endif
         vips_shutdown();
@@ -196,7 +196,7 @@ int worker_main(int argc, char *argv[]) {
     }
 
 // Clean up libraries.
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
     FPDF_DestroyLibrary();
 #endif
     vips_shutdown();

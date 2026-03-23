@@ -58,7 +58,7 @@ struct Options {
     QGroupBox *settings_group;
     QFormLayout *settings_layout;
     QCheckBox *advanced_options_check_box;
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
     QLabel *pdf_pixel_density_label;
     QLabel *pdf_pixel_density_tooltip;
     QComboBox *pdf_pixel_density_combo_box;
@@ -144,7 +144,7 @@ class Window : public QMainWindow {
     void on_remove_selected_clicked();
     void on_clear_all_clicked();
     void on_browse_output_clicked();
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
     void on_pdf_pixel_density_combo_box_changed(const QString &text);
 #endif
     void on_double_page_spread_changed(const QString &text);

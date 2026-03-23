@@ -52,7 +52,7 @@ class DensitySpinBox : public QSpinBox {
     }
 };
 
-#if defined(PDFIUM_ENABLED)
+#if defined(PDF_ENABLED)
 void add_pdf_pixel_density_widget(QStyle *style, Options *options);
 #endif
 void add_convert_to_greyscale_widget(QStyle *style, Options *options);

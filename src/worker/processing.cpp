@@ -342,8 +342,8 @@ vips::VImage get_vips_img_from_pdf_page(
     auto width_pt = FPDF_GetPageWidth(page);
     auto height_pt = FPDF_GetPageHeight(page);
     auto scale = ppi / 72.0;
-    auto width = std::lround(width_pt * scale);
-    auto height = std::lround(height_pt * scale);
+    auto width = static_cast<int>(std::lround(width_pt * scale));
+    auto height = static_cast<int>(std::lround(height_pt * scale));
 
     FPDF_BITMAP bitmap = FPDFBitmap_CreateEx(
         width, height, colour_mode, nullptr, width * bands

@@ -562,6 +562,15 @@ void Window::create_archive(const QString &source_archive_path) {
     archive_write_set_options(a, "compression-level=0");
     archive_write_open_filename(a, final_output_path.string().c_str());
 
+    // Check if we can actually open the output archive path.
+    if (archive_write_open_filename(a, final_output_path.string().c_str())
+        != ARCHIVE_OK) {
+        log_output->setVisible(true);
+        log_output->append(QString("Error: %1").arg(archive_error_string(a)));
+        archive_write_free(a);
+        return;
+    }
+
     try {
         for (const auto &dir_entry :
              fs::recursive_directory_iterator(temp_dir)) {

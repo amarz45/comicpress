@@ -560,7 +560,6 @@ void Window::create_archive(const QString &source_archive_path) {
     auto a = archive_write_new();
     archive_write_set_format_zip(a);
     archive_write_set_options(a, "compression-level=0");
-    archive_write_open_filename(a, final_output_path.string().c_str());
 
     // Check if we can actually open the output archive path.
     if (archive_write_open_filename(a, final_output_path.string().c_str())

@@ -731,6 +731,7 @@ void Window::on_start_button_clicked() {
     this->progress_bar->setMaximum(total_pages);
 
     // Timer
+    now = std::chrono::system_clock::now();
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                   now.time_since_epoch()
     )

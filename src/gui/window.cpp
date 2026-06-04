@@ -10,13 +10,13 @@
 
 namespace fs = std::filesystem;
 
-Window::Window(QWidget *parent) : QMainWindow(parent), eta_recent_samples(5) {
+Window::Window(QWidget *parent) : QMainWindow(parent), eta_samples(5) {
     // Timer
     this->timer = new QTimer(this);
     connect(this->timer, &QTimer::timeout, this, &Window::update_time_labels);
     this->start_time = std::nullopt;
-    this->last_eta_recent_time = std::nullopt;
-    this->images_since_last_eta_recent = 0;
+    this->last_eta_time = std::nullopt;
+    this->images_since_last_eta = 0;
     this->last_progress_value = 0.0;
     this->is_processing_cancelled = false;
     this->is_programmatically_changing_values = false;
@@ -213,11 +213,9 @@ void Window::create_log_group() {
 
     auto time_layout = new QHBoxLayout();
     this->elapsed_label = new QLabel("Elapsed: –");
-    this->eta_overall_label = new QLabel("ETA (overall): –");
-    this->eta_recent_label = new QLabel("ETA (recent): –");
+    this->eta_label = new QLabel("ETA: –");
     time_layout->addWidget(this->elapsed_label);
-    time_layout->addWidget(this->eta_overall_label);
-    time_layout->addWidget(this->eta_recent_label);
+    time_layout->addWidget(this->eta_label);
     time_layout->addStretch();
     time_layout->setSpacing(50);
 
@@ -317,11 +315,9 @@ void Window::start_next_task() {
 
         auto time_layout = new QHBoxLayout();
         auto elapsed_label = new QLabel("Elapsed: –");
-        auto eta_overall_label = new QLabel("ETA (overall): –");
-        auto eta_recent_label = new QLabel("ETA (recent): –");
+        auto eta_label = new QLabel("ETA: –");
         time_layout->addWidget(elapsed_label);
-        time_layout->addWidget(eta_overall_label);
-        time_layout->addWidget(eta_recent_label);
+        time_layout->addWidget(eta_label);
         time_layout->addStretch();
         time_layout->setSpacing(50);
 
@@ -332,8 +328,7 @@ void Window::start_next_task() {
         this->active_file_widgets.insert(source_qstr, widget);
         this->active_progress_bars.insert(source_qstr, progressBar);
         this->file_elapsed_labels.insert(source_qstr, elapsed_label);
-        this->file_eta_overall_labels.insert(source_qstr, eta_overall_label);
-        this->file_eta_recent_labels.insert(source_qstr, eta_recent_label);
+        this->file_eta_labels.insert(source_qstr, eta_label);
 
         auto now = std::chrono::system_clock::now();
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -342,8 +337,8 @@ void Window::start_next_task() {
                       .count();
         FileTimer file_timer;
         file_timer.start_time = ms;
-        file_timer.last_eta_recent_time = ms;
-        file_timer.images_since_last_eta_recent = 0;
+        file_timer.last_eta_time = ms;
+        file_timer.images_since_last_eta = 0;
         this->file_timers.insert(source_qstr, file_timer);
     }
 
@@ -413,7 +408,7 @@ void Window::handle_log_message(const QString &message) {
 
 void Window::handle_task_finished() {
     pages_processed++;
-    images_since_last_eta_recent++;
+    images_since_last_eta++;
     this->progress_bar->setValue(pages_processed);
 }
 

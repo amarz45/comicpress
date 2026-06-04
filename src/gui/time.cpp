@@ -28,36 +28,23 @@ void Window::update_overall_time_labels() {
 
     auto value = this->pages_processed;
 
-    // Overall ETA
-    if (value > 0) {
-        auto total = this->total_pages;
-        auto per_unit = static_cast<double>(elapsed) / value;
-        auto remaining = static_cast<double>(total - value) * per_unit;
-        auto eta_overall_str
-            = "ETA (overall): " + time_to_str(static_cast<int64_t>(remaining));
-        this->eta_overall_label->setText(
-            QString::fromStdString(eta_overall_str)
-        );
+    if (this->last_eta_time.has_value()
+        && ms - this->last_eta_time.value() >= 1000
+        && this->images_since_last_eta > 0) {
+        auto images = this->images_since_last_eta;
+        auto interval = ms - this->last_eta_time.value();
+
+        this->eta_samples.push_front({images, interval});
+
+        this->last_eta_time = ms;
+        this->images_since_last_eta = 0;
     }
 
-    // Recent ETA
-    if (this->last_eta_recent_time.has_value()
-        && ms - this->last_eta_recent_time.value() >= 1000
-        && this->images_since_last_eta_recent > 0) {
-        auto images = this->images_since_last_eta_recent;
-        auto interval = ms - this->last_eta_recent_time.value();
-
-        this->eta_recent_samples.push_front({images, interval});
-
-        this->last_eta_recent_time = ms;
-        this->images_since_last_eta_recent = 0;
-    }
-
-    if (!this->eta_recent_samples.dq.empty()) {
+    if (!this->eta_samples.dq.empty()) {
         int64_t images = 0;
         int64_t interval = 0;
 
-        for (const auto &[i, d] : this->eta_recent_samples.dq) {
+        for (const auto &[i, d] : this->eta_samples.dq) {
             images += i;
             interval += d;
         }
@@ -67,11 +54,9 @@ void Window::update_overall_time_labels() {
                 = static_cast<double>(images) / static_cast<double>(interval);
             auto remaining
                 = static_cast<double>(this->total_pages - value) / speed;
-            auto eta_recent_str = "ETA (recent): "
-                                + time_to_str(static_cast<int64_t>(remaining));
-            this->eta_recent_label->setText(
-                QString::fromStdString(eta_recent_str)
-            );
+            auto eta_str
+                = "ETA: " + time_to_str(static_cast<int64_t>(remaining));
+            this->eta_label->setText(QString::fromStdString(eta_str));
         }
     }
 }
@@ -106,36 +91,22 @@ void Window::update_file_time_labels(const QString &file) {
     auto value = this->pages_processed_per_archive.value(file, 0);
     auto total = this->total_pages_per_archive.value(file, 0);
 
-    // Overall ETA
-    if (value > 0) {
-        auto per_unit = static_cast<double>(elapsed) / value;
-        auto remaining = static_cast<double>(total - value) * per_unit;
-        auto eta_overall_str
-            = "ETA (overall): " + time_to_str(static_cast<int64_t>(remaining));
-        if (this->file_eta_overall_labels.contains(file)) {
-            this->file_eta_overall_labels[file]->setText(
-                QString::fromStdString(eta_overall_str)
-            );
-        }
+    if (file_timer.last_eta_time.has_value()
+        && ms - file_timer.last_eta_time.value() >= 1000
+        && file_timer.images_since_last_eta > 0) {
+        auto images = file_timer.images_since_last_eta;
+        auto interval = ms - file_timer.last_eta_time.value();
+
+        file_timer.eta_samples.push_front({images, interval});
+
+        file_timer.last_eta_time = ms;
+        file_timer.images_since_last_eta = 0;
     }
 
-    // Recent ETA
-    if (file_timer.last_eta_recent_time.has_value()
-        && ms - file_timer.last_eta_recent_time.value() >= 1000
-        && file_timer.images_since_last_eta_recent > 0) {
-        auto images = file_timer.images_since_last_eta_recent;
-        auto interval = ms - file_timer.last_eta_recent_time.value();
-
-        file_timer.eta_recent_samples.push_front({images, interval});
-
-        file_timer.last_eta_recent_time = ms;
-        file_timer.images_since_last_eta_recent = 0;
-    }
-
-    if (!file_timer.eta_recent_samples.dq.empty()) {
+    if (!file_timer.eta_samples.dq.empty()) {
         int64_t images = 0;
         int64_t interval = 0;
-        for (const auto &[i, d] : file_timer.eta_recent_samples.dq) {
+        for (const auto &[i, d] : file_timer.eta_samples.dq) {
             images += i;
             interval += d;
         }
@@ -144,12 +115,12 @@ void Window::update_file_time_labels(const QString &file) {
             auto speed
                 = static_cast<double>(images) / static_cast<double>(interval);
             auto remaining = static_cast<double>(total - value) / speed;
-            auto eta_recent_str = "ETA (recent): "
-                                + time_to_str(static_cast<int64_t>(remaining));
+            auto eta_str
+                = "ETA: " + time_to_str(static_cast<int64_t>(remaining));
 
-            if (this->file_eta_recent_labels.contains(file)) {
-                this->file_eta_recent_labels[file]->setText(
-                    QString::fromStdString(eta_recent_str)
+            if (this->file_eta_labels.contains(file)) {
+                this->file_eta_labels[file]->setText(
+                    QString::fromStdString(eta_str)
                 );
             }
         }

@@ -547,8 +547,7 @@ void Window::on_start_button_clicked() {
     this->active_file_widgets.clear();
     this->active_progress_bars.clear();
     this->file_elapsed_labels.clear();
-    this->file_eta_overall_labels.clear();
-    this->file_eta_recent_labels.clear();
+    this->file_eta_labels.clear();
     this->file_timers.clear();
     is_processing_cancelled = false;
     pages_processed = 0;
@@ -737,12 +736,11 @@ void Window::on_start_button_clicked() {
     )
                   .count();
     start_time = ms;
-    last_eta_recent_time = ms;
-    images_since_last_eta_recent = 0;
+    last_eta_time = ms;
+    images_since_last_eta = 0;
     last_progress_value = 0;
     elapsed_label->setText("Elapsed: –");
-    eta_overall_label->setText("ETA (overall): –");
-    eta_recent_label->setText("ETA (recent): –");
+    eta_label->setText("ETA: –");
     timer->start(1000);
 
     for (int i = 0; i < max_concurrent_workers; ++i) {
@@ -771,8 +769,7 @@ void Window::on_cancel_button_clicked() {
     this->active_file_widgets.clear();
     this->active_progress_bars.clear();
     this->file_elapsed_labels.clear();
-    this->file_eta_overall_labels.clear();
-    this->file_eta_recent_labels.clear();
+    this->file_eta_labels.clear();
     this->file_timers.clear();
     this->pages_processed_per_archive.clear();
     this->progress_bars_group->setVisible(false);
@@ -833,7 +830,7 @@ void Window::on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus) {
     if (this->pages_processed_per_archive.contains(source_qstr)) {
         this->pages_processed_per_archive[source_qstr]++;
         if (this->file_timers.contains(source_qstr)) {
-            this->file_timers[source_qstr].images_since_last_eta_recent++;
+            this->file_timers[source_qstr].images_since_last_eta++;
         }
         if (this->active_progress_bars.contains(source_qstr)) {
             auto progressBar = this->active_progress_bars.value(source_qstr);
@@ -855,8 +852,7 @@ void Window::on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus) {
                 delete widget;
                 this->active_progress_bars.remove(source_qstr);
                 this->file_elapsed_labels.remove(source_qstr);
-                this->file_eta_overall_labels.remove(source_qstr);
-                this->file_eta_recent_labels.remove(source_qstr);
+                this->file_eta_labels.remove(source_qstr);
                 this->file_timers.remove(source_qstr);
                 this->total_pages_per_archive.remove(source_qstr);
 

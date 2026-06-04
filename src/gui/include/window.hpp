@@ -109,11 +109,11 @@ struct Options {
 
 struct FileTimer {
     std::optional<int64_t> start_time;
-    std::optional<int64_t> last_eta_recent_time;
-    int images_since_last_eta_recent = 0;
-    BoundedDeque<std::pair<int64_t, int64_t>> eta_recent_samples;
+    std::optional<int64_t> last_eta_time;
+    int images_since_last_eta = 0;
+    BoundedDeque<std::pair<int64_t, int64_t>> eta_samples;
 
-    FileTimer() : eta_recent_samples(5) {
+    FileTimer() : eta_samples(5) {
     }
 };
 
@@ -168,10 +168,10 @@ class Window : public QMainWindow {
     // Timer
     QTimer *timer;
     std::optional<int64_t> start_time;
-    std::optional<int64_t> last_eta_recent_time;
-    int images_since_last_eta_recent;
+    std::optional<int64_t> last_eta_time;
+    int images_since_last_eta;
     float last_progress_value;
-    BoundedDeque<std::pair<int64_t, int64_t>> eta_recent_samples;
+    BoundedDeque<std::pair<int64_t, int64_t>> eta_samples;
 
     // Input and output
     QListWidget *file_list;
@@ -188,8 +188,7 @@ class Window : public QMainWindow {
 
     // Progress
     QLabel *elapsed_label;
-    QLabel *eta_overall_label;
-    QLabel *eta_recent_label;
+    QLabel *eta_label;
     QProgressBar *progress_bar;
     QTextEdit *log_output;
     QPushButton *start_button;
@@ -205,8 +204,7 @@ class Window : public QMainWindow {
     QMap<QString, QWidget *> active_file_widgets;
     QMap<QString, QProgressBar *> active_progress_bars;
     QMap<QString, QLabel *> file_elapsed_labels;
-    QMap<QString, QLabel *> file_eta_overall_labels;
-    QMap<QString, QLabel *> file_eta_recent_labels;
+    QMap<QString, QLabel *> file_eta_labels;
     QMap<QString, FileTimer> file_timers;
     QMap<QString, fs::path> archive_temp_dirs;
     int max_concurrent_workers;

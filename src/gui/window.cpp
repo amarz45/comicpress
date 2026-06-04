@@ -10,7 +10,7 @@
 
 namespace fs = std::filesystem;
 
-Window::Window(QWidget *parent) : QMainWindow(parent), eta_recent_intervals(5) {
+Window::Window(QWidget *parent) : QMainWindow(parent), eta_recent_samples(5) {
     // Timer
     this->timer = new QTimer(this);
     connect(this->timer, &QTimer::timeout, this, &Window::update_time_labels);

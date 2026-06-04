@@ -31,22 +31,23 @@ class QVBoxLayout;
 class QWidget;
 QT_END_NAMESPACE
 
+template <typename T>
 class BoundedDeque {
     size_t max_size;
 
   public:
-    std::deque<int64_t> dq;
+    std::deque<T> dq;
     BoundedDeque(size_t n) : max_size(n) {
     }
 
-    void push_back(int val) {
+    void push_back(const T &val) {
         if (dq.size() == max_size) {
             dq.pop_front();
         }
         dq.push_back(val);
     }
 
-    void push_front(int val) {
+    void push_front(const T &val) {
         if (dq.size() == max_size) {
             dq.pop_back();
         }
@@ -110,9 +111,9 @@ struct FileTimer {
     std::optional<int64_t> start_time;
     std::optional<int64_t> last_eta_recent_time;
     int images_since_last_eta_recent = 0;
-    BoundedDeque eta_recent_intervals;
+    BoundedDeque<std::pair<int64_t, int64_t>> eta_recent_samples;
 
-    FileTimer() : eta_recent_intervals(5) {
+    FileTimer() : eta_recent_samples(5) {
     }
 };
 
@@ -170,7 +171,7 @@ class Window : public QMainWindow {
     std::optional<int64_t> last_eta_recent_time;
     int images_since_last_eta_recent;
     float last_progress_value;
-    BoundedDeque eta_recent_intervals;
+    BoundedDeque<std::pair<int64_t, int64_t>> eta_recent_samples;
 
     // Input and output
     QListWidget *file_list;

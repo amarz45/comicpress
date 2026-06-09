@@ -243,33 +243,45 @@ void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
             );
         }
 
+        // Build fresh palette options per save: a VOption is consumed by the
+        // operation it is passed to, so it must not be reused across calls.
+        auto make_palette_options = [&] {
+            return vips::VImage::option()
+                ->set("palette", true)
+                ->set("bitdepth", task.bit_depth)
+                ->set("dither", task.dither)
+                ->set("effort", 10);
+        };
+
+        // Quantize FIRST so the palette is built from the original tones.
+        // Doing this before the contrast stretch matters: it ensures that each
+        // page stretches the full colour range.
+        if (task.quantize_pages) {
+            png_blob = img.pngsave_buffer(
+                make_palette_options()->set("compression", 0)
+            );
+            size_t buffer_size = 0;
+            const void *buffer_data = vips_blob_get(png_blob, &buffer_size);
+            img = vips::VImage::new_from_buffer(buffer_data, buffer_size, "");
+        }
+
         if (page_info.stretch_page_contrast) {
             img = stretch_image_contrast(img);
         }
 
-        auto png_palette_options = vips::VImage::option()
-                                       ->set("palette", true)
-                                       ->set("bitdepth", task.bit_depth)
-                                       ->set("dither", task.dither)
-                                       ->set("effort", 10);
-
         if (task.image_format == "PNG") {
-            auto base_options = task.quantize_pages ? png_palette_options
+            // When `task.quantize_pages` is true, the image has already been
+            // quantized, so re-quantizing here is a no-op.
+            auto base_options = task.quantize_pages ? make_palette_options()
                                                     : vips::VImage::option();
             img.pngsave(
                 png_path.c_str(),
                 base_options->set("compression", task.compression_effort)
             );
+            if (png_blob != nullptr) {
+                vips_area_unref(VIPS_AREA(png_blob));
+            }
             return;
-        }
-
-        if (task.quantize_pages) {
-            png_blob = img.pngsave_buffer(
-                png_palette_options->set("compression", 0)
-            );
-            size_t buffer_size = 0;
-            const void *buffer_data = vips_blob_get(png_blob, &buffer_size);
-            img = vips::VImage::new_from_buffer(buffer_data, buffer_size, "");
         }
 
         auto options = vips::VImage::option();

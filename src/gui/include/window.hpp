@@ -145,6 +145,9 @@ class Window : public QMainWindow {
     void on_remove_selected_clicked();
     void on_clear_all_clicked();
     void on_browse_output_clicked();
+    // Folder to actually write to, which may differ from what output_dir_field
+    // shows.
+    QString effective_output_dir() const;
 #if defined(PDF_ENABLED)
     void on_pdf_pixel_density_combo_box_changed(const QString &text);
 #endif
@@ -179,6 +182,10 @@ class Window : public QMainWindow {
     QPushButton *remove_selected_button;
     QPushButton *clear_all_button;
     QLineEdit *output_dir_field;
+    // Writable path for the browsed output folder (a portal path under
+    // Flatpak); empty until the user browses, while output_dir_field shows its
+    // host path.
+    QString output_dir_io_path;
     fs::path output_path;
     QPushButton *browse_output_button;
     QGroupBox *progress_bars_group;

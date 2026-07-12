@@ -140,6 +140,16 @@ QGroupBox *Window::create_io_group() {
     );
     this->output_dir_field
         = new QLineEdit(documents_dir.filePath("Comicpress"));
+
+    // The folder must be picked through the file dialog so the sandbox grants
+    // access to it; a typed-in path would not be writable.
+    this->output_dir_field->setReadOnly(true);
+    this->output_dir_field->setCursor(Qt::PointingHandCursor);
+
+    // Folder icon inside the field.
+    auto browse_icon = this->style()->standardIcon(QStyle::SP_DirIcon);
+    this->output_dir_field->addAction(browse_icon, QLineEdit::LeadingPosition);
+
     this->browse_output_button = new QPushButton("Browse output folder");
     output_layout->addWidget(this->browse_output_button);
     output_layout->addWidget(this->output_dir_field);

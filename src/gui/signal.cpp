@@ -1,6 +1,41 @@
 #include "include/display_presets.hpp"
 #include "include/window.hpp"
+#include <QFile>
+#include <chrono>
 #include <stdexcept>
+
+#ifdef __linux__
+#include <sys/xattr.h>
+#include <vector>
+#endif
+
+// Turns a Flatpak file-portal path (`/run/user/...`) into the real path the
+// user recognizes (`/home/user/...`), which the portal stashes in an extended
+// attribute. Returns `path` untouched when that attribute is absent: outside
+// Flatpak, and on non-Linux platforms that have no portal.
+static QString resolve_host_path(const QString &path) {
+#ifdef __linux__
+    auto attr = "user.document-portal.host-path";
+    auto local = QFile::encodeName(path);
+
+    // A null buffer makes getxattr return the value's length; use it to size an
+    // exact buffer (the stored value has no null terminator).
+    auto size = getxattr(local.constData(), attr, nullptr, 0);
+    if (size <= 0) {
+        return path;
+    }
+
+    std::vector<char> buffer(static_cast<size_t>(size));
+    auto read = getxattr(local.constData(), attr, buffer.data(), buffer.size());
+    if (read <= 0) {
+        return path;
+    }
+
+    return QFile::decodeName(QByteArray(buffer.data(), static_cast<int>(read)));
+#else
+    return path;
+#endif
+}
 
 void Window::connect_signals() {
     connect(
@@ -194,9 +229,18 @@ void Window::on_browse_output_clicked() {
     );
 
     if (!dir.isEmpty()) {
-        this->output_dir_field->setText(dir);
+        // `dir` is the path we can write to; store it and show its resolved,
+        // human-readable form.
+        this->output_dir_io_path = dir;
+        this->output_dir_field->setText(resolve_host_path(dir));
     }
 }
+
+QString Window::effective_output_dir() const {
+    return this->output_dir_io_path.isEmpty() ? this->output_dir_field->text()
+                                              : this->output_dir_io_path;
+}
+
 #if defined(PDF_ENABLED)
 void Window::on_pdf_pixel_density_combo_box_changed(const QString &text) {
     auto spin = this->options.pdf_pixel_density_spin_box;
@@ -565,7 +609,7 @@ void Window::on_start_button_clicked() {
     oss << std::put_time(local_time, "%Y-%m-%d %H-%M-%S");
 
     auto output_base_dir
-        = fs::path(output_dir_field->text().toStdString()) / oss.str();
+        = fs::path(effective_output_dir().toStdString()) / oss.str();
 
     auto output_dir = output_base_dir;
     auto i = 1;

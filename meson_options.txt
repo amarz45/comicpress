@@ -1,6 +1,6 @@
 option(
     'pdfium',
     type: 'feature',
-    value: 'auto',
-    description: 'Enable PDFium support (default: auto-detect).',
+    value: 'enabled',
+    description: 'Enable PDFium support (default: enabled).',
 )

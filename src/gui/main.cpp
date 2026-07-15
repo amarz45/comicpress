@@ -13,6 +13,11 @@ int main(int argc, char **argv) {
 
     QApplication app(argc, argv);
 
+    QApplication::setDesktopFileName("io.github.amarz45.Comicpress");
+    QApplication::setWindowIcon(
+        QIcon::fromTheme("io.github.amarz45.Comicpress")
+    );
+
     auto font = app.font();
     // font.setPointSize(14);
     app.setFont(font);

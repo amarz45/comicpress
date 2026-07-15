@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Comicpress
+Comment=Compress comics and manga for ereaders
+Exec=comicpress
+Icon=io.github.amarz45.Comicpress
+Terminal=false
+Categories=Graphics;
+Keywords=comic;manga;cbz;cbr;pdf;ereader;compress;
+StartupWMClass=comicpress

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<component type="desktop-application">
+  <id>io.github.amarz45.Comicpress</id>
+
+  <!-- The license of THIS metainfo file (not the app). -->
+  <metadata_license>CC0-1.0</metadata_license>
+  <!-- The license of the application itself. -->
+  <project_license>GPL-3.0-or-later</project_license>
+
+  <name>Comicpress</name>
+  <summary>Converts and compresses comics and manga for ereaders</summary>
+
+  <description>
+    <p>
+      Comicpress takes DRM-free comic book files (CBR, CBZ, PDF) and compresses
+      them to a fraction of their original size while improving how they look on
+      e-ink ereaders. It applies image-processing operations such as contrast
+      stretching, high-quality scaling, quantization, and dithering, all of
+      which can be customized or disabled.
+    </p>
+  </description>
+
+  <launchable
+        type="desktop-id"
+    >io.github.amarz45.Comicpress.desktop</launchable>
+
+  <url type="homepage">https://github.com/amarz45/comicpress</url>
+
+  <developer id="io.github.amarz45">
+    <name>Amar Al-Zubaidi</name>
+  </developer>
+
+  <screenshots>
+    <screenshot type="default">
+      <image
+            >https://raw.githubusercontent.com/amarz45/comicpress/v1.0.0/screenshot.png</image>
+      <caption>The Comicpress main window</caption>
+    </screenshot>
+  </screenshots>
+
+  <releases>
+    <release version="1.0.0" date="2026-07-13">
+      <description>
+        <p>Initial release.</p>
+      </description>
+    </release>
+  </releases>
+
+  <content_rating type="oars-1.1" />
+</component>

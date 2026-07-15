@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Manga-paper background -->
+  <rect x="8" y="8" width="112" height="112" rx="26" fill="#F2EAD3"/>
+
+  <!-- Halftone / screentone dots (comic-print texture) -->
+  <g fill="#1A1A1A" opacity="0.32">
+    <circle cx="107" cy="92" r="1.6"/>
+    <circle cx="102" cy="97" r="1.6"/><circle cx="107" cy="97" r="1.6"/>
+    <circle cx="97" cy="102" r="1.6"/><circle cx="102" cy="102" r="1.6"/><circle cx="107" cy="102" r="1.6"/>
+    <circle cx="92" cy="107" r="1.6"/><circle cx="97" cy="107" r="1.6"/><circle cx="102" cy="107" r="1.6"/><circle cx="107" cy="107" r="1.6"/>
+    <circle cx="87" cy="112" r="1.6"/><circle cx="92" cy="112" r="1.6"/><circle cx="97" cy="112" r="1.6"/><circle cx="102" cy="112" r="1.6"/><circle cx="107" cy="112" r="1.6"/>
+  </g>
+
+  <!-- Stacked comic pages behind the bubble -->
+  <g fill="#FFFFFF" stroke="#1A1A1A" stroke-width="3" stroke-linejoin="round">
+    <rect x="44" y="18" width="58" height="52" rx="6"/>
+    <rect x="36" y="24" width="58" height="52" rx="6"/>
+  </g>
+
+  <!-- Speech bubble -->
+  <path d="M38 34 H86 A14 14 0 0 1 100 48 V72 A14 14 0 0 1 86 86 H56 L40 104 L46 86 H38 A14 14 0 0 1 24 72 V48 A14 14 0 0 1 38 34 Z"
+        fill="#FFFFFF" stroke="#1A1A1A" stroke-width="6" stroke-linejoin="round"/>
+
+  <!-- Compression mark: double down-chevron -->
+  <g fill="none" stroke="#D64545" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="50,52 62,62 74,52"/>
+    <polyline points="50,62 62,72 74,62"/>
+  </g>
+</svg>

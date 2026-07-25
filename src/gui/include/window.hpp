@@ -182,12 +182,17 @@ class Window : public QMainWindow {
     QPushButton *remove_selected_button;
     QPushButton *clear_all_button;
     QLineEdit *output_dir_field;
-    // Writable path for the browsed output folder (a portal path under
-    // Flatpak); empty until the user browses, while output_dir_field shows its
-    // host path.
+    // Writable path for the chosen output folder (a portal path under
+    // Flatpak); empty until the user picks one, while output_dir_field shows
+    // its host path.
     QString output_dir_io_path;
     fs::path output_path;
     QPushButton *browse_output_button;
+
+    void set_output_dir(const QString &io_path);
+    void persist_output_dir();
+    void restore_output_dir();
+    bool ensure_output_dir();
     QGroupBox *progress_bars_group;
     QVBoxLayout *progress_bars_layout;
 

@@ -37,6 +37,14 @@ static QString resolve_host_path(const QString &path) {
 #endif
 }
 
+static bool is_dir_writable(const QString &path) {
+    if (path.isEmpty()) {
+        return false;
+    }
+    QFileInfo info(path);
+    return info.isDir() && info.isWritable();
+}
+
 void Window::connect_signals() {
     connect(
         this->add_files_button,
@@ -221,24 +229,82 @@ void Window::on_clear_all_clicked() {
 }
 
 void Window::on_browse_output_clicked() {
+    // Start where the user already is, or in Documents the first time.
+    QString start_dir = this->output_dir_field->text().isEmpty()
+                          ? QStandardPaths::writableLocation(
+                                QStandardPaths::DocumentsLocation
+                            )
+                          : this->output_dir_field->text();
+
     QString dir = QFileDialog::getExistingDirectory(
         this,
         tr("Select output folder"),
-        this->output_dir_field->text(),
+        start_dir,
         QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks
     );
 
     if (!dir.isEmpty()) {
-        // `dir` is the path we can write to; store it and show its resolved,
-        // human-readable form.
-        this->output_dir_io_path = dir;
-        this->output_dir_field->setText(resolve_host_path(dir));
+        this->set_output_dir(dir);
     }
 }
 
+void Window::set_output_dir(const QString &io_path) {
+    this->output_dir_io_path = io_path;
+    this->output_dir_field->setText(resolve_host_path(io_path));
+    this->persist_output_dir();
+}
+
+void Window::persist_output_dir() {
+    QSettings settings;
+    settings.setValue("output/io_path", this->output_dir_io_path);
+    settings.setValue("output/host_path", this->output_dir_field->text());
+}
+
+void Window::restore_output_dir() {
+    QSettings settings;
+    auto io_path = settings.value("output/io_path").toString();
+    auto host_path = settings.value("output/host_path").toString();
+
+    if (is_dir_writable(io_path)) {
+        this->output_dir_io_path = io_path;
+        this->output_dir_field->setText(
+            host_path.isEmpty() ? resolve_host_path(io_path) : host_path
+        );
+        return;
+    }
+
+    if (is_dir_writable(host_path)) {
+        this->output_dir_io_path = host_path;
+        this->output_dir_field->setText(host_path);
+        return;
+    }
+
+    this->output_dir_io_path.clear();
+    this->output_dir_field->clear();
+}
+
+bool Window::ensure_output_dir() {
+    if (is_dir_writable(this->output_dir_io_path)) {
+        return true;
+    }
+
+    QString dir = QFileDialog::getExistingDirectory(
+        this,
+        tr("Choose an output folder"),
+        QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
+        QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks
+    );
+
+    if (dir.isEmpty()) {
+        return false;
+    }
+
+    this->set_output_dir(dir);
+    return true;
+}
+
 QString Window::effective_output_dir() const {
-    return this->output_dir_io_path.isEmpty() ? this->output_dir_field->text()
-                                              : this->output_dir_io_path;
+    return this->output_dir_io_path;
 }
 
 #if defined(PDF_ENABLED)
@@ -555,6 +621,15 @@ void Window::on_start_button_clicked() {
     if (input_file_paths.isEmpty()) {
         this->log_output->setVisible(true);
         log_output->append("No input files selected.");
+        return;
+    }
+
+    // The only point where a folder is required, so it is the only point we
+    // ask. Covers the first conversion, and a folder that became unusable
+    // since it was chosen.
+    if (!this->ensure_output_dir()) {
+        this->log_output->setVisible(true);
+        log_output->append("No output folder selected.");
         return;
     }
 

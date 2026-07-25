@@ -14,6 +14,10 @@ int main(int argc, char **argv) {
     QApplication app(argc, argv);
 
     QApplication::setDesktopFileName("io.github.amarz45.Comicpress");
+
+    QSettings::setDefaultFormat(QSettings::IniFormat);
+    QCoreApplication::setOrganizationName("io.github.amarz45");
+    QCoreApplication::setApplicationName("Comicpress");
     QApplication::setWindowIcon(
         QIcon::fromTheme("io.github.amarz45.Comicpress")
     );

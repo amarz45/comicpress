@@ -9,6 +9,7 @@
 #include <QDir>
 #include <QDoubleSpinBox>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -26,6 +27,7 @@
 #include <QRadioButton>
 #include <QScrollArea>
 #include <QScroller>
+#include <QSettings>
 #include <QSizePolicy>
 #include <QSpinBox>
 #include <QStackedWidget>

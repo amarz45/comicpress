@@ -35,6 +35,8 @@ Window::Window(QWidget *parent) : QMainWindow(parent), eta_samples(5) {
         this->options.double_page_spread_combo_box->currentText()
     );
     this->connect_signals();
+
+    this->restore_output_dir();
 }
 
 void Window::setup_ui() {
@@ -135,11 +137,8 @@ QGroupBox *Window::create_io_group() {
 
     auto output_layout = new QHBoxLayout();
 
-    auto documents_dir = QDir(
-        QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)
-    );
-    this->output_dir_field
-        = new QLineEdit(documents_dir.filePath("Comicpress"));
+    this->output_dir_field = new QLineEdit();
+    this->output_dir_field->setPlaceholderText(tr("No output folder chosen"));
 
     // The folder must be picked through the file dialog so the sandbox grants
     // access to it; a typed-in path would not be writable.

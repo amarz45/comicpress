@@ -45,6 +45,27 @@ static bool is_dir_writable(const QString &path) {
     return info.isDir() && info.isWritable();
 }
 
+static QString choose_directory(
+    QWidget *parent, const QString &caption, const QString &start_dir
+) {
+    QFileDialog dialog(parent, caption);
+    dialog.setFileMode(QFileDialog::Directory);
+    dialog.setAcceptMode(QFileDialog::AcceptOpen);
+    dialog.setOption(QFileDialog::ShowDirsOnly, true);
+    dialog.setOption(QFileDialog::DontResolveSymlinks, true);
+
+    if (!start_dir.isEmpty()) {
+        dialog.setDirectoryUrl(QUrl::fromLocalFile(start_dir));
+    }
+
+    if (dialog.exec() != QDialog::Accepted) {
+        return QString();
+    }
+
+    auto selected = dialog.selectedUrls();
+    return selected.isEmpty() ? QString() : selected.constFirst().toLocalFile();
+}
+
 void Window::connect_signals() {
     connect(
         this->add_files_button,
@@ -236,12 +257,7 @@ void Window::on_browse_output_clicked() {
                             )
                           : this->output_dir_field->text();
 
-    QString dir = QFileDialog::getExistingDirectory(
-        this,
-        tr("Select output folder"),
-        start_dir,
-        QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks
-    );
+    QString dir = choose_directory(this, tr("Select output folder"), start_dir);
 
     if (!dir.isEmpty()) {
         this->set_output_dir(dir);
@@ -288,11 +304,10 @@ bool Window::ensure_output_dir() {
         return true;
     }
 
-    QString dir = QFileDialog::getExistingDirectory(
+    QString dir = choose_directory(
         this,
         tr("Choose an output folder"),
-        QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
-        QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks
+        QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)
     );
 
     if (dir.isEmpty()) {

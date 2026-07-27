@@ -12,7 +12,7 @@ advertised as DRM-free.
 
 Comicpress takes your comic book files (supported formats: CBR, CBZ, PDF) and compresses them to a fraction of the size while also significantly improving the visual quality on ereaders. It does so by applying image processing operations such as contrast stretching, high-quality scaling, quantization, and dithering. These can all be customized or disabled. Comicpress also downscales pages to your specific ereader device’s display resolution, which not only significantly decreases file sizes but also likely improves the perceived quality on the ereader using high-quality default resampling.
 
-![Screenshot](screenshot.png)
+https://github.com/user-attachments/assets/926ad4b2-05e5-4c97-9068-8cad95f18e53
 
 ## Comparison to Kindle Comic Converter
 

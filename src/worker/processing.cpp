@@ -419,7 +419,7 @@ vips::VImage remove_uniform_middle_columns(const vips::VImage &img) {
     int best_left_bound = mid;
     int best_right_bound = mid + 1;
 
-    // First, attempt with the highest possible threshold as you requested.
+    // First, attempt with the highest possible threshold.
     auto bounds_at_max = get_uniform_bounds(global_range);
     int remove_width_at_max = bounds_at_max.second - bounds_at_max.first - 1;
     double frac_at_max = static_cast<double>(remove_width_at_max) / width;

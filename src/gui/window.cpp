@@ -2,6 +2,8 @@
 #include "../include/task.hpp"
 #include "include/display_presets.hpp"
 #include "include/options.hpp"
+#include "include/output_formats.hpp"
+#include "include/ui_constants.hpp"
 #include "include/window_util.hpp"
 #include "qboxlayout.h"
 #include "qnamespace.h"
@@ -288,8 +290,20 @@ void Window::add_display_presets_widget() {
     );
     this->options.display_preset_button->setMenu(display_menu);
 
+    auto output_format_label = new QLabel("Output format");
+    this->options.output_format_combo_box
+        = create_combo_box({"EPUB", "CBZ"}, "EPUB");
+    auto output_format_container = create_control_with_info(
+        this->style(),
+        this->options.output_format_combo_box,
+        OUTPUT_FORMAT_TOOLTIP
+    );
+
     this->options.settings_layout->addRow(
         label, this->options.display_preset_button
+    );
+    this->options.settings_layout->addRow(
+        output_format_label, output_format_container
     );
 }
 
@@ -555,71 +569,52 @@ void Window::set_display_preset(std::string brand, std::string model) {
 
 void Window::create_archive(const QString &source_archive_path) {
     auto source_path = fs::path(source_archive_path.toStdString());
-    auto temp_dir = fs::path(this->temp_base_dir) / source_path.stem();
-    auto final_filename = source_path.filename().replace_extension(".cbz");
-    auto final_output_path = output_path / final_filename;
+    auto title = source_path.stem();
+
+    auto temp_dir = fs::path(this->temp_base_dir) / title;
+    auto output_filename = source_path.filename();
 
     QCoreApplication::processEvents();
 
-    auto a = archive_write_new();
-    archive_write_set_format_zip(a);
-    archive_write_set_options(a, "compression-level=0");
-
-    // Check if we can actually open the output archive path.
-    if (archive_write_open_filename(a, final_output_path.string().c_str())
-        != ARCHIVE_OK) {
-        log_output->setVisible(true);
-        log_output->append(QString("Error: %1").arg(archive_error_string(a)));
-        archive_write_free(a);
-        return;
-    }
-
     try {
-        for (const auto &dir_entry :
-             fs::recursive_directory_iterator(temp_dir)) {
-            if (dir_entry.is_regular_file()) {
-                const fs::path &path = dir_entry.path();
-                fs::path relative_path = fs::relative(path, temp_dir);
-
-                struct archive_entry *entry = archive_entry_new();
-                archive_entry_set_pathname(
-                    entry, relative_path.string().c_str()
-                );
-                archive_entry_set_size(entry, fs::file_size(path));
-                archive_entry_set_filetype(entry, AE_IFREG);
-                archive_entry_set_perm(entry, 0644);
-                archive_write_header(a, entry);
-
-                std::ifstream file_stream(path, std::ios::binary);
-                char buffer[8192];
-                while (file_stream.good()) {
-                    file_stream.read(buffer, sizeof(buffer));
-                    archive_write_data(
-                        a, buffer, static_cast<size_t>(file_stream.gcount())
-                    );
-                }
-
-                archive_entry_free(entry);
-            }
+        if (this->options.output_format_combo_box->currentText() == "EPUB") {
+            output_filename = output_filename.replace_extension(".epub");
+            auto final_output_path = this->output_path / output_filename;
+            create_epub(
+                temp_dir, std::move(final_output_path), title.generic_string()
+            );
+        }
+        else {
+            output_filename = output_filename.replace_extension(".cbz");
+            auto final_output_path = this->output_path / output_filename;
+            create_cbz(temp_dir, std::move(final_output_path));
         }
     }
-    catch (const std::exception &e) {
+    catch (const NoImagesError &) {
+        log_output->append(
+            QString("Error: source '%1' does not contain any images.")
+                .arg(source_archive_path)
+        );
         log_output->setVisible(true);
-        log_output->append(QString("Error during archiving: %1").arg(e.what()));
+        return;
     }
-
-    archive_write_close(a);
-    archive_write_free(a);
+    catch (const std::exception &e) {
+        log_output->append(
+            QString("Error: %1").arg(QString::fromUtf8(e.what()))
+        );
+        log_output->setVisible(true);
+        return;
+    }
 
     try {
         fs::remove_all(temp_dir);
     }
     catch (const std::exception &e) {
-        log_output->setVisible(true);
         log_output->append(
             QString("Error cleaning up temp directory %1: %2")
                 .arg(QString::fromStdString(temp_dir.string()), e.what())
         );
+        log_output->setVisible(true);
     }
 }
 

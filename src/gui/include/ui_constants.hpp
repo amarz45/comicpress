@@ -10,6 +10,15 @@ static const char *PDF_TOOLTIP = R"(
 )";
 #endif
 
+static const char *OUTPUT_FORMAT_TOOLTIP = R"(
+    EPUB is the standard format on ereaders and is recommended in most cases.
+    When the same image format is chosen in the advanced options menu, there is
+    practically no file size difference between EPUB and CBZ, but EPUB is more
+    widely supported. However, EPUB does not officially support the image
+    formats JPEG XL and AVIF, so only use CBZ if you’re using one of those image
+    formats.
+)";
+
 static const char *GREYSCALE_TOOLTIP = R"(
     Converts coloured pages to greyscale. This option is recommended for
     ereaders that don’t support colour, since it reduces file size at no cost to

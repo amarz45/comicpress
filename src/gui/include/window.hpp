@@ -4,6 +4,7 @@
 #include <deque>
 #include <optional>
 #include <qtconfigmacros.h>
+#include <sstream>
 #include <string>
 
 #include "../../include/task.hpp"
@@ -74,6 +75,7 @@ struct Options {
     QCheckBox *remove_spine_check_box;
     QCheckBox *contrast_check_box;
     QPushButton *display_preset_button;
+    QComboBox *output_format_combo_box;
     QLabel *scale_pages_label;
     QWidget *scale_pages_container;
     QCheckBox *enable_image_scaling_check_box;

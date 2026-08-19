@@ -51,6 +51,7 @@ executable(
     'src/gui/time.cpp',
     'src/gui/options.cpp',
     'src/gui/window_util.cpp',
+    'src/gui/output_formats.cpp',
     'src/worker/worker.cpp',
     'src/worker/processing.cpp',
     qt_processed_files,

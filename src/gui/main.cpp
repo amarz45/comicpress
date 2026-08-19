@@ -6,6 +6,11 @@ int main(int argc, char **argv) {
         return worker_main(argc, argv);
     }
 
+    // libvips is needed to get the page dimensions for EPUBs.
+    if (VIPS_INIT(argv[0])) {
+        vips_error_exit(nullptr);
+    }
+
 #if defined(PDF_ENABLED)
     // PDFium is needed here to discover the number of pages in PDF files.
     FPDF_InitLibrary();

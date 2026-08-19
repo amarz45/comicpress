@@ -3,9 +3,12 @@
 // Qt
 #include <QAction>
 #include <QApplication>
+#include <QBuffer>
 #include <QCheckBox>
+#include <QCollator>
 #include <QComboBox>
 #include <QCoreApplication>
+#include <QDateTime>
 #include <QDir>
 #include <QDoubleSpinBox>
 #include <QFileDialog>
@@ -37,9 +40,11 @@
 #include <QTextEdit>
 #include <QTimer>
 #include <QUrl>
+#include <QUuid>
 #include <QVBoxLayout>
 #include <QVector>
 #include <QWidget>
+#include <QXmlStreamWriter>
 
 // Other libraries
 #include <archive.h>

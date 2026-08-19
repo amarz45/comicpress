@@ -91,6 +91,12 @@ void Window::connect_signals() {
         this,
         &Window::on_browse_output_clicked
     );
+    connect(
+        this->options.output_format_combo_box,
+        &QComboBox::currentTextChanged,
+        this,
+        &Window::on_output_format_combo_box_changed
+    );
 #if defined(PDF_ENABLED)
     connect(
         this->options.pdf_pixel_density_combo_box,
@@ -320,6 +326,23 @@ bool Window::ensure_output_dir() {
 
 QString Window::effective_output_dir() const {
     return this->output_dir_io_path;
+}
+
+void Window::on_output_format_combo_box_changed(const QString &text) {
+    auto image_format_combo = this->options.image_format_combo_box;
+    auto *view = qobject_cast<QListView *>(image_format_combo->view());
+    if (!view) {
+        return;
+    }
+
+    // EPUB does not support the AVIF or JPEG XL image formats.
+    auto hidden = text == "EPUB";
+    auto image_format = image_format_combo->currentText();
+    if (hidden && (image_format == "AVIF" || image_format == "JPEG XL")) {
+        image_format_combo->setCurrentText("PNG");
+    }
+    view->setRowHidden(0, hidden); // AVIF
+    view->setRowHidden(2, hidden); // JPEG XL
 }
 
 #if defined(PDF_ENABLED)

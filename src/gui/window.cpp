@@ -36,6 +36,9 @@ Window::Window(QWidget *parent) : QMainWindow(parent), eta_samples(5) {
     this->on_double_page_spread_changed(
         this->options.double_page_spread_combo_box->currentText()
     );
+    this->on_output_format_combo_box_changed(
+        this->options.output_format_combo_box->currentText()
+    );
     this->connect_signals();
 
     this->restore_output_dir();

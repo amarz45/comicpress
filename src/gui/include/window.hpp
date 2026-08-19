@@ -150,6 +150,7 @@ class Window : public QMainWindow {
     // Folder to actually write to, which may differ from what output_dir_field
     // shows.
     QString effective_output_dir() const;
+    void on_output_format_combo_box_changed(const QString &text);
 #if defined(PDF_ENABLED)
     void on_pdf_pixel_density_combo_box_changed(const QString &text);
 #endif

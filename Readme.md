@@ -1,8 +1,8 @@
 # Comicpress
 
-_If you own a Kobo, Boox, Kindle, or other ereader and read DRM-free manga or
-comics, Comicpress can shrink your file sizes by up to 80% and, as a bonus,
-makes them look better on e-ink than the originals._
+_If you own a Kobo, Kindle, or other ereader and read DRM-free manga or comics,
+Comicpress can shrink your file sizes by up to 80% and, as a bonus, makes them
+look better on e-ink than the originals._
 
 Comicpress can process DRM-free CBR, CBZ, and PDF files. PDF files are preferred
 since they usually have higher quality, but CBR and CBZ file types are

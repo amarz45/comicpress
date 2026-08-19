@@ -37,7 +37,7 @@ Comicpress is available on Flathub:
 Alternatively, you can install from the command-line:
 
 ```console
-flatpak install flathub io.github.amarz45.Comicpress
+$ flatpak install flathub io.github.amarz45.Comicpress
 ```
 
 Ensure that you have [set up Flathub](https://flathub.org/en/setup) for your

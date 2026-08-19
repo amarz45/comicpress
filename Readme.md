@@ -27,6 +27,26 @@ https://github.com/user-attachments/assets/926ad4b2-05e5-4c97-9068-8cad95f18e53
 
 ## Installation
 
+## Linux
+
+Comicpress is available on Flathub:
+
+1. Go to https://flathub.org/en/apps/io.github.amarz45.Comicpress.
+1. Click _Install_.
+
+Alternatively, you can install from the command-line:
+
+```console
+flatpak install flathub io.github.amarz45.Comicpress
+```
+
+Ensure that you have [set up Flathub](https://flathub.org/en/setup) for your
+distribution before installing.
+
+## Windows
+
+Installation for Windows is coming soon.
+
 ## Building From Source
 
 ### Linux

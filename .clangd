@@ -1,5 +1,5 @@
 CompileFlags:
-    Remove: [-fpch-preprocess, -include]
-    Add: [-include=../pch/pch.hpp]
+  Remove: [-fpch-preprocess, -include, -include-pch, -Winvalid-pch]
+  Add: [-include, ../pch/pch.hpp]
 Diagnostics:
-    Suppress: [module_odr_violation_function]
+  Suppress: [module_odr_violation_function]

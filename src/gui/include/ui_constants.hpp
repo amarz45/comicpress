@@ -1,5 +1,5 @@
 #if defined(PDF_ENABLED)
-static const char *PDF_TOOLTIP = R"(
+inline constexpr const char *PDF_TOOLTIP = R"(
     Sets the rendering resolution for PDF input files. Higher values produce
     better quality but use more memory and take longer to process. Values higher
     than the target display’s pixel density still result in higher perceived
@@ -10,7 +10,7 @@ static const char *PDF_TOOLTIP = R"(
 )";
 #endif
 
-static const char *OUTPUT_FORMAT_TOOLTIP = R"(
+inline constexpr const char *OUTPUT_FORMAT_TOOLTIP = R"(
     EPUB is the standard format on ereaders and is recommended in most cases.
     When the same image format is chosen in the advanced options menu, there is
     practically no file size difference between EPUB and CBZ, but EPUB is more
@@ -19,50 +19,50 @@ static const char *OUTPUT_FORMAT_TOOLTIP = R"(
     formats.
 )";
 
-static const char *GREYSCALE_TOOLTIP = R"(
+inline constexpr const char *GREYSCALE_TOOLTIP = R"(
     Converts coloured pages to greyscale. This option is recommended for
     ereaders that don’t support colour, since it reduces file size at no cost to
     quality.
 )";
 
-static const char *DOUBLE_PAGE_SPREAD_TOOLTIP = R"(
+inline constexpr const char *DOUBLE_PAGE_SPREAD_TOOLTIP = R"(
     What to do when a two-page spread (when two pages are put together into a
     single page).
 )";
 
-static const char *LINEAR_LIGHT_RESAMPLING_TOOLTIP = R"(
+inline constexpr const char *LINEAR_LIGHT_RESAMPLING_TOOLTIP = R"(
     Resample images in a linear colourspace instead of a gamma-encoded
     colourspace. This improves colour accuracy when scaling images but
     significantly increases processing time.
 )";
 
-static const char *REMOVE_SPINE_TOOLTIP = R"(
+inline constexpr const char *REMOVE_SPINE_TOOLTIP = R"(
     Remove spines which separate two pages in a two-page spread. This can
     help to unify two-page spreads, but note that it might remove parts of
     the actual pages.
 )";
 
-static const char *CONTRAST_TOOLTIP = R"(
+inline constexpr const char *CONTRAST_TOOLTIP = R"(
     Automatically adjusts the page’s black and white points to maximize
     contrast. This is highly recommended when reading on an ereader, as it makes
     the colours “pop.”
 )";
 
-static const char *SCALE_TOOLTIP = R"(
+inline constexpr const char *SCALE_TOOLTIP = R"(
     Scales pages to fit the target resolution. This is highly recommended
     because it can potentially decrease file sizes significantly. In addition,
     it improves quality since it prevents the ereader from scaling pages itself.
     (Ereaders usually use subpar scaling algorithms for speed.)
 )";
 
-static const char *RESAMPLER_TOOLTIP = R"(
+inline constexpr const char *RESAMPLER_TOOLTIP = R"(
     The algorithm used to calculate pixel values when resizing an image.
     <i>Magic Kernel Sharp 2021</i> is recommended for the best quality and
     <i>Lanczos 3</i> is a close second. Other resampling filters are faster but
     usually result in significantly lower quality.
 )";
 
-static const char *QUANTIZE_TOOLTIP = R"(
+inline constexpr const char *QUANTIZE_TOOLTIP = R"(
     Limits the colour palette of pages. This is highly recommended because it
     decreases file size, and ereaders usually only have 16 shades of grey
     anyway. In addition, this usually improves quality because it prevents the
@@ -71,19 +71,19 @@ static const char *QUANTIZE_TOOLTIP = R"(
     Otherwise, the quality will be ruined."
 )";
 
-static const char *BIT_DEPTH_TOOLTIP = R"(
+inline constexpr const char *BIT_DEPTH_TOOLTIP = R"(
     Determines the number of colours in the final images. A bit depth of 4 (16
     colours) is recommended in most cases because most ereaders only have 16
     colours.
 )";
 
-static const char *DITHERING_TOOLTIP = R"(
+inline constexpr const char *DITHERING_TOOLTIP = R"(
     Sets the dithering level, which is used to make quantized images look better.
     It’s highly recommended recommended to leave this at the default maximum
     value of 1.0 to significantly improve quality.
 )";
 
-static const char *IMG_FORMAT_TOOLTIP = R"(
+inline constexpr const char *IMG_FORMAT_TOOLTIP = R"(
     Sets the image format for each page.
     <dl>
         <dt>AVIF</dt>
@@ -120,7 +120,7 @@ static const char *IMG_FORMAT_TOOLTIP = R"(
     </dl>
 )";
 
-static const char *IMAGE_COMPRESSION_TYPE_TOOLTIP = R"(
+inline constexpr const char *IMAGE_COMPRESSION_TYPE_TOOLTIP = R"(
     Sets the image compression type. <i>Lossless</i> is strongly recommended
     when <i>Quantize pages</i> is enabled because it results in smaller file
     sizes as well as better quality. If <i>Quantize pages</i> is disabled,
@@ -128,7 +128,7 @@ static const char *IMAGE_COMPRESSION_TYPE_TOOLTIP = R"(
     with only a minor negative impact on quality.
 )";
 
-static const char *IMAGE_QUALITY_JPEG_XL_TOOLTIP = R"(
+inline constexpr const char *IMAGE_QUALITY_JPEG_XL_TOOLTIP = R"(
     <i>Distance</i> is the recommended option because it is JPEG XL’s native
     perceptual quality metric. <i>Quality</i> is a compatibility scale similar
     to other image formats. For <i>Distance</i>, lower values produce higher

@@ -4,7 +4,6 @@
 #include <deque>
 #include <optional>
 #include <qtconfigmacros.h>
-#include <sstream>
 #include <string>
 
 #include "../../include/task.hpp"

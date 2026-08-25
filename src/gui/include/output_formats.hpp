@@ -11,8 +11,6 @@ struct NoImagesError : std::runtime_error {
     }
 };
 
-struct NoImagesError;
-
 void create_epub(
     const fs::path &image_dir,
     const fs::path &output_path,

@@ -91,141 +91,141 @@ static bool create_output_dir(fs::path &output_dir) {
 
 void Window::connect_signals() {
     connect(
-        this->add_files_button,
+        add_files_button_,
         &QPushButton::clicked,
         this,
         &Window::on_add_files_clicked
     );
     connect(
-        this->remove_selected_button,
+        remove_selected_button_,
         &QPushButton::clicked,
         this,
         &Window::on_remove_selected_clicked
     );
     connect(
-        this->clear_all_button,
+        clear_all_button_,
         &QPushButton::clicked,
         this,
         &Window::on_clear_all_clicked
     );
     connect(
-        this->browse_output_button,
+        browse_output_button_,
         &QPushButton::clicked,
         this,
         &Window::on_browse_output_clicked
     );
     connect(
-        this->options.output_format_combo_box,
+        options_.output_format_combo_box,
         &QComboBox::currentTextChanged,
         this,
         &Window::on_output_format_combo_box_changed
     );
 #if defined(PDF_ENABLED)
     connect(
-        this->options.pdf_pixel_density_combo_box,
+        options_.pdf_pixel_density_combo_box,
         &QComboBox::currentTextChanged,
         this,
         &Window::on_pdf_pixel_density_combo_box_changed
     );
 #endif
     connect(
-        this->options.double_page_spread_combo_box,
+        options_.double_page_spread_combo_box,
         &QComboBox::currentTextChanged,
         this,
         &Window::on_double_page_spread_changed
     );
     connect(
-        this->options.convert_to_greyscale,
+        options_.convert_to_greyscale,
         &QCheckBox::checkStateChanged,
         this,
         &Window::on_preset_option_modified
     );
     connect(
-        this->options.bit_depth_combo_box,
+        options_.bit_depth_combo_box,
         QOverload<int>::of(&QComboBox::currentIndexChanged),
         this,
         &Window::on_preset_option_modified
     );
     connect(
-        this->options.width_spin_box,
+        options_.width_spin_box,
         QOverload<int>::of(&QSpinBox::valueChanged),
         this,
         &Window::on_preset_option_modified
     );
     connect(
-        this->options.height_spin_box,
+        options_.height_spin_box,
         QOverload<int>::of(&QSpinBox::valueChanged),
         this,
         &Window::on_preset_option_modified
     );
     connect(
-        this->options.enable_image_scaling_check_box,
+        options_.enable_image_scaling_check_box,
         &QCheckBox::checkStateChanged,
         this,
         &Window::on_preset_option_modified
     );
     connect(
-        this->options.advanced_options_check_box,
+        options_.advanced_options_check_box,
         &QCheckBox::checkStateChanged,
         this,
         &Window::on_advanced_options_changed
     );
     connect(
-        this->options.enable_image_scaling_check_box,
+        options_.enable_image_scaling_check_box,
         &QCheckBox::checkStateChanged,
         this,
         &Window::on_enable_image_scaling_changed
     );
     connect(
-        this->options.enable_image_quantization_check_box,
+        options_.enable_image_quantization_check_box,
         &QCheckBox::checkStateChanged,
         this,
         &Window::on_enable_image_quantization_changed
     );
     connect(
-        this->options.image_format_combo_box,
+        options_.image_format_combo_box,
         &QComboBox::currentTextChanged,
         this,
         &Window::on_image_format_changed
     );
     connect(
-        this->options.image_compression_spin_box,
+        options_.image_compression_spin_box,
         &QSpinBox::valueChanged,
         this,
         &Window::on_image_compression_changed
     );
     connect(
-        this->options.image_compression_type_combo_box,
+        options_.image_compression_type_combo_box,
         &QComboBox::currentTextChanged,
         this,
         &Window::on_image_compression_type_changed_explicit
     );
     connect(
-        this->options.image_quality_spin_box,
+        options_.image_quality_spin_box,
         &QDoubleSpinBox::valueChanged,
         this,
         &Window::on_image_quality_changed
     );
     connect(
-        this->options.image_quality_label_jpeg_xl,
+        options_.image_quality_label_jpeg_xl,
         &QComboBox::currentTextChanged,
         this,
         &Window::on_jpeg_xl_quality_type_changed
     );
     connect(
-        this->start_button,
+        start_button_,
         &QPushButton::clicked,
         this,
         &Window::on_start_button_clicked
     );
     connect(
-        this->cancel_button,
+        cancel_button_,
         &QPushButton::clicked,
         this,
         &Window::on_cancel_button_clicked
     );
     connect(
-        this->file_list,
+        file_list_,
         &QListWidget::itemSelectionChanged,
         this,
         &Window::update_file_list_buttons
@@ -249,8 +249,8 @@ void Window::on_add_files_clicked() {
     }
 
     QStringList existing_paths;
-    for (int i = 0; i < file_list->count(); i += 1) {
-        if (auto item = file_list->item(i)) {
+    for (int i = 0; i < file_list_->count(); i += 1) {
+        if (auto item = file_list_->item(i)) {
             if (auto data = item->data(Qt::UserRole); data.isValid()) {
                 existing_paths.append(data.toString());
             }
@@ -261,48 +261,48 @@ void Window::on_add_files_clicked() {
         if (!existing_paths.contains(file)) {
             auto item = new QListWidgetItem(QFileInfo(file).fileName());
             item->setData(Qt::UserRole, file);
-            file_list->addItem(item);
+            file_list_->addItem(item);
         }
     }
 
-    this->update_file_list_buttons();
+    update_file_list_buttons();
 }
 
 void Window::on_remove_selected_clicked() {
-    qDeleteAll(this->file_list->selectedItems());
-    this->update_file_list_buttons();
+    qDeleteAll(file_list_->selectedItems());
+    update_file_list_buttons();
 }
 
 void Window::on_clear_all_clicked() {
-    this->file_list->clear();
-    this->update_file_list_buttons();
+    file_list_->clear();
+    update_file_list_buttons();
 }
 
 void Window::on_browse_output_clicked() {
     // Start where the user already is, or in Documents the first time.
-    QString start_dir = this->output_dir_field->text().isEmpty()
+    QString start_dir = output_dir_field_->text().isEmpty()
                           ? QStandardPaths::writableLocation(
                                 QStandardPaths::DocumentsLocation
                             )
-                          : this->output_dir_field->text();
+                          : output_dir_field_->text();
 
     QString dir = choose_directory(this, tr("Select output folder"), start_dir);
 
     if (!dir.isEmpty()) {
-        this->set_output_dir(dir);
+        set_output_dir(dir);
     }
 }
 
 void Window::set_output_dir(const QString &io_path) {
-    this->output_dir_io_path = io_path;
-    this->output_dir_field->setText(resolve_host_path(io_path));
-    this->persist_output_dir();
+    output_dir_io_path_ = io_path;
+    output_dir_field_->setText(resolve_host_path(io_path));
+    persist_output_dir();
 }
 
 void Window::persist_output_dir() {
     QSettings settings;
-    settings.setValue("output/io_path", this->output_dir_io_path);
-    settings.setValue("output/host_path", this->output_dir_field->text());
+    settings.setValue("output/io_path", output_dir_io_path_);
+    settings.setValue("output/host_path", output_dir_field_->text());
 }
 
 void Window::restore_output_dir() {
@@ -311,25 +311,25 @@ void Window::restore_output_dir() {
     auto host_path = settings.value("output/host_path").toString();
 
     if (is_dir_writable(io_path)) {
-        this->output_dir_io_path = io_path;
-        this->output_dir_field->setText(
+        output_dir_io_path_ = io_path;
+        output_dir_field_->setText(
             host_path.isEmpty() ? resolve_host_path(io_path) : host_path
         );
         return;
     }
 
     if (is_dir_writable(host_path)) {
-        this->output_dir_io_path = host_path;
-        this->output_dir_field->setText(host_path);
+        output_dir_io_path_ = host_path;
+        output_dir_field_->setText(host_path);
         return;
     }
 
-    this->output_dir_io_path.clear();
-    this->output_dir_field->clear();
+    output_dir_io_path_.clear();
+    output_dir_field_->clear();
 }
 
 bool Window::ensure_output_dir() {
-    if (is_dir_writable(this->output_dir_io_path)) {
+    if (is_dir_writable(output_dir_io_path_)) {
         return true;
     }
 
@@ -343,16 +343,16 @@ bool Window::ensure_output_dir() {
         return false;
     }
 
-    this->set_output_dir(dir);
+    set_output_dir(dir);
     return true;
 }
 
 QString Window::effective_output_dir() const {
-    return this->output_dir_io_path;
+    return output_dir_io_path_;
 }
 
 void Window::on_output_format_combo_box_changed(const QString &text) {
-    auto image_format_combo = this->options.image_format_combo_box;
+    auto image_format_combo = options_.image_format_combo_box;
     auto *view = qobject_cast<QListView *>(image_format_combo->view());
     if (!view) {
         return;
@@ -370,7 +370,7 @@ void Window::on_output_format_combo_box_changed(const QString &text) {
 
 #if defined(PDF_ENABLED)
 void Window::on_pdf_pixel_density_combo_box_changed(const QString &text) {
-    auto spin = this->options.pdf_pixel_density_spin_box;
+    auto spin = options_.pdf_pixel_density_spin_box;
     if (text == "Custom") {
         spin->setVisible(true);
         return;
@@ -391,29 +391,29 @@ void Window::on_pdf_pixel_density_combo_box_changed(const QString &text) {
 
 void Window::on_double_page_spread_changed(const QString &text) {
     bool should_show = (text == "Rotate page" || text == "Rotate and split");
-    this->options.rotation_options_container->setVisible(should_show);
+    options_.rotation_options_container->setVisible(should_show);
 }
 
 void Window::on_preset_option_modified() {
-    if (this->is_programmatically_changing_values) {
+    if (is_programmatically_changing_values_) {
         return;
     }
 
-    if (this->display_preset.brand != "None") {
-        this->set_display_preset("None", "");
+    if (display_preset_.brand != "None") {
+        set_display_preset("None", "");
     }
 }
 
 void Window::on_display_preset_changed() {
-    auto brand = this->display_preset.brand;
-    auto model = this->display_preset.model;
+    auto brand = display_preset_.brand;
+    auto model = display_preset_.model;
     auto is_custom = brand == "None";
 
     if (is_custom) {
         return;
     }
 
-    this->is_programmatically_changing_values = true;
+    is_programmatically_changing_values_ = true;
 
     const auto &models = DISPLAY_PRESETS.at(brand).value();
     auto it = std::find_if(
@@ -424,81 +424,77 @@ void Window::on_display_preset_changed() {
 
     if (it != models.end()) {
         const DisplaySpec &display = it->second;
-        this->options.enable_image_scaling_check_box->setChecked(true);
-        this->options.width_spin_box->setValue(display.width);
-        this->options.height_spin_box->setValue(display.height);
-        this->options.bit_depth_combo_box->setCurrentIndex(
-            display.bit_depth_index
-        );
-        this->options.convert_to_greyscale->setChecked(!display.colour);
+        options_.enable_image_scaling_check_box->setChecked(true);
+        options_.width_spin_box->setValue(display.width);
+        options_.height_spin_box->setValue(display.height);
+        options_.bit_depth_combo_box->setCurrentIndex(display.bit_depth_index);
+        options_.convert_to_greyscale->setChecked(!display.colour);
     }
 
-    this->is_programmatically_changing_values = false;
+    is_programmatically_changing_values_ = false;
 }
 
 void Window::on_advanced_options_changed(int state) {
     bool is_checked = state == Qt::Checked;
 
-    this->options.linear_light_resampling_label->setVisible(is_checked);
-    this->options.linear_light_resampling_container->setVisible(is_checked);
+    options_.linear_light_resampling_label->setVisible(is_checked);
+    options_.linear_light_resampling_container->setVisible(is_checked);
 
-    this->options.quantize_pages_label->setVisible(is_checked);
-    this->options.quantize_pages_container->setVisible(is_checked);
+    options_.quantize_pages_label->setVisible(is_checked);
+    options_.quantize_pages_container->setVisible(is_checked);
 
-    this->options.scale_pages_label->setVisible(is_checked);
-    this->options.scale_pages_container->setVisible(is_checked);
+    options_.scale_pages_label->setVisible(is_checked);
+    options_.scale_pages_container->setVisible(is_checked);
 
-    this->options.image_format_label->setVisible(is_checked);
-    this->options.image_format_container->setVisible(is_checked);
+    options_.image_format_label->setVisible(is_checked);
+    options_.image_format_container->setVisible(is_checked);
 
     if (is_checked) {
-        this->on_enable_image_quantization_changed(
-            this->options.enable_image_quantization_check_box->checkState()
+        on_enable_image_quantization_changed(
+            options_.enable_image_quantization_check_box->checkState()
         );
-        this->on_enable_image_scaling_changed(
-            this->options.enable_image_scaling_check_box->checkState()
+        on_enable_image_scaling_changed(
+            options_.enable_image_scaling_check_box->checkState()
         );
-        this->on_image_format_changed();
+        on_image_format_changed();
     }
     else {
-        this->options.quantization_options_container->setVisible(false);
-        this->options.scaling_options_container->setVisible(false);
-        this->options.image_format_options_container->setVisible(false);
+        options_.quantization_options_container->setVisible(false);
+        options_.scaling_options_container->setVisible(false);
+        options_.image_format_options_container->setVisible(false);
     }
 
-    this->options.workers_label->setVisible(is_checked);
-    this->options.workers_spin_box->setVisible(is_checked);
+    options_.workers_label->setVisible(is_checked);
+    options_.workers_spin_box->setVisible(is_checked);
 }
 
 void Window::on_enable_image_scaling_changed(int state) {
     bool is_checked = state == Qt::Checked;
-    bool parent_visible = this->options.scale_pages_container->isVisible();
-    this->options.scaling_options_container->setVisible(
+    bool parent_visible = options_.scale_pages_container->isVisible();
+    options_.scaling_options_container->setVisible(
         is_checked && parent_visible
     );
 }
 
 void Window::on_enable_image_quantization_changed(int state) {
     bool is_checked = state == Qt::Checked;
-    this->options.quantization_options_container->setVisible(is_checked);
+    options_.quantization_options_container->setVisible(is_checked);
     if (is_checked) {
-        this->options.image_compression_type_combo_box->setCurrentText(
-            "Lossless"
-        );
+        options_.image_compression_type_combo_box->setCurrentText("Lossless");
     }
-    else if (!this->compression_type_changed) {
-        this->options.image_compression_type_combo_box->setCurrentText("Lossy");
+    else if (!compression_type_changed_) {
+        options_.image_compression_type_combo_box->setCurrentText("Lossy");
     }
 }
 
 void Window::on_image_format_changed() {
-    this->options.image_format_options_container->setVisible(true);
-    auto img_format = this->options.image_format_combo_box->currentText();
+    options_.image_format_options_container->setVisible(true);
+    auto img_format = options_.image_format_combo_box->currentText();
 
     auto compression_min = 0;
     auto compression_max = 9;
     auto compression_effort = 0;
-    QWidget *quality_label = this->options.image_quality_label_original;
+    QWidget *quality_label = options_.image_quality_label_original;
     auto jxl_quality_label_visible = false;
     std::string quality_type = "Quality";
     double distance = 0.0;
@@ -507,153 +503,143 @@ void Window::on_image_format_changed() {
     auto compression_effort_visible = true;
 
     if (img_format == "AVIF") {
-        compression_effort = this->avif_compression_effort;
-        quality = this->avif_quality;
+        compression_effort = avif_compression_effort_;
+        quality = avif_quality_;
         compression_type_visible = true;
     }
     else if (img_format == "JPEG") {
-        quality = this->jpeg_quality;
+        quality = jpeg_quality_;
         compression_effort_visible = false;
     }
     else if (img_format == "JPEG XL") {
         compression_min = 1;
-        compression_effort = this->jpeg_xl_compression_effort;
-        quality_label = this->options.image_quality_label_jpeg_xl;
+        compression_effort = jpeg_xl_compression_effort_;
+        quality_label = options_.image_quality_label_jpeg_xl;
         jxl_quality_label_visible = true;
-        quality_type = this->options.image_quality_label_jpeg_xl->currentText()
-                           .toStdString();
-        distance = this->jpeg_xl_distance;
-        quality = this->jpeg_xl_quality;
+        quality_type
+            = options_.image_quality_label_jpeg_xl->currentText().toStdString();
+        distance = jpeg_xl_distance_;
+        quality = jpeg_xl_quality_;
         compression_type_visible = true;
     }
     else if (img_format == "PNG") {
-        compression_effort = this->png_compression_effort;
+        compression_effort = png_compression_effort_;
     }
     else if (img_format == "WebP") {
         compression_max = 6;
-        compression_effort = this->webp_compression_effort;
-        quality = this->webp_quality;
+        compression_effort = webp_compression_effort_;
+        quality = webp_quality_;
         compression_type_visible = true;
     }
 
     // Important: This should be before the others.
-    this->on_jpeg_xl_quality_type_changed();
+    on_jpeg_xl_quality_type_changed();
 
-    this->options.image_compression_spin_box->setRange(
+    options_.image_compression_spin_box->setRange(
         compression_min, compression_max
     );
-    this->options.image_compression_spin_box->setValue(compression_effort);
-    this->options.image_quality_label = quality_label;
-    this->options.image_quality_label_original->setVisible(
+    options_.image_compression_spin_box->setValue(compression_effort);
+    options_.image_quality_label = quality_label;
+    options_.image_quality_label_original->setVisible(
         !jxl_quality_label_visible
     );
-    this->options.image_quality_label_jpeg_xl->setVisible(
-        jxl_quality_label_visible
-    );
+    options_.image_quality_label_jpeg_xl->setVisible(jxl_quality_label_visible);
 
     if (quality_type == "Quality") {
-        this->options.image_quality_spin_box->setValue(quality);
+        options_.image_quality_spin_box->setValue(quality);
     }
     else {
-        this->options.image_quality_spin_box->setValue(distance);
+        options_.image_quality_spin_box->setValue(distance);
     }
 
-    this->options.image_compression_type_label->setVisible(
+    options_.image_compression_type_label->setVisible(compression_type_visible);
+    options_.image_compression_type_combo_box->setVisible(
         compression_type_visible
     );
-    this->options.image_compression_type_combo_box->setVisible(
+    options_.image_compression_type_tooltip->setVisible(
         compression_type_visible
     );
-    this->options.image_compression_type_tooltip->setVisible(
-        compression_type_visible
-    );
-    this->options.image_compression_label->setVisible(
-        compression_effort_visible
-    );
-    this->options.image_compression_spin_box->setVisible(
-        compression_effort_visible
-    );
+    options_.image_compression_label->setVisible(compression_effort_visible);
+    options_.image_compression_spin_box->setVisible(compression_effort_visible);
 
-    this->on_image_compression_type_changed(false);
+    on_image_compression_type_changed(false);
 }
 
 void Window::on_image_compression_changed(int state) {
-    auto img_format = this->options.image_format_combo_box->currentText();
+    auto img_format = options_.image_format_combo_box->currentText();
     if (img_format == "AVIF") {
-        this->avif_compression_effort = state;
+        avif_compression_effort_ = state;
     }
     else if (img_format == "JPEG XL") {
-        this->jpeg_xl_compression_effort = state;
+        jpeg_xl_compression_effort_ = state;
     }
     else if (img_format == "PNG") {
-        this->png_compression_effort = state;
+        png_compression_effort_ = state;
     }
     else if (img_format == "WebP") {
-        this->webp_compression_effort = state;
+        webp_compression_effort_ = state;
     }
 }
 
 void Window::on_image_compression_type_changed_explicit() {
-    this->on_image_compression_type_changed(true);
+    on_image_compression_type_changed(true);
 }
 
 void Window::on_image_compression_type_changed(bool is_explicit) {
-    auto img_format = this->options.image_format_combo_box->currentText();
+    auto img_format = options_.image_format_combo_box->currentText();
     auto compression_type
-        = this->options.image_compression_type_combo_box->currentText();
+        = options_.image_compression_type_combo_box->currentText();
     auto image_quality_visible
         = img_format != "PNG"
        && (img_format == "JPEG" || compression_type == "Lossy");
     auto jpeg_xl_quality_tooltip_visible
         = img_format == "JPEG XL" && compression_type == "Lossy";
 
-    this->options.image_quality_label->setVisible(image_quality_visible);
-    this->options.image_quality_spin_box->setVisible(image_quality_visible);
-    this->options.image_quality_jpeg_xl_tooltip->setVisible(
+    options_.image_quality_label->setVisible(image_quality_visible);
+    options_.image_quality_spin_box->setVisible(image_quality_visible);
+    options_.image_quality_jpeg_xl_tooltip->setVisible(
         jpeg_xl_quality_tooltip_visible
     );
 
     if (is_explicit) {
-        this->compression_type_changed = true;
+        compression_type_changed_ = true;
     }
 }
 
 void Window::on_image_quality_changed(double value) {
-    auto img_format = this->options.image_format_combo_box->currentText();
+    auto img_format = options_.image_format_combo_box->currentText();
     if (img_format == "AVIF") {
-        this->avif_quality = static_cast<int>(value);
+        avif_quality_ = static_cast<int>(value);
     }
     else if (img_format == "JPEG") {
-        this->jpeg_quality = static_cast<int>(value);
+        jpeg_quality_ = static_cast<int>(value);
     }
     else if (img_format == "JPEG XL") {
-        if (this->options.image_quality_label_jpeg_xl->currentText()
-            == "Distance") {
-            this->jpeg_xl_distance = value;
+        if (options_.image_quality_label_jpeg_xl->currentText() == "Distance") {
+            jpeg_xl_distance_ = value;
         }
         else {
-            this->jpeg_xl_quality = static_cast<int>(value);
+            jpeg_xl_quality_ = static_cast<int>(value);
         }
     }
     else if (img_format == "WebP") {
-        this->webp_quality = static_cast<int>(value);
+        webp_quality_ = static_cast<int>(value);
     }
 }
 
 void Window::on_jpeg_xl_quality_type_changed() {
-    auto quality_type
-        = this->options.image_quality_label_jpeg_xl->currentText();
+    auto quality_type = options_.image_quality_label_jpeg_xl->currentText();
 
     auto min = 0.0;
     auto max = 100.0;
     auto step = 1.0;
     auto decimals = 0;
 
-    auto img_format = this->options.image_format_combo_box->currentText();
+    auto img_format = options_.image_format_combo_box->currentText();
     if (img_format != "JPEG XL") {
-        this->options.image_quality_spin_box->setRange(min, max);
-        this->options.image_quality_spin_box->setSingleStep(step);
-        this->options.image_quality_spin_box->setDecimals(decimals);
+        options_.image_quality_spin_box->setRange(min, max);
+        options_.image_quality_spin_box->setSingleStep(step);
+        options_.image_quality_spin_box->setDecimals(decimals);
         return;
     }
 
@@ -661,37 +647,37 @@ void Window::on_jpeg_xl_quality_type_changed() {
         max = 15.0;
         step = 0.1;
         decimals = 2;
-        auto quality = this->jpeg_xl_distance;
-        this->options.image_quality_spin_box->setValue(quality);
+        auto quality = jpeg_xl_distance_;
+        options_.image_quality_spin_box->setValue(quality);
     }
 
-    this->options.image_quality_spin_box->setRange(min, max);
-    this->options.image_quality_spin_box->setSingleStep(step);
-    this->options.image_quality_spin_box->setDecimals(decimals);
-    auto quality = this->jpeg_xl_quality;
-    this->options.image_quality_spin_box->setValue(quality);
+    options_.image_quality_spin_box->setRange(min, max);
+    options_.image_quality_spin_box->setSingleStep(step);
+    options_.image_quality_spin_box->setDecimals(decimals);
+    auto quality = jpeg_xl_quality_;
+    options_.image_quality_spin_box->setValue(quality);
 }
 
 void Window::on_start_button_clicked() {
     QStringList input_file_paths;
-    for (int i = 0; i < file_list->count(); i += 1) {
+    for (int i = 0; i < file_list_->count(); i += 1) {
         input_file_paths.append(
-            file_list->item(i)->data(Qt::UserRole).toString()
+            file_list_->item(i)->data(Qt::UserRole).toString()
         );
     }
 
     if (input_file_paths.isEmpty()) {
-        this->log_output->setVisible(true);
-        log_output->append("No input files selected.");
+        log_output_->setVisible(true);
+        log_output_->append("No input files selected.");
         return;
     }
 
     // The only point where a folder is required, so it is the only point we
     // ask. Covers the first conversion, and a folder that became unusable
     // since it was chosen.
-    if (!this->ensure_output_dir()) {
-        this->log_output->setVisible(true);
-        log_output->append("No output folder selected.");
+    if (!ensure_output_dir()) {
+        log_output_->setVisible(true);
+        log_output_->append("No output folder selected.");
         return;
     }
 
@@ -705,39 +691,39 @@ void Window::on_start_button_clicked() {
 
     try {
         fs::create_directories(temp_base_path);
-        this->temp_base_dir = temp_base_path.string();
+        temp_base_dir_ = temp_base_path.string();
     }
     catch (const std::exception &e) {
-        this->log_output->setVisible(true);
-        log_output->append(
+        log_output_->setVisible(true);
+        log_output_->append(
             QString("Failed to create temporary directory: %1").arg(e.what())
         );
         return;
     }
 
-    this->options.settings_group->setEnabled(false);
-    start_button->setEnabled(false);
-    cancel_button->setEnabled(true);
-    log_output->clear();
-    task_queue.clear();
-    running_processes.clear();
-    running_tasks.clear();
-    archive_task_counts.clear();
-    this->total_pages_per_archive.clear();
-    this->pages_processed_per_archive.clear();
-    this->active_file_widgets.clear();
-    this->active_progress_bars.clear();
-    this->file_elapsed_labels.clear();
-    this->file_eta_labels.clear();
-    this->file_timers.clear();
-    is_processing_cancelled = false;
-    pages_processed = 0;
-    total_pages = 0;
-    max_concurrent_workers = this->options.workers_spin_box->value();
+    options_.settings_group->setEnabled(false);
+    start_button_->setEnabled(false);
+    cancel_button_->setEnabled(true);
+    log_output_->clear();
+    task_queue_.clear();
+    running_processes_.clear();
+    running_tasks_.clear();
+    archive_task_counts_.clear();
+    total_pages_per_archive_.clear();
+    pages_processed_per_archive_.clear();
+    active_file_widgets_.clear();
+    active_progress_bars_.clear();
+    file_elapsed_labels_.clear();
+    file_eta_labels_.clear();
+    file_timers_.clear();
+    is_processing_cancelled_ = false;
+    pages_processed_ = 0;
+    total_pages_ = 0;
+    max_concurrent_workers_ = options_.workers_spin_box->value();
 
-    this->progress_bar->setValue(0);
-    this->log_group->setVisible(true);
-    this->progress_bar->setVisible(true);
+    progress_bar_->setValue(0);
+    log_group_->setVisible(true);
+    progress_bar_->setVisible(true);
 
     auto now = std::chrono::system_clock::now();
     auto now_time = std::chrono::system_clock::to_time_t(now);
@@ -748,11 +734,11 @@ void Window::on_start_button_clicked() {
     auto output_dir
         = fs::path(effective_output_dir().toStdString()) / oss.str();
     if (!create_output_dir(output_dir)) {
-        log_output->append("Failed to create output directory.");
-        log_output->setVisible(true);
+        log_output_->append("Failed to create output directory.");
+        log_output_->setVisible(true);
         return;
     }
-    this->output_path = output_dir;
+    output_path_ = output_dir;
 
     QCoreApplication::processEvents();
 
@@ -767,7 +753,7 @@ void Window::on_start_button_clicked() {
         try {
             if (extension == ".cbz" || extension == ".cbr") {
                 auto temp_archive_dir
-                    = fs::path(this->temp_base_dir) / source_file.stem();
+                    = fs::path(temp_base_dir_) / source_file.stem();
                 fs::create_directories(temp_archive_dir);
 
                 auto archive = archive_read_new();
@@ -778,11 +764,11 @@ void Window::on_start_button_clicked() {
                     archive, source_file.string().c_str(), 10240
                 );
                 if (archive_open != ARCHIVE_OK) {
-                    log_output->append(
+                    log_output_->append(
                         QString("Error: failed to read archive '%1'.")
                             .arg(source_file.string())
                     );
-                    log_output->setVisible(true);
+                    log_output_->setVisible(true);
                     return;
                 }
 
@@ -797,13 +783,13 @@ void Window::on_start_button_clicked() {
                 archive_read_close(archive);
                 archive_read_free(archive);
 
-                archive_task_counts[file_qstr] = page_count;
-                this->total_pages_per_archive[file_qstr] = page_count;
-                this->total_pages += page_count;
-                this->pages_processed_per_archive[file_qstr] = 0;
+                archive_task_counts_[file_qstr] = page_count;
+                total_pages_per_archive_[file_qstr] = page_count;
+                total_pages_ += page_count;
+                pages_processed_per_archive_[file_qstr] = 0;
                 if (page_count == 0) {
-                    log_output->setVisible(true);
-                    log_output->append(
+                    log_output_->setVisible(true);
+                    log_output_->append(
                         "Archive " + file_qstr + " contains no files."
                     );
                     continue;
@@ -823,15 +809,14 @@ void Window::on_start_button_clicked() {
                         continue;
                     }
 
-                    auto task
-                        = this->create_task(source_file, temp_archive_dir, i);
+                    auto task = create_task(source_file, temp_archive_dir, i);
                     task.path_in_archive = archive_entry_pathname(entry);
 
                     fs::path entry_path(task.path_in_archive);
                     task.output_base_name
                         = entry_path.replace_extension("").string();
 
-                    task_queue.enqueue(task);
+                    task_queue_.enqueue(task);
                     i += 1;
                 }
                 archive_read_close(archive);
@@ -842,20 +827,20 @@ void Window::on_start_button_clicked() {
                 FPDF_DOCUMENT doc
                     = FPDF_LoadDocument(source_file.string().c_str(), nullptr);
                 if (!doc) {
-                    log_output->setVisible(true);
-                    log_output->append(QString(
-                                           "Error: Cannot open PDF "
-                                           "document %1. Error code: %2"
+                    log_output_->setVisible(true);
+                    log_output_->append(QString(
+                                            "Error: Cannot open PDF "
+                                            "document %1. Error code: %2"
                     )
-                                           .arg(file_qstr)
-                                           .arg(FPDF_GetLastError()));
+                                            .arg(file_qstr)
+                                            .arg(FPDF_GetLastError()));
                     continue;
                 }
 
                 auto page_count = FPDF_GetPageCount(doc);
                 if (page_count == 0) {
-                    log_output->setVisible(true);
-                    log_output->append(
+                    log_output_->setVisible(true);
+                    log_output_->append(
                         "PDF " + file_qstr + " contains no pages."
                     );
                     FPDF_CloseDocument(doc);
@@ -863,55 +848,54 @@ void Window::on_start_button_clicked() {
                 }
 
                 auto temp_archive_dir
-                    = fs::path(this->temp_base_dir) / source_file.stem();
+                    = fs::path(temp_base_dir_) / source_file.stem();
                 fs::create_directories(temp_archive_dir);
-                archive_task_counts[file_qstr] = page_count;
-                this->total_pages_per_archive[file_qstr] = page_count;
-                this->total_pages += page_count;
-                this->pages_processed_per_archive[file_qstr] = 0;
+                archive_task_counts_[file_qstr] = page_count;
+                total_pages_per_archive_[file_qstr] = page_count;
+                total_pages_ += page_count;
+                pages_processed_per_archive_[file_qstr] = 0;
 
                 for (int i = 0; i < page_count; i += 1) {
-                    auto task
-                        = this->create_task(source_file, temp_archive_dir, i);
-                    task_queue.enqueue(task);
+                    auto task = create_task(source_file, temp_archive_dir, i);
+                    task_queue_.enqueue(task);
                 }
                 FPDF_CloseDocument(doc);
             }
 #endif
         }
         catch (const std::exception &e) {
-            log_output->setVisible(true);
-            log_output->append(QString("Error discovering tasks in %1: %2")
-                                   .arg(file_qstr, e.what()));
+            log_output_->setVisible(true);
+            log_output_->append(QString("Error discovering tasks in %1: %2")
+                                    .arg(file_qstr, e.what()));
         }
     }
 
-    if (task_queue.isEmpty()) {
-        log_output->setVisible(true);
-        log_output->append("No pages found to process.");
-        this->options.settings_group->setEnabled(true);
-        start_button->setEnabled(true);
-        cancel_button->setEnabled(false);
-        this->progress_bar->setVisible(false);
+    if (task_queue_.isEmpty()) {
+        log_output_->setVisible(true);
+        log_output_->append("No pages found to process.");
+        options_.settings_group->setEnabled(true);
+        start_button_->setEnabled(true);
+        cancel_button_->setEnabled(false);
+        progress_bar_->setVisible(false);
 
         // Clean up base temp dir on early exit
-        if (!this->temp_base_dir.empty()) {
+        if (!temp_base_dir_.empty()) {
             try {
-                fs::remove_all(this->temp_base_dir);
+                fs::remove_all(temp_base_dir_);
             }
             catch (const std::exception &e) {
-                log_output->setVisible(true);
-                log_output->append(
+                log_output_->setVisible(true);
+                log_output_->append(
                     QString("Error cleaning up temp directory: %1")
                         .arg(e.what())
                 );
             }
-            this->temp_base_dir.clear();
+            temp_base_dir_.clear();
         }
         return;
     }
 
-    this->progress_bar->setMaximum(total_pages);
+    progress_bar_->setMaximum(total_pages_);
 
     // Timer
     now = std::chrono::system_clock::now();
@@ -919,72 +903,72 @@ void Window::on_start_button_clicked() {
                   now.time_since_epoch()
     )
                   .count();
-    start_time = ms;
-    last_eta_time = ms;
-    images_since_last_eta = 0;
-    last_progress_value = 0;
-    elapsed_label->setText("Elapsed: –");
-    eta_label->setText("ETA: –");
-    timer->start(1000);
+    start_time_ = ms;
+    last_eta_time_ = ms;
+    images_since_last_eta_ = 0;
+    last_progress_value_ = 0;
+    elapsed_label_->setText("Elapsed: –");
+    eta_label_->setText("ETA: –");
+    timer_->start(1000);
 
-    for (int i = 0; i < max_concurrent_workers; ++i) {
+    for (int i = 0; i < max_concurrent_workers_; ++i) {
         start_next_task();
     }
 }
 
 void Window::on_cancel_button_clicked() {
-    if (is_processing_cancelled)
+    if (is_processing_cancelled_)
         return;
 
-    is_processing_cancelled = true;
+    is_processing_cancelled_ = true;
 
-    task_queue.clear();
+    task_queue_.clear();
 
-    for (QProcess *p : running_processes) {
+    for (QProcess *p : running_processes_) {
         p->kill();
     }
-    running_processes.clear();
-    running_tasks.clear();
+    running_processes_.clear();
+    running_tasks_.clear();
 
-    for (QWidget *widget : this->active_file_widgets.values()) {
-        this->progress_bars_layout->removeWidget(widget);
+    for (QWidget *widget : active_file_widgets_.values()) {
+        progress_bars_layout_->removeWidget(widget);
         delete widget;
     }
-    this->active_file_widgets.clear();
-    this->active_progress_bars.clear();
-    this->file_elapsed_labels.clear();
-    this->file_eta_labels.clear();
-    this->file_timers.clear();
-    this->pages_processed_per_archive.clear();
-    this->progress_bars_group->setVisible(false);
+    active_file_widgets_.clear();
+    active_progress_bars_.clear();
+    file_elapsed_labels_.clear();
+    file_eta_labels_.clear();
+    file_timers_.clear();
+    pages_processed_per_archive_.clear();
+    progress_bars_group_->setVisible(false);
 
-    this->progress_bar->setVisible(false);
-    this->progress_bar->setValue(0);
+    progress_bar_->setVisible(false);
+    progress_bar_->setValue(0);
 
-    timer->stop();
-    this->options.settings_group->setEnabled(true);
-    start_button->setEnabled(true);
-    cancel_button->setEnabled(false);
+    timer_->stop();
+    options_.settings_group->setEnabled(true);
+    start_button_->setEnabled(true);
+    cancel_button_->setEnabled(false);
 
     // Clean up base temp dir on cancel
-    if (!this->temp_base_dir.empty()) {
+    if (!temp_base_dir_.empty()) {
         auto err_code = std::error_code{};
-        fs::remove_all(this->temp_base_dir, err_code);
+        fs::remove_all(temp_base_dir_, err_code);
         if (err_code) {
-            log_output->append(
+            log_output_->append(
                 QString("Warning: failed to delete temp directory '%1': %2")
-                    .arg(this->temp_base_dir, err_code.message())
+                    .arg(temp_base_dir_, err_code.message())
             );
-            log_output->setVisible(true);
+            log_output_->setVisible(true);
         }
-        this->temp_base_dir.clear();
+        temp_base_dir_.clear();
     }
 
     // Clean up empty output dir
     auto err_code = std::error_code{};
-    if (fs::is_directory(this->output_path, err_code)
-        && fs::is_empty(this->output_path, err_code)) {
-        fs::remove(this->output_path, err_code);
+    if (fs::is_directory(output_path_, err_code)
+        && fs::is_empty(output_path_, err_code)) {
+        fs::remove(output_path_, err_code);
     }
 }
 
@@ -993,16 +977,16 @@ void Window::on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus) {
     if (!process)
         return;
 
-    running_processes.removeAll(process);
-    if (!running_tasks.contains(process)) {
+    running_processes_.removeAll(process);
+    if (!running_tasks_.contains(process)) {
         process->deleteLater();
         return;
     }
-    PageTask finished_task = running_tasks.take(process);
+    PageTask finished_task = running_tasks_.take(process);
 
     if (exitStatus == QProcess::CrashExit || exitCode != 0) {
-        log_output->setVisible(true);
-        log_output->append(
+        log_output_->setVisible(true);
+        log_output_->append(
             QString("Worker process failed or crashed. Exit code: %1")
                 .arg(exitCode)
         );
@@ -1013,68 +997,68 @@ void Window::on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus) {
     QString source_qstr
         = QString::fromStdString(finished_task.source_file.string());
 
-    if (this->pages_processed_per_archive.contains(source_qstr)) {
-        this->pages_processed_per_archive[source_qstr]++;
-        if (this->file_timers.contains(source_qstr)) {
-            this->file_timers[source_qstr].images_since_last_eta++;
+    if (pages_processed_per_archive_.contains(source_qstr)) {
+        pages_processed_per_archive_[source_qstr]++;
+        if (file_timers_.contains(source_qstr)) {
+            file_timers_[source_qstr].images_since_last_eta++;
         }
-        if (this->active_progress_bars.contains(source_qstr)) {
-            auto progressBar = this->active_progress_bars.value(source_qstr);
+        if (active_progress_bars_.contains(source_qstr)) {
+            auto progressBar = active_progress_bars_.value(source_qstr);
             progressBar->setValue(
-                this->pages_processed_per_archive.value(source_qstr)
+                pages_processed_per_archive_.value(source_qstr)
             );
         }
     }
 
-    if (archive_task_counts.contains(source_qstr)) {
-        archive_task_counts[source_qstr] -= 1;
-        if (archive_task_counts[source_qstr] == 0) {
-            archive_task_counts.remove(source_qstr);
+    if (archive_task_counts_.contains(source_qstr)) {
+        archive_task_counts_[source_qstr] -= 1;
+        if (archive_task_counts_[source_qstr] == 0) {
+            archive_task_counts_.remove(source_qstr);
             create_archive(source_qstr);
 
-            if (this->active_file_widgets.contains(source_qstr)) {
-                auto widget = this->active_file_widgets.take(source_qstr);
-                this->progress_bars_layout->removeWidget(widget);
+            if (active_file_widgets_.contains(source_qstr)) {
+                auto widget = active_file_widgets_.take(source_qstr);
+                progress_bars_layout_->removeWidget(widget);
                 delete widget;
-                this->active_progress_bars.remove(source_qstr);
-                this->file_elapsed_labels.remove(source_qstr);
-                this->file_eta_labels.remove(source_qstr);
-                this->file_timers.remove(source_qstr);
-                this->total_pages_per_archive.remove(source_qstr);
+                active_progress_bars_.remove(source_qstr);
+                file_elapsed_labels_.remove(source_qstr);
+                file_eta_labels_.remove(source_qstr);
+                file_timers_.remove(source_qstr);
+                total_pages_per_archive_.remove(source_qstr);
 
-                if (this->active_file_widgets.isEmpty()) {
-                    this->progress_bars_group->setVisible(false);
+                if (active_file_widgets_.isEmpty()) {
+                    progress_bars_group_->setVisible(false);
                 }
             }
         }
     }
 
-    if (is_processing_cancelled) {
-        if (running_processes.isEmpty()) {
-            log_output->setVisible(true);
-            log_output->append("All running tasks have been cancelled.");
+    if (is_processing_cancelled_) {
+        if (running_processes_.isEmpty()) {
+            log_output_->setVisible(true);
+            log_output_->append("All running tasks have been cancelled.");
         }
     }
     else {
-        if (pages_processed == total_pages) {
-            timer->stop();
-            this->options.settings_group->setEnabled(true);
-            start_button->setEnabled(true);
-            cancel_button->setEnabled(false);
+        if (pages_processed_ == total_pages_) {
+            timer_->stop();
+            options_.settings_group->setEnabled(true);
+            start_button_->setEnabled(true);
+            cancel_button_->setEnabled(false);
 
             // Clean up base temp dir on success
-            if (!this->temp_base_dir.empty()) {
+            if (!temp_base_dir_.empty()) {
                 try {
-                    fs::remove_all(this->temp_base_dir);
+                    fs::remove_all(temp_base_dir_);
                 }
                 catch (const std::exception &e) {
-                    log_output->setVisible(true);
-                    log_output->append(
+                    log_output_->setVisible(true);
+                    log_output_->append(
                         QString("Error cleaning up temp directory: %1")
                             .arg(e.what())
                     );
                 }
-                this->temp_base_dir.clear();
+                temp_base_dir_.clear();
             }
         }
         else {
@@ -1090,8 +1074,8 @@ void Window::on_worker_output() {
     if (process) {
         // Read line by line to prevent partial messages
         while (process->canReadLine()) {
-            log_output->setVisible(true);
-            log_output->append(process->readLine().trimmed());
+            log_output_->setVisible(true);
+            log_output_->append(process->readLine().trimmed());
         }
     }
 }

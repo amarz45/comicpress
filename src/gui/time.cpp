@@ -2,19 +2,19 @@
 #include "include/window_util.hpp"
 
 void Window::update_time_labels() {
-    this->update_overall_time_labels();
+    update_overall_time_labels();
 
-    for (const QString &file : this->active_progress_bars.keys()) {
-        this->update_file_time_labels(file);
+    for (const QString &file : active_progress_bars_.keys()) {
+        update_file_time_labels(file);
     }
 }
 
 void Window::update_overall_time_labels() {
-    if (!this->start_time.has_value()) {
+    if (!start_time_.has_value()) {
         return;
     }
 
-    auto start_time = this->start_time.value();
+    auto start_time = start_time_.value();
 
     auto now = std::chrono::system_clock::now();
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -24,27 +24,26 @@ void Window::update_overall_time_labels() {
 
     auto elapsed = ms - start_time;
     auto elapsed_str = "Elapsed: " + time_to_str(elapsed);
-    this->elapsed_label->setText(QString::fromStdString(elapsed_str));
+    elapsed_label_->setText(QString::fromStdString(elapsed_str));
 
-    auto value = this->pages_processed;
+    auto value = pages_processed_;
 
-    if (this->last_eta_time.has_value()
-        && ms - this->last_eta_time.value() >= 1000
-        && this->images_since_last_eta > 0) {
-        auto images = this->images_since_last_eta;
-        auto interval = ms - this->last_eta_time.value();
+    if (last_eta_time_.has_value() && ms - last_eta_time_.value() >= 1000
+        && images_since_last_eta_ > 0) {
+        auto images = images_since_last_eta_;
+        auto interval = ms - last_eta_time_.value();
 
-        this->eta_samples.push_front({images, interval});
+        eta_samples_.push_front({images, interval});
 
-        this->last_eta_time = ms;
-        this->images_since_last_eta = 0;
+        last_eta_time_ = ms;
+        images_since_last_eta_ = 0;
     }
 
-    if (!this->eta_samples.dq.empty()) {
+    if (!eta_samples_.dq.empty()) {
         int64_t images = 0;
         int64_t interval = 0;
 
-        for (const auto &[i, d] : this->eta_samples.dq) {
+        for (const auto &[i, d] : eta_samples_.dq) {
             images += i;
             interval += d;
         }
@@ -52,21 +51,20 @@ void Window::update_overall_time_labels() {
         if (images > 0) {
             auto speed
                 = static_cast<double>(images) / static_cast<double>(interval);
-            auto remaining
-                = static_cast<double>(this->total_pages - value) / speed;
+            auto remaining = static_cast<double>(total_pages_ - value) / speed;
             auto eta_str
                 = "ETA: " + time_to_str(static_cast<int64_t>(remaining));
-            this->eta_label->setText(QString::fromStdString(eta_str));
+            eta_label_->setText(QString::fromStdString(eta_str));
         }
     }
 }
 
 void Window::update_file_time_labels(const QString &file) {
-    if (!this->file_timers.contains(file)) {
+    if (!file_timers_.contains(file)) {
         return;
     }
 
-    auto &file_timer = this->file_timers[file];
+    auto &file_timer = file_timers_[file];
 
     if (!file_timer.start_time.has_value()) {
         return;
@@ -82,14 +80,14 @@ void Window::update_file_time_labels(const QString &file) {
 
     auto elapsed = ms - start_time;
     auto elapsed_str = "Elapsed: " + time_to_str(elapsed);
-    if (this->file_elapsed_labels.contains(file)) {
-        this->file_elapsed_labels[file]->setText(
+    if (file_elapsed_labels_.contains(file)) {
+        file_elapsed_labels_[file]->setText(
             QString::fromStdString(elapsed_str)
         );
     }
 
-    auto value = this->pages_processed_per_archive.value(file, 0);
-    auto total = this->total_pages_per_archive.value(file, 0);
+    auto value = pages_processed_per_archive_.value(file, 0);
+    auto total = total_pages_per_archive_.value(file, 0);
 
     if (file_timer.last_eta_time.has_value()
         && ms - file_timer.last_eta_time.value() >= 1000
@@ -118,8 +116,8 @@ void Window::update_file_time_labels(const QString &file) {
             auto eta_str
                 = "ETA: " + time_to_str(static_cast<int64_t>(remaining));
 
-            if (this->file_eta_labels.contains(file)) {
-                this->file_eta_labels[file]->setText(
+            if (file_eta_labels_.contains(file)) {
+                file_eta_labels_[file]->setText(
                     QString::fromStdString(eta_str)
                 );
             }

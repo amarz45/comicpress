@@ -127,7 +127,7 @@ class Window : public QMainWindow {
     Q_OBJECT
 
   public:
-    DisplayPreset display_preset = DisplayPreset{
+    DisplayPreset display_preset_ = DisplayPreset{
         .brand = "Custom",
         .model = "",
     };
@@ -167,63 +167,63 @@ class Window : public QMainWindow {
     void on_jpeg_xl_quality_type_changed();
 
   private:
-    QWidget *central_widget;
-    QVBoxLayout *main_layout;
+    QWidget *central_widget_;
+    QVBoxLayout *main_layout_;
 
     // Timer
-    QTimer *timer;
-    std::optional<int64_t> start_time;
-    std::optional<int64_t> last_eta_time;
-    int images_since_last_eta;
-    float last_progress_value;
-    BoundedDeque<std::pair<int64_t, int64_t>> eta_samples;
+    QTimer *timer_;
+    std::optional<int64_t> start_time_;
+    std::optional<int64_t> last_eta_time_;
+    int images_since_last_eta_;
+    float last_progress_value_;
+    BoundedDeque<std::pair<int64_t, int64_t>> eta_samples_;
 
     // Input and output
-    QListWidget *file_list;
-    QPushButton *add_files_button;
-    QPushButton *remove_selected_button;
-    QPushButton *clear_all_button;
-    QLineEdit *output_dir_field;
+    QListWidget *file_list_;
+    QPushButton *add_files_button_;
+    QPushButton *remove_selected_button_;
+    QPushButton *clear_all_button_;
+    QLineEdit *output_dir_field_;
     // Writable path for the chosen output folder (a portal path under
     // Flatpak); empty until the user picks one, while output_dir_field shows
     // its host path.
-    QString output_dir_io_path;
-    fs::path output_path;
-    QPushButton *browse_output_button;
+    QString output_dir_io_path_;
+    fs::path output_path_;
+    QPushButton *browse_output_button_;
 
     void set_output_dir(const QString &io_path);
     void persist_output_dir();
     void restore_output_dir();
     bool ensure_output_dir();
-    QGroupBox *progress_bars_group;
-    QVBoxLayout *progress_bars_layout;
+    QGroupBox *progress_bars_group_;
+    QVBoxLayout *progress_bars_layout_;
 
-    Options options;
+    Options options_;
 
     // Progress
-    QLabel *elapsed_label;
-    QLabel *eta_label;
-    QProgressBar *progress_bar;
-    QTextEdit *log_output;
-    QPushButton *start_button;
-    QPushButton *cancel_button;
+    QLabel *elapsed_label_;
+    QLabel *eta_label_;
+    QProgressBar *progress_bar_;
+    QTextEdit *log_output_;
+    QPushButton *start_button_;
+    QPushButton *cancel_button_;
 
     // Process Management
-    QQueue<PageTask> task_queue;
-    QList<QProcess *> running_processes;
-    QMap<QProcess *, PageTask> running_tasks;
-    QMap<QString, int> archive_task_counts;
-    QMap<QString, int> total_pages_per_archive;
-    QMap<QString, int> pages_processed_per_archive;
-    QMap<QString, QWidget *> active_file_widgets;
-    QMap<QString, QProgressBar *> active_progress_bars;
-    QMap<QString, QLabel *> file_elapsed_labels;
-    QMap<QString, QLabel *> file_eta_labels;
-    QMap<QString, FileTimer> file_timers;
-    QMap<QString, fs::path> archive_temp_dirs;
-    int max_concurrent_workers;
-    bool is_processing_cancelled;
-    bool is_programmatically_changing_values;
+    QQueue<PageTask> task_queue_;
+    QList<QProcess *> running_processes_;
+    QMap<QProcess *, PageTask> running_tasks_;
+    QMap<QString, int> archive_task_counts_;
+    QMap<QString, int> total_pages_per_archive_;
+    QMap<QString, int> pages_processed_per_archive_;
+    QMap<QString, QWidget *> active_file_widgets_;
+    QMap<QString, QProgressBar *> active_progress_bars_;
+    QMap<QString, QLabel *> file_elapsed_labels_;
+    QMap<QString, QLabel *> file_eta_labels_;
+    QMap<QString, FileTimer> file_timers_;
+    QMap<QString, fs::path> archive_temp_dirs_;
+    int max_concurrent_workers_;
+    bool is_processing_cancelled_;
+    bool is_programmatically_changing_values_;
 
     fs::path create_unique_temp_dir(const std::string &stem);
 
@@ -237,7 +237,7 @@ class Window : public QMainWindow {
     QGroupBox *create_io_group();
     QGroupBox *create_settings_group();
     void create_log_group();
-    QGroupBox *log_group;
+    QGroupBox *log_group_;
 
     void add_display_presets_widget();
 
@@ -249,19 +249,19 @@ class Window : public QMainWindow {
     void set_display_preset(std::string brand, std::string model);
     void create_archive(const QString &source_archive_path);
 
-    int total_pages;
-    int pages_processed;
+    int total_pages_;
+    int pages_processed_;
 
-    int avif_compression_effort = 4;
-    int avif_quality = 50;
-    int jpeg_quality = 80;
-    int jpeg_xl_compression_effort = 7;
-    double jpeg_xl_distance = 1.0;
-    int jpeg_xl_quality = 75;
-    int png_compression_effort = 6;
-    int webp_compression_effort = 4;
-    int webp_quality = 80;
-    bool compression_type_changed = false;
+    int avif_compression_effort_ = 4;
+    int avif_quality_ = 50;
+    int jpeg_quality_ = 80;
+    int jpeg_xl_compression_effort_ = 7;
+    double jpeg_xl_distance_ = 1.0;
+    int jpeg_xl_quality_ = 75;
+    int png_compression_effort_ = 6;
+    int webp_compression_effort_ = 4;
+    int webp_quality_ = 80;
+    bool compression_type_changed_ = false;
 
-    std::string temp_base_dir;
+    std::string temp_base_dir_;
 };

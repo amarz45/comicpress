@@ -11,40 +11,40 @@
 
 namespace fs = std::filesystem;
 
-Window::Window(QWidget *parent) : QMainWindow(parent), eta_samples(5) {
+Window::Window(QWidget *parent) : QMainWindow(parent), eta_samples_(5) {
     // Timer
-    this->timer = new QTimer(this);
-    connect(this->timer, &QTimer::timeout, this, &Window::update_time_labels);
-    this->start_time = std::nullopt;
-    this->last_eta_time = std::nullopt;
-    this->images_since_last_eta = 0;
-    this->last_progress_value = 0.0;
-    this->is_processing_cancelled = false;
-    this->is_programmatically_changing_values = false;
-    this->temp_base_dir = "";
+    timer_ = new QTimer(this);
+    connect(timer_, &QTimer::timeout, this, &Window::update_time_labels);
+    start_time_ = std::nullopt;
+    last_eta_time_ = std::nullopt;
+    images_since_last_eta_ = 0;
+    last_progress_value_ = 0.0;
+    is_processing_cancelled_ = false;
+    is_programmatically_changing_values_ = false;
+    temp_base_dir_ = "";
 
-    this->setWindowTitle("Comicpress");
-    this->central_widget = new QWidget(this);
-    this->setCentralWidget(central_widget);
+    setWindowTitle("Comicpress");
+    central_widget_ = new QWidget(this);
+    setCentralWidget(central_widget_);
 
-    this->setup_ui();
-    this->set_display_preset("None", "");
-    this->on_enable_image_scaling_changed(
-        this->options.enable_image_scaling_check_box->checkState()
+    setup_ui();
+    set_display_preset("None", "");
+    on_enable_image_scaling_changed(
+        options_.enable_image_scaling_check_box->checkState()
     );
-    this->on_double_page_spread_changed(
-        this->options.double_page_spread_combo_box->currentText()
+    on_double_page_spread_changed(
+        options_.double_page_spread_combo_box->currentText()
     );
-    this->on_output_format_combo_box_changed(
-        this->options.output_format_combo_box->currentText()
+    on_output_format_combo_box_changed(
+        options_.output_format_combo_box->currentText()
     );
-    this->connect_signals();
+    connect_signals();
 
-    this->restore_output_dir();
+    restore_output_dir();
 }
 
 void Window::setup_ui() {
-    auto container_layout = new QHBoxLayout(this->central_widget);
+    auto container_layout = new QHBoxLayout(central_widget_);
     container_layout->setContentsMargins(40, 20, 40, 20);
     auto content_widget = new QWidget();
     container_layout->setAlignment(Qt::AlignTop);
@@ -52,15 +52,15 @@ void Window::setup_ui() {
         QSizePolicy::Preferred, QSizePolicy::Preferred
     );
 
-    auto io_group = this->create_io_group();
-    this->options.settings_group = this->create_settings_group();
+    auto io_group = create_io_group();
+    options_.settings_group = create_settings_group();
 
-    this->progress_bars_group = new QGroupBox("File progress");
-    this->progress_bars_group->setFlat(true);
-    this->progress_bars_layout = new QVBoxLayout(this->progress_bars_group);
-    this->progress_bars_group->setVisible(false);
+    progress_bars_group_ = new QGroupBox("File progress");
+    progress_bars_group_->setFlat(true);
+    progress_bars_layout_ = new QVBoxLayout(progress_bars_group_);
+    progress_bars_group_->setVisible(false);
 
-    this->create_log_group();
+    create_log_group();
 
     auto tabs = new QTabWidget();
     tabs->setDocumentMode(true);
@@ -73,7 +73,7 @@ void Window::setup_ui() {
     tabs->addTab(io_scroll, "Files");
 
     auto settings_scroll = new QScrollArea();
-    settings_scroll->setWidget(this->options.settings_group);
+    settings_scroll->setWidget(options_.settings_group);
     settings_scroll->setWidgetResizable(true);
     settings_scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     settings_scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
@@ -81,31 +81,31 @@ void Window::setup_ui() {
 
     auto action_group = new QWidget();
     auto action_layout = new QHBoxLayout(action_group);
-    this->start_button = new QPushButton("Start");
-    this->cancel_button = new QPushButton("Cancel");
-    this->start_button->setEnabled(false);
-    this->cancel_button->setEnabled(false);
+    start_button_ = new QPushButton("Start");
+    cancel_button_ = new QPushButton("Cancel");
+    start_button_->setEnabled(false);
+    cancel_button_->setEnabled(false);
     action_layout->addStretch();
-    action_layout->addWidget(this->start_button);
-    action_layout->addWidget(this->cancel_button);
+    action_layout->addWidget(start_button_);
+    action_layout->addWidget(cancel_button_);
 
-    this->main_layout = new QVBoxLayout(content_widget);
-    this->main_layout->setContentsMargins(0, 0, 0, 0);
+    main_layout_ = new QVBoxLayout(content_widget);
+    main_layout_->setContentsMargins(0, 0, 0, 0);
 
-    this->main_layout->addWidget(tabs);
-    this->main_layout->addSpacing(20);
+    main_layout_->addWidget(tabs);
+    main_layout_->addSpacing(20);
 
     auto separator = new QFrame();
     separator->setFrameShape(QFrame::HLine);
     separator->setFrameShadow(QFrame::Sunken);
-    this->main_layout->addWidget(separator);
+    main_layout_->addWidget(separator);
 
-    this->main_layout->addWidget(this->progress_bars_group);
-    this->main_layout->addWidget(log_group);
-    this->main_layout->addItem(
+    main_layout_->addWidget(progress_bars_group_);
+    main_layout_->addWidget(log_group_);
+    main_layout_->addItem(
         new QSpacerItem(1000, 0, QSizePolicy::Preferred, QSizePolicy::Fixed)
     );
-    this->main_layout->addWidget(action_group);
+    main_layout_->addWidget(action_group);
 
     container_layout->addStretch(1);
     container_layout->addWidget(content_widget);
@@ -119,43 +119,43 @@ QGroupBox *Window::create_io_group() {
     io_layout->setContentsMargins(0, 10, 0, 0);
     auto file_buttons_layout = new QHBoxLayout();
 
-    this->file_list = new QListWidget();
-    this->file_list->setFont(QFont("monospace"));
-    this->file_list->setSelectionMode(QAbstractItemView::ExtendedSelection);
-    this->file_list->setMaximumHeight(500);
+    file_list_ = new QListWidget();
+    file_list_->setFont(QFont("monospace"));
+    file_list_->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    file_list_->setMaximumHeight(500);
 
-    this->add_files_button = new QPushButton("Add input files");
-    this->remove_selected_button = new QPushButton("Remove selected");
-    this->clear_all_button = new QPushButton("Remove all");
+    add_files_button_ = new QPushButton("Add input files");
+    remove_selected_button_ = new QPushButton("Remove selected");
+    clear_all_button_ = new QPushButton("Remove all");
 
-    this->remove_selected_button->setVisible(false);
-    this->clear_all_button->setVisible(false);
+    remove_selected_button_->setVisible(false);
+    clear_all_button_->setVisible(false);
 
-    file_buttons_layout->addWidget(this->add_files_button);
-    file_buttons_layout->addWidget(this->remove_selected_button);
-    file_buttons_layout->addWidget(this->clear_all_button);
+    file_buttons_layout->addWidget(add_files_button_);
+    file_buttons_layout->addWidget(remove_selected_button_);
+    file_buttons_layout->addWidget(clear_all_button_);
     file_buttons_layout->addStretch();
 
     io_layout->addLayout(file_buttons_layout);
-    io_layout->addWidget(file_list, 1);
+    io_layout->addWidget(file_list_, 1);
 
     auto output_layout = new QHBoxLayout();
 
-    this->output_dir_field = new QLineEdit();
-    this->output_dir_field->setPlaceholderText(tr("No output folder chosen"));
+    output_dir_field_ = new QLineEdit();
+    output_dir_field_->setPlaceholderText(tr("No output folder chosen"));
 
     // The folder must be picked through the file dialog so the sandbox grants
     // access to it; a typed-in path would not be writable.
-    this->output_dir_field->setReadOnly(true);
-    this->output_dir_field->setCursor(Qt::PointingHandCursor);
+    output_dir_field_->setReadOnly(true);
+    output_dir_field_->setCursor(Qt::PointingHandCursor);
 
     // Folder icon inside the field.
-    auto browse_icon = this->style()->standardIcon(QStyle::SP_DirIcon);
-    this->output_dir_field->addAction(browse_icon, QLineEdit::LeadingPosition);
+    auto browse_icon = style()->standardIcon(QStyle::SP_DirIcon);
+    output_dir_field_->addAction(browse_icon, QLineEdit::LeadingPosition);
 
-    this->browse_output_button = new QPushButton("Browse output folder");
-    output_layout->addWidget(this->browse_output_button);
-    output_layout->addWidget(this->output_dir_field);
+    browse_output_button_ = new QPushButton("Browse output folder");
+    output_layout->addWidget(browse_output_button_);
+    output_layout->addWidget(output_dir_field_);
 
     io_layout->addLayout(output_layout);
     io_layout->addStretch();
@@ -166,30 +166,30 @@ QGroupBox *Window::create_io_group() {
 QGroupBox *Window::create_settings_group() {
     auto settings_group = new QGroupBox();
     settings_group->setFlat(true);
-    this->options.settings_layout = new QFormLayout(settings_group);
-    this->options.settings_layout->setContentsMargins(0, 10, 0, 0);
-    this->options.settings_layout->setFieldGrowthPolicy(
+    options_.settings_layout = new QFormLayout(settings_group);
+    options_.settings_layout->setContentsMargins(0, 10, 0, 0);
+    options_.settings_layout->setFieldGrowthPolicy(
         QFormLayout::FieldsStayAtSizeHint
     );
-    this->options.settings_layout->setLabelAlignment(
+    options_.settings_layout->setLabelAlignment(
         Qt::AlignRight | Qt::AlignVCenter
     );
     auto style = this->style();
 
     // Preprocessing
-    this->add_display_presets_widget();
+    add_display_presets_widget();
 #if defined(PDF_ENABLED)
-    add_pdf_pixel_density_widget(style, &this->options);
+    add_pdf_pixel_density_widget(style, &options_);
 #endif
-    this->options.settings_layout->addItem(new QSpacerItem(0, 25));
-    add_convert_to_greyscale_widget(style, &this->options);
-    add_contrast_widget(style, &this->options);
-    this->options.settings_layout->addItem(new QSpacerItem(0, 25));
-    add_double_page_spread_widget(style, &this->options);
-    add_remove_spine_widget(style, &this->options);
+    options_.settings_layout->addItem(new QSpacerItem(0, 25));
+    add_convert_to_greyscale_widget(style, &options_);
+    add_contrast_widget(style, &options_);
+    options_.settings_layout->addItem(new QSpacerItem(0, 25));
+    add_double_page_spread_widget(style, &options_);
+    add_remove_spine_widget(style, &options_);
 
-    this->options.settings_layout->addItem(new QSpacerItem(0, 25));
-    this->options.advanced_options_check_box = new QCheckBox();
+    options_.settings_layout->addItem(new QSpacerItem(0, 25));
+    options_.advanced_options_check_box = new QCheckBox();
     auto advanced_options_label = new QLabel("Show advanced options");
     QFont font = advanced_options_label->font();
     font.setBold(true);
@@ -197,63 +197,63 @@ QGroupBox *Window::create_settings_group() {
     auto container = new QWidget();
     auto container_layout = new QHBoxLayout(container);
     container_layout->setContentsMargins(0, 0, 0, 0);
-    container_layout->addWidget(this->options.advanced_options_check_box);
+    container_layout->addWidget(options_.advanced_options_check_box);
     container_layout->addWidget(advanced_options_label);
     container_layout->addStretch();
-    this->options.settings_layout->addRow(container);
+    options_.settings_layout->addRow(container);
 
     // Colour
-    add_linear_light_resampling_widget(style, &this->options);
-    add_quantization_widgets(style, &this->options);
-    add_scaling_widgets(style, &this->options);
+    add_linear_light_resampling_widget(style, &options_);
+    add_quantization_widgets(style, &options_);
+    add_scaling_widgets(style, &options_);
 
-    this->options.settings_layout->addItem(new QSpacerItem(0, 25));
-    add_image_format_widgets(style, &this->options);
-    add_parallel_workers_widget(style, &this->options);
+    options_.settings_layout->addItem(new QSpacerItem(0, 25));
+    add_image_format_widgets(style, &options_);
+    add_parallel_workers_widget(style, &options_);
 
-    this->on_advanced_options_changed(
-        this->options.advanced_options_check_box->checkState()
+    on_advanced_options_changed(
+        options_.advanced_options_check_box->checkState()
     );
 
     return settings_group;
 }
 
 void Window::create_log_group() {
-    log_group = new QGroupBox("Total progress");
-    log_group->setVisible(false);
-    log_group->setFlat(true);
-    auto log_layout = new QVBoxLayout(log_group);
+    log_group_ = new QGroupBox("Total progress");
+    log_group_->setVisible(false);
+    log_group_->setFlat(true);
+    auto log_layout = new QVBoxLayout(log_group_);
 
     auto time_layout = new QHBoxLayout();
-    this->elapsed_label = new QLabel("Elapsed: –");
-    this->eta_label = new QLabel("ETA: –");
-    time_layout->addWidget(this->elapsed_label);
-    time_layout->addWidget(this->eta_label);
+    elapsed_label_ = new QLabel("Elapsed: –");
+    eta_label_ = new QLabel("ETA: –");
+    time_layout->addWidget(elapsed_label_);
+    time_layout->addWidget(eta_label_);
     time_layout->addStretch();
     time_layout->setSpacing(50);
 
-    this->progress_bar = new QProgressBar();
-    this->progress_bar->setVisible(false);
-    this->progress_bar->setTextVisible(true);
-    this->progress_bar->setFormat("%p % (%v / %m pages)");
+    progress_bar_ = new QProgressBar();
+    progress_bar_->setVisible(false);
+    progress_bar_->setTextVisible(true);
+    progress_bar_->setFormat("%p % (%v / %m pages)");
 
-    this->log_output = new QTextEdit();
-    this->log_output->setVisible(false);
-    this->log_output->setReadOnly(true);
+    log_output_ = new QTextEdit();
+    log_output_->setVisible(false);
+    log_output_->setReadOnly(true);
 
-    log_layout->addWidget(this->progress_bar);
+    log_layout->addWidget(progress_bar_);
     log_layout->addLayout(time_layout);
-    log_layout->addWidget(this->log_output);
+    log_layout->addWidget(log_output_);
 }
 
 void Window::add_display_presets_widget() {
-    auto display_preset = QString::fromStdString(this->display_preset.brand);
-    this->options.display_preset_button = new QPushButton(display_preset);
+    auto display_preset = QString::fromStdString(display_preset_.brand);
+    options_.display_preset_button = new QPushButton(display_preset);
     auto display_menu = new QMenu(this);
 
     if (auto custom_action = display_menu->addAction("None")) {
         connect(custom_action, &QAction::triggered, this, [this]() {
-            this->set_display_preset("None", "");
+            set_display_preset("None", "");
         });
     }
     display_menu->addSeparator();
@@ -281,46 +281,41 @@ void Window::add_display_presets_widget() {
                 &QAction::triggered,
                 this,
                 [this, brand, model_name]() {
-                    this->set_display_preset(brand, model_name);
+                    set_display_preset(brand, model_name);
                 }
             );
         }
     }
 
-    auto label = create_widget_with_info(
-        this->style(), new QLabel("Device preset"), ""
-    );
-    this->options.display_preset_button->setMenu(display_menu);
+    auto label
+        = create_widget_with_info(style(), new QLabel("Device preset"), "");
+    options_.display_preset_button->setMenu(display_menu);
 
     auto output_format_label = new QLabel("Output format");
-    this->options.output_format_combo_box
+    options_.output_format_combo_box
         = create_combo_box({"EPUB", "CBZ"}, "EPUB");
     auto output_format_container = create_control_with_info(
-        this->style(),
-        this->options.output_format_combo_box,
-        OUTPUT_FORMAT_TOOLTIP
+        style(), options_.output_format_combo_box, OUTPUT_FORMAT_TOOLTIP
     );
 
-    this->options.settings_layout->addRow(
-        label, this->options.display_preset_button
-    );
-    this->options.settings_layout->addRow(
+    options_.settings_layout->addRow(label, options_.display_preset_button);
+    options_.settings_layout->addRow(
         output_format_label, output_format_container
     );
 }
 
 void Window::start_next_task() {
-    if (task_queue.isEmpty()
-        || running_processes.size() >= max_concurrent_workers
-        || is_processing_cancelled) {
+    if (task_queue_.isEmpty()
+        || running_processes_.size() >= max_concurrent_workers_
+        || is_processing_cancelled_) {
         return;
     }
 
-    PageTask task = task_queue.dequeue();
+    PageTask task = task_queue_.dequeue();
     QString source_qstr = QString::fromStdString(task.source_file.string());
 
-    if (!this->active_progress_bars.contains(source_qstr)) {
-        this->progress_bars_group->setVisible(true);
+    if (!active_progress_bars_.contains(source_qstr)) {
+        progress_bars_group_->setVisible(true);
 
         auto widget = new QWidget();
         auto vbox = new QVBoxLayout(widget);
@@ -330,7 +325,7 @@ void Window::start_next_task() {
         auto filename = QFileInfo(source_qstr).completeBaseName() + ".cbz";
         auto label = new QLabel("<code>" + filename + "</code>");
         auto progressBar = new QProgressBar();
-        progressBar->setMaximum(this->archive_task_counts.value(source_qstr));
+        progressBar->setMaximum(archive_task_counts_.value(source_qstr));
         progressBar->setValue(0);
         progressBar->setTextVisible(true);
         progressBar->setFormat("%p % (%v / %m pages)");
@@ -349,11 +344,11 @@ void Window::start_next_task() {
         vbox->addLayout(progress_layout);
         vbox->addLayout(time_layout);
 
-        this->progress_bars_layout->addWidget(widget);
-        this->active_file_widgets.insert(source_qstr, widget);
-        this->active_progress_bars.insert(source_qstr, progressBar);
-        this->file_elapsed_labels.insert(source_qstr, elapsed_label);
-        this->file_eta_labels.insert(source_qstr, eta_label);
+        progress_bars_layout_->addWidget(widget);
+        active_file_widgets_.insert(source_qstr, widget);
+        active_progress_bars_.insert(source_qstr, progressBar);
+        file_elapsed_labels_.insert(source_qstr, elapsed_label);
+        file_eta_labels_.insert(source_qstr, eta_label);
 
         auto now = std::chrono::system_clock::now();
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -364,12 +359,12 @@ void Window::start_next_task() {
         file_timer.start_time = ms;
         file_timer.last_eta_time = ms;
         file_timer.images_since_last_eta = 0;
-        this->file_timers.insert(source_qstr, file_timer);
+        file_timers_.insert(source_qstr, file_timer);
     }
 
     QProcess *process = new QProcess(this);
-    running_processes.append(process);
-    running_tasks.insert(process, task);
+    running_processes_.append(process);
+    running_tasks_.insert(process, task);
 
     connect(
         process,
@@ -427,14 +422,14 @@ void Window::start_next_task() {
 }
 
 void Window::handle_log_message(const QString &message) {
-    log_output->setVisible(true);
-    log_output->append(message);
+    log_output_->setVisible(true);
+    log_output_->append(message);
 }
 
 void Window::handle_task_finished() {
-    pages_processed++;
-    images_since_last_eta++;
-    this->progress_bar->setValue(pages_processed);
+    pages_processed_++;
+    images_since_last_eta_++;
+    progress_bar_->setValue(pages_processed_);
 }
 
 PageTask
@@ -446,7 +441,7 @@ Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
     task.output_dir = output_dir;
     task.page_number = page_num;
 
-    auto total_pages = this->total_pages_per_archive.value(source_qstr, 0);
+    auto total_pages = total_pages_per_archive_.value(source_qstr, 0);
     auto padding_width
         = total_pages > 0
             ? static_cast<int>(std::floor(std::log10(total_pages))) + 1
@@ -457,29 +452,27 @@ Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
               .toStdString();
 
 #if defined(PDF_ENABLED)
-    task.pdf_pixel_density = this->options.pdf_pixel_density_spin_box->value();
+    task.pdf_pixel_density = options_.pdf_pixel_density_spin_box->value();
 #endif
     task.convert_pages_to_greyscale
-        = this->options.convert_to_greyscale->isChecked();
+        = options_.convert_to_greyscale->isChecked();
     task.double_page_spread_action
-        = (DoublePageSpreadActions)this->options.double_page_spread_combo_box
-              ->currentIndex();
-    if (this->options.rotation_direction_combo_box->currentText()
-        == "Clockwise") {
+        = (DoublePageSpreadActions)
+              options_.double_page_spread_combo_box->currentIndex();
+    if (options_.rotation_direction_combo_box->currentText() == "Clockwise") {
         task.rotation_direction = CLOCKWISE;
     }
     else {
         task.rotation_direction = COUNTERCLOCKWISE;
     }
-    task.remove_spine = this->options.remove_spine_check_box->isChecked();
+    task.remove_spine = options_.remove_spine_check_box->isChecked();
     task.linear_light_resampling
-        = this->options.linear_light_resampling_check_box->isChecked();
-    task.stretch_page_contrast = this->options.contrast_check_box->isChecked();
-    task.scale_pages
-        = this->options.enable_image_scaling_check_box->isChecked();
-    task.page_width = this->options.width_spin_box->value();
-    task.page_height = this->options.height_spin_box->value();
-    auto resampler = this->options.resampler_combo_box->currentText();
+        = options_.linear_light_resampling_check_box->isChecked();
+    task.stretch_page_contrast = options_.contrast_check_box->isChecked();
+    task.scale_pages = options_.enable_image_scaling_check_box->isChecked();
+    task.page_width = options_.width_spin_box->value();
+    task.page_height = options_.height_spin_box->value();
+    auto resampler = options_.resampler_combo_box->currentText();
     if (resampler == "Bicubic interpolation") {
         task.page_resampler = VIPS_KERNEL_CUBIC;
     }
@@ -505,35 +498,32 @@ Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
         task.page_resampler = VIPS_KERNEL_NEAREST;
     }
     task.quantize_pages
-        = this->options.enable_image_quantization_check_box->isChecked();
-    task.bit_depth
-        = std::pow(2, this->options.bit_depth_combo_box->currentIndex());
-    task.dither = this->options.dithering_spin_box->value();
+        = options_.enable_image_quantization_check_box->isChecked();
+    task.bit_depth = std::pow(2, options_.bit_depth_combo_box->currentIndex());
+    task.dither = options_.dithering_spin_box->value();
     task.image_format
-        = this->options.image_format_combo_box->currentText().toStdString();
+        = options_.image_format_combo_box->currentText().toStdString();
     task.is_lossy
-        = this->options.image_compression_type_combo_box->currentText()
-       == "Lossy";
+        = options_.image_compression_type_combo_box->currentText() == "Lossy";
     task.quality_type_is_distance
-        = this->options.image_quality_label_jpeg_xl->currentText()
-       == "Distance";
-    task.quality = this->options.image_quality_spin_box->value();
-    task.compression_effort = this->options.image_compression_spin_box->value();
+        = options_.image_quality_label_jpeg_xl->currentText() == "Distance";
+    task.quality = options_.image_quality_spin_box->value();
+    task.compression_effort = options_.image_compression_spin_box->value();
     return task;
 }
 
 void Window::update_file_list_buttons() {
-    auto count = this->file_list->count();
+    auto count = file_list_->count();
     auto has_items = count > 0;
 
-    this->start_button->setEnabled(has_items);
-    this->remove_selected_button->setVisible(has_items);
-    this->clear_all_button->setVisible(has_items);
+    start_button_->setEnabled(has_items);
+    remove_selected_button_->setVisible(has_items);
+    clear_all_button_->setVisible(has_items);
 
 #if defined(PDF_ENABLED)
     auto pdf_inputs_exist = false;
     for (auto i = 0; i < count; i += 1) {
-        auto path_variant = this->file_list->item(i)->data(Qt::UserRole);
+        auto path_variant = file_list_->item(i)->data(Qt::UserRole);
         auto path = fs::path(path_variant.toString().toStdString());
         auto extension = path.extension().string();
         std::transform(
@@ -545,71 +535,71 @@ void Window::update_file_list_buttons() {
         }
     }
 
-    this->options.pdf_pixel_density_label->setVisible(pdf_inputs_exist);
-    this->options.pdf_pixel_density_combo_box->setVisible(pdf_inputs_exist);
-    this->options.pdf_pixel_density_tooltip->setVisible(pdf_inputs_exist);
-    this->options.pdf_options_container->setVisible(pdf_inputs_exist);
+    options_.pdf_pixel_density_label->setVisible(pdf_inputs_exist);
+    options_.pdf_pixel_density_combo_box->setVisible(pdf_inputs_exist);
+    options_.pdf_pixel_density_tooltip->setVisible(pdf_inputs_exist);
+    options_.pdf_options_container->setVisible(pdf_inputs_exist);
 #endif
 
     if (!has_items) {
-        this->remove_selected_button->setEnabled(false);
+        remove_selected_button_->setEnabled(false);
         return;
     }
 
-    auto has_selection = !this->file_list->selectedItems().isEmpty();
-    this->remove_selected_button->setEnabled(has_selection);
+    auto has_selection = !file_list_->selectedItems().isEmpty();
+    remove_selected_button_->setEnabled(has_selection);
 }
 
 void Window::set_display_preset(std::string brand, std::string model) {
-    this->display_preset.brand = brand;
-    this->display_preset.model = model;
+    display_preset_.brand = brand;
+    display_preset_.model = model;
     QString text = model.empty() ? QString::fromStdString(brand)
                                  : QString::fromStdString(brand + " " + model);
-    this->options.display_preset_button->setText(text);
-    this->on_display_preset_changed();
+    options_.display_preset_button->setText(text);
+    on_display_preset_changed();
 }
 
 void Window::create_archive(const QString &source_archive_path) {
     auto source_path = fs::path(source_archive_path.toStdString());
     auto title = source_path.stem();
 
-    auto temp_dir = fs::path(this->temp_base_dir) / title;
+    auto temp_dir = fs::path(temp_base_dir_) / title;
     auto output_filename = source_path.filename();
 
     QCoreApplication::processEvents();
 
     try {
-        if (this->options.output_format_combo_box->currentText() == "EPUB") {
+        if (options_.output_format_combo_box->currentText() == "EPUB") {
             output_filename = output_filename.replace_extension(".epub");
-            auto final_output_path = this->output_path / output_filename;
+            auto final_output_path = output_path_ / output_filename;
             create_epub(
                 temp_dir, std::move(final_output_path), title.generic_string()
             );
         }
         else {
             output_filename = output_filename.replace_extension(".cbz");
-            auto final_output_path = this->output_path / output_filename;
+            auto final_output_path = output_path_ / output_filename;
             create_cbz(temp_dir, std::move(final_output_path));
         }
     }
     catch (const NoImagesError &) {
-        log_output->append(
+        log_output_->append(
             QString("Error: source '%1' does not contain any images.")
                 .arg(source_archive_path)
         );
-        log_output->setVisible(true);
+        log_output_->setVisible(true);
         return;
     }
     catch (const ArchiveError &) {
-        log_output->append("Error: failed to create archive.");
-        log_output->setVisible(true);
+        log_output_->append("Error: failed to create archive.");
+        log_output_->setVisible(true);
         return;
     }
     catch (const std::exception &e) {
-        log_output->append(
+        log_output_->append(
             QString("Error: %1").arg(QString::fromUtf8(e.what()))
         );
-        log_output->setVisible(true);
+        log_output_->setVisible(true);
         return;
     }
 
@@ -617,11 +607,11 @@ void Window::create_archive(const QString &source_archive_path) {
         fs::remove_all(temp_dir);
     }
     catch (const std::exception &e) {
-        log_output->append(
+        log_output_->append(
             QString("Error cleaning up temp directory %1: %2")
                 .arg(QString::fromStdString(temp_dir.string()), e.what())
         );
-        log_output->setVisible(true);
+        log_output_->setVisible(true);
     }
 }
 

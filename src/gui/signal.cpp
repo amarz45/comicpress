@@ -648,7 +648,6 @@ void Window::on_jpeg_xl_quality_type_changed() {
     auto max = 100.0;
     auto step = 1.0;
     auto decimals = 0;
-    auto quality = this->jpeg_xl_quality;
 
     auto img_format = this->options.image_format_combo_box->currentText();
     if (img_format != "JPEG XL") {
@@ -662,12 +661,14 @@ void Window::on_jpeg_xl_quality_type_changed() {
         max = 15.0;
         step = 0.1;
         decimals = 2;
-        quality = this->jpeg_xl_distance;
+        auto quality = this->jpeg_xl_distance;
+        this->options.image_quality_spin_box->setValue(quality);
     }
 
     this->options.image_quality_spin_box->setRange(min, max);
     this->options.image_quality_spin_box->setSingleStep(step);
     this->options.image_quality_spin_box->setDecimals(decimals);
+    auto quality = this->jpeg_xl_quality;
     this->options.image_quality_spin_box->setValue(quality);
 }
 

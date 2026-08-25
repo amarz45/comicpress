@@ -1,5 +1,6 @@
 #include "include/output_formats.hpp"
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 namespace fs = std::filesystem;
 
@@ -307,6 +308,17 @@ static std::vector<EpubImage> collect_epub_images(const fs::path &dir) {
     return image_paths;
 }
 
+static std::vector<fs::path> collect_cbz_images(const fs::path &dir) {
+    auto image_paths = std::vector<fs::path>{};
+    for (const auto &entry : fs::recursive_directory_iterator(dir)) {
+        auto media_type = image_media_type(entry.path());
+        if (!media_type.empty()) {
+            image_paths.push_back(entry.path());
+        }
+    }
+    return image_paths;
+}
+
 static void add_file_to_archive(
     struct archive *archive, const char *filename, std::string file_contents
 ) {
@@ -493,35 +505,33 @@ void create_cbz(const fs::path &image_dir, const fs::path &output_path) {
         throw std::runtime_error(message);
     }
 
-    if (image_dir.empty()) {
+    auto cbz_images = collect_cbz_images(image_dir);
+    if (cbz_images.empty()) {
         archive_write_free(archive);
         throw NoImagesError();
         return;
     }
 
-    for (const auto &dir_entry : fs::recursive_directory_iterator(image_dir)) {
-        if (dir_entry.is_regular_file()) {
-            auto path = dir_entry.path();
-            auto relative_path = fs::relative(path, image_dir);
+    for (const auto &image_path_rel : cbz_images) {
+        auto image_path_abs = image_dir / image_path_rel;
 
-            auto entry = archive_entry_new();
-            archive_entry_set_pathname(entry, relative_path.string().c_str());
-            archive_entry_set_size(entry, fs::file_size(path));
-            archive_entry_set_filetype(entry, AE_IFREG);
-            archive_entry_set_perm(entry, 0644);
-            archive_write_header(archive, entry);
+        auto entry = archive_entry_new();
+        archive_entry_set_pathname(entry, image_path_rel.string().c_str());
+        archive_entry_set_size(entry, fs::file_size(image_path_abs));
+        archive_entry_set_filetype(entry, AE_IFREG);
+        archive_entry_set_perm(entry, 0644);
+        archive_write_header(archive, entry);
 
-            auto file_stream = std::ifstream(path, std::ios::binary);
-            char buffer[8192];
-            while (file_stream.good()) {
-                file_stream.read(buffer, sizeof(buffer));
-                archive_write_data(
-                    archive, buffer, static_cast<size_t>(file_stream.gcount())
-                );
-            }
-
-            archive_entry_free(entry);
+        auto file_stream = std::ifstream(image_path_abs, std::ios::binary);
+        char buffer[8192];
+        while (file_stream.good()) {
+            file_stream.read(buffer, sizeof(buffer));
+            archive_write_data(
+                archive, buffer, static_cast<size_t>(file_stream.gcount())
+            );
         }
+
+        archive_entry_free(entry);
     }
 
     archive_write_close(archive);

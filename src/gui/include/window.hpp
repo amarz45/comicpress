@@ -40,22 +40,22 @@ QT_END_NAMESPACE
 
 template <typename T>
 class BoundedDeque {
-    size_t max_size;
+    size_t max_size_;
 
   public:
     std::deque<T> dq;
-    BoundedDeque(size_t n) : max_size(n) {
+    BoundedDeque(size_t n) : max_size_(n) {
     }
 
     void push_back(const T &val) {
-        if (dq.size() == max_size) {
+        if (dq.size() == max_size_) {
             dq.pop_front();
         }
         dq.push_back(val);
     }
 
     void push_front(const T &val) {
-        if (dq.size() == max_size) {
+        if (dq.size() == max_size_) {
             dq.pop_back();
         }
         dq.push_front(val);
@@ -134,12 +134,12 @@ class Window : public QMainWindow {
     Q_OBJECT
 
   public:
-    DisplayPreset display_preset_ = DisplayPreset{
+    DisplayPreset display_preset = DisplayPreset{
         .brand = "Custom",
         .model = "",
     };
     explicit Window(QWidget *parent = nullptr);
-    ~Window();
+    ~Window() override;
 
   private slots:
     void on_start_button_clicked();
@@ -147,7 +147,7 @@ class Window : public QMainWindow {
     void handle_log_message(const QString &message);
     void handle_task_finished();
     void start_next_task();
-    void on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus);
+    void on_worker_finished(int exit_code, QProcess::ExitStatus exit_status);
     void on_worker_output();
     void on_add_files_clicked();
     void on_remove_selected_clicked();
@@ -250,10 +250,10 @@ class Window : public QMainWindow {
 
     // Helper methods
     PageTask
-    create_task(fs::path source_file, fs::path output_dir, int page_num);
+    create_task(const fs::path &source_file, fs::path output_dir, int page_num);
     void update_file_list_buttons();
     void connect_signals();
-    void set_display_preset(std::string brand, std::string model);
+    void set_display_preset(const std::string &brand, const std::string &model);
     void create_archive(const QString &source_archive_path);
 
     int total_pages_;

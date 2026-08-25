@@ -37,6 +37,7 @@
 #include <QWidget>
 #include <Qt>
 
+#include <utility>
 #include <vips/vips8>
 
 #include <chrono>
@@ -280,8 +281,8 @@ void Window::create_log_group() {
 }
 
 void Window::add_display_presets_widget() {
-    auto display_preset = QString::fromStdString(display_preset_.brand);
-    options_.display_preset_button = new QPushButton(display_preset);
+    auto display_preset_brand = QString::fromStdString(display_preset.brand);
+    options_.display_preset_button = new QPushButton(display_preset_brand);
     auto display_menu = new QMenu(this);
 
     if (auto custom_action = display_menu->addAction("None")) {
@@ -357,14 +358,14 @@ void Window::start_next_task() {
         auto progress_layout = new QHBoxLayout();
         auto filename = QFileInfo(source_qstr).completeBaseName() + ".cbz";
         auto label = new QLabel("<code>" + filename + "</code>");
-        auto progressBar = new QProgressBar();
-        progressBar->setMaximum(archive_task_counts_.value(source_qstr));
-        progressBar->setValue(0);
-        progressBar->setTextVisible(true);
-        progressBar->setFormat("%p % (%v / %m pages)");
+        auto progress_bar = new QProgressBar();
+        progress_bar->setMaximum(archive_task_counts_.value(source_qstr));
+        progress_bar->setValue(0);
+        progress_bar->setTextVisible(true);
+        progress_bar->setFormat("%p % (%v / %m pages)");
 
         progress_layout->addWidget(label);
-        progress_layout->addWidget(progressBar);
+        progress_layout->addWidget(progress_bar);
 
         auto time_layout = new QHBoxLayout();
         auto elapsed_label = new QLabel("Elapsed: –");
@@ -379,7 +380,7 @@ void Window::start_next_task() {
 
         progress_bars_layout_->addWidget(widget);
         active_file_widgets_.insert(source_qstr, widget);
-        active_progress_bars_.insert(source_qstr, progressBar);
+        active_progress_bars_.insert(source_qstr, progress_bar);
         file_elapsed_labels_.insert(source_qstr, elapsed_label);
         file_eta_labels_.insert(source_qstr, eta_label);
 
@@ -395,7 +396,7 @@ void Window::start_next_task() {
         file_timers_.insert(source_qstr, file_timer);
     }
 
-    QProcess *process = new QProcess(this);
+    auto process = new QProcess(this);
     running_processes_.append(process);
     running_tasks_.insert(process, task);
 
@@ -465,13 +466,14 @@ void Window::handle_task_finished() {
     progress_bar_->setValue(pages_processed_);
 }
 
-PageTask
-Window::create_task(fs::path source_file, fs::path output_dir, int page_num) {
+PageTask Window::create_task(
+    const fs::path &source_file, fs::path output_dir, int page_num
+) {
     PageTask task;
     auto source_qstr = QString::fromStdString(source_file.string());
 
     task.source_file = source_file;
-    task.output_dir = output_dir;
+    task.output_dir = std::move(output_dir);
     task.page_number = page_num;
 
     auto total_pages = total_pages_per_archive_.value(source_qstr, 0);
@@ -583,9 +585,11 @@ void Window::update_file_list_buttons() {
     remove_selected_button_->setEnabled(has_selection);
 }
 
-void Window::set_display_preset(std::string brand, std::string model) {
-    display_preset_.brand = brand;
-    display_preset_.model = model;
+void Window::set_display_preset(
+    const std::string &brand, const std::string &model
+) {
+    display_preset.brand = brand;
+    display_preset.model = model;
     QString text = model.empty() ? QString::fromStdString(brand)
                                  : QString::fromStdString(brand + " " + model);
     options_.display_preset_button->setText(text);
@@ -605,14 +609,12 @@ void Window::create_archive(const QString &source_archive_path) {
         if (options_.output_format_combo_box->currentText() == "EPUB") {
             output_filename = output_filename.replace_extension(".epub");
             auto final_output_path = output_path_ / output_filename;
-            create_epub(
-                temp_dir, std::move(final_output_path), title.generic_string()
-            );
+            create_epub(temp_dir, final_output_path, title.generic_string());
         }
         else {
             output_filename = output_filename.replace_extension(".cbz");
             auto final_output_path = output_path_ / output_filename;
-            create_cbz(temp_dir, std::move(final_output_path));
+            create_cbz(temp_dir, final_output_path);
         }
     }
     catch (const NoImagesError &) {

@@ -16,7 +16,8 @@ QHBoxLayout *create_container_layout(QWidget *container) {
     return layout;
 }
 
-QComboBox *create_combo_box(QStringList items, QString current_text) {
+QComboBox *
+create_combo_box(const QStringList &items, const QString &current_text) {
     auto combo_box = new QComboBox();
     combo_box->addItems(items);
     combo_box->setCurrentText(current_text);
@@ -32,7 +33,8 @@ QComboBox *create_combo_box_with_layout(
     QString current_text
 ) {
     layout->addWidget(widget);
-    auto combo_box = create_combo_box(items, current_text);
+    auto combo_box
+        = create_combo_box(std::move(items), std::move(current_text));
     layout->addWidget(combo_box);
     return combo_box;
 }
@@ -151,7 +153,7 @@ QWidget *create_control_with_info(
 }
 
 std::string time_to_str(int64_t millis) {
-    int seconds = static_cast<int>(millis / 1000);
+    auto seconds = static_cast<int>(millis / 1000);
 
     int h = seconds / 3600;
     int rem = seconds % 3600;

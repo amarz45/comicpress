@@ -163,7 +163,7 @@ int worker_main(int argc, char *argv[]) {
     }
 
     // A simple logger that prints to standard output.
-    auto logger = [](const std::string &msg) { std::cout << msg << std::endl; };
+    auto logger = [](const std::string &msg) { std::cout << msg << '\n'; };
 
     try {
         LoadPageReturn page_info;

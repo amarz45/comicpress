@@ -5,6 +5,7 @@
 #include <functional>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #if defined(PDF_ENABLED)
@@ -32,7 +33,7 @@ static bool is_preview_greyscale(FPDF_PAGE page, int page_number);
 #endif
 
 static vips::VImage remove_uniform_middle_columns(const vips::VImage &img);
-static bool is_greyscale(vips::VImage img, double threshold);
+static bool is_greyscale(const vips::VImage &img, double threshold);
 static bool should_image_rotate(
     double image_width,
     double image_height,
@@ -41,10 +42,11 @@ static bool should_image_rotate(
 );
 static bool
 is_uniform_column(const vips::VImage &img, int col, double threshold);
-static bool should_image_stretch_contrast(vips::VImage img, PageTask task);
+static bool
+should_image_stretch_contrast(vips::VImage img, const PageTask &task);
 
 static vips::VImage
-rotate_image(vips::VImage img, RotationDirection rotation_direction);
+rotate_image(const vips::VImage &img, RotationDirection rotation_direction);
 
 static vips::VImage scale_image(
     vips::VImage img,
@@ -207,7 +209,9 @@ LoadPageReturn load_archive_image(const PageTask &task) {
     };
 }
 
-void process_vimage(LoadPageReturn page_info, PageTask task, Logger log) {
+void process_vimage(
+    const LoadPageReturn &page_info, PageTask task, Logger log
+) {
     VipsBlob *png_blob = nullptr;
     try {
         auto base_path = task.output_dir / task.output_base_name;
@@ -496,7 +500,7 @@ bool is_preview_greyscale(FPDF_PAGE page, int page_number) {
 }
 #endif
 
-bool is_greyscale(vips::VImage img, double threshold) {
+bool is_greyscale(const vips::VImage &img, double threshold) {
     if (img.bands() < 3) {
         return true;
     }
@@ -521,9 +525,10 @@ bool should_image_rotate(
     return rotated_diff < original_diff;
 }
 
-bool should_image_stretch_contrast(vips::VImage img, PageTask task) {
+bool should_image_stretch_contrast(vips::VImage img, const PageTask &task) {
     return task.stretch_page_contrast
-        && (!task.convert_pages_to_greyscale || is_greyscale(img, 10.0));
+        && (!task.convert_pages_to_greyscale
+            || is_greyscale(std::move(img), 10.0));
 }
 
 bool is_uniform_column(const vips::VImage &img, int col, double threshold) {
@@ -532,7 +537,7 @@ bool is_uniform_column(const vips::VImage &img, int col, double threshold) {
 }
 
 vips::VImage
-rotate_image(vips::VImage img, RotationDirection rotation_direction) {
+rotate_image(const vips::VImage &img, RotationDirection rotation_direction) {
     double angle = 0.0;
     switch (rotation_direction) {
     case CLOCKWISE:

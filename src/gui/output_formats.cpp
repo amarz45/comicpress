@@ -340,7 +340,9 @@ static std::vector<fs::path> collect_cbz_images(const fs::path &dir) {
 }
 
 static void add_file_to_archive(
-    struct archive *archive, const char *filename, std::string file_contents
+    struct archive *archive,
+    const char *filename,
+    const std::string &file_contents
 ) {
     auto entry = archive_entry_new();
     archive_entry_set_pathname(entry, filename);

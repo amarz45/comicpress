@@ -433,14 +433,14 @@ void Window::on_preset_option_modified() {
         return;
     }
 
-    if (display_preset_.brand != "None") {
+    if (display_preset.brand != "None") {
         set_display_preset("None", "");
     }
 }
 
 void Window::on_display_preset_changed() {
-    auto brand = display_preset_.brand;
-    auto model = display_preset_.model;
+    auto brand = display_preset.brand;
+    auto model = display_preset.model;
     auto is_custom = brand == "None";
 
     if (is_custom) {
@@ -951,8 +951,9 @@ void Window::on_start_button_clicked() {
 }
 
 void Window::on_cancel_button_clicked() {
-    if (is_processing_cancelled_)
+    if (is_processing_cancelled_) {
         return;
+    }
 
     is_processing_cancelled_ = true;
 
@@ -1006,10 +1007,13 @@ void Window::on_cancel_button_clicked() {
     }
 }
 
-void Window::on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus) {
-    QProcess *process = qobject_cast<QProcess *>(sender());
-    if (!process)
+void Window::on_worker_finished(
+    int exit_code, QProcess::ExitStatus exit_status
+) {
+    auto process = qobject_cast<QProcess *>(sender());
+    if (!process) {
         return;
+    }
 
     running_processes_.removeAll(process);
     if (!running_tasks_.contains(process)) {
@@ -1018,11 +1022,11 @@ void Window::on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus) {
     }
     PageTask finished_task = running_tasks_.take(process);
 
-    if (exitStatus == QProcess::CrashExit || exitCode != 0) {
+    if (exit_status == QProcess::CrashExit || exit_code != 0) {
         log_output_->setVisible(true);
         log_output_->append(
             QString("Worker process failed or crashed. Exit code: %1")
-                .arg(exitCode)
+                .arg(exit_code)
         );
     }
 
@@ -1037,8 +1041,8 @@ void Window::on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus) {
             file_timers_[source_qstr].images_since_last_eta++;
         }
         if (active_progress_bars_.contains(source_qstr)) {
-            auto progressBar = active_progress_bars_.value(source_qstr);
-            progressBar->setValue(
+            auto progress_bar = active_progress_bars_.value(source_qstr);
+            progress_bar->setValue(
                 pages_processed_per_archive_.value(source_qstr)
             );
         }
@@ -1104,7 +1108,7 @@ void Window::on_worker_finished(int exitCode, QProcess::ExitStatus exitStatus) {
 }
 
 void Window::on_worker_output() {
-    QProcess *process = qobject_cast<QProcess *>(sender());
+    auto process = qobject_cast<QProcess *>(sender());
     if (process) {
         // Read line by line to prevent partial messages
         while (process->canReadLine()) {

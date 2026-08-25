@@ -17,4 +17,4 @@ LoadPageReturn load_pdf_page(const PageTask &task);
 #endif
 LoadPageReturn load_archive_image(const PageTask &task);
 
-void process_vimage(LoadPageReturn page_info, PageTask task, Logger log);
+void process_vimage(const LoadPageReturn &page_info, PageTask task, Logger log);

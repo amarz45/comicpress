@@ -21,28 +21,28 @@ class DensitySpinBox : public QSpinBox {
             return;
         }
 
-        const int stepSize = 300;
+        const int step_size = 300;
         const bool up = steps > 0;
-        const int numSteps = qAbs(steps);
+        const int num_steps = qAbs(steps);
 
-        for (int i = 0; i < numSteps; ++i) {
+        for (int i = 0; i < num_steps; ++i) {
             int current = value();
             int target;
 
             if (up) {
-                if (current % stepSize == 0) {
-                    target = current + stepSize;
+                if (current % step_size == 0) {
+                    target = current + step_size;
                 }
                 else {
-                    target = ((current / stepSize) + 1) * stepSize;
+                    target = ((current / step_size) + 1) * step_size;
                 }
             }
             else {
-                if (current % stepSize == 0) {
-                    target = current - stepSize;
+                if (current % step_size == 0) {
+                    target = current - step_size;
                 }
                 else {
-                    target = (current / stepSize) * stepSize;
+                    target = (current / step_size) * step_size;
                 }
             }
 

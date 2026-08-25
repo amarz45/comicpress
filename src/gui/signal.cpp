@@ -1,7 +1,41 @@
 #include "include/display_presets.hpp"
 #include "include/window.hpp"
+
+#include <QCheckBox>
+#include <QComboBox>
+#include <QCoreApplication>
+#include <QDoubleSpinBox>
 #include <QFile>
+#include <QFileDialog>
+#include <QFileInfo>
+#include <QGroupBox>
+#include <QLabel>
+#include <QLineEdit>
+#include <QListView>
+#include <QListWidget>
+#include <QListWidgetItem>
+#include <QProcess>
+#include <QProgressBar>
+#include <QPushButton>
+#include <QSettings>
+#include <QSpinBox>
+#include <QStandardPaths>
+#include <QTextEdit>
+#include <QTimer>
+#include <QVBoxLayout>
+#include <QWidget>
+
+#include <archive.h>
+#include <archive_entry.h>
+
+#if defined(PDF_ENABLED)
+#include <fpdfview.h>
+#endif
+
+#include <algorithm>
 #include <chrono>
+#include <iomanip>
+#include <sstream>
 
 #ifdef __linux__
 #include <sys/xattr.h>

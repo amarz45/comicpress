@@ -1,5 +1,10 @@
 CompileFlags:
+  # clangd cannot consume the compiler-built PCH. Strip the PCH flags and let it
+  # parse each translation unit on its own. Every TU is self-contained, so this
+  # also means clangd reports a missing include instead of silently resolving
+  # the symbol through pch.hpp.
   Remove: [-fpch-preprocess, -include, -include-pch, -Winvalid-pch]
-  Add: [-include, ../pch/pch.hpp]
+
 Diagnostics:
   Suppress: [module_odr_violation_function]
+  UnusedIncludes: Strict

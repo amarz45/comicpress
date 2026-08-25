@@ -1,7 +1,27 @@
 #include "include/output_formats.hpp"
+
+#include <QAnyStringView>
+#include <QBuffer>
+#include <QByteArray>
+#include <QCollator>
+#include <QDateTime>
+#include <QIODevice>
+#include <QLocale>
+#include <QString>
+#include <QUuid>
+#include <QXmlStreamWriter>
+#include <Qt>
+
+#include <archive.h>
+#include <archive_entry.h>
+#include <vips/vips8>
+
+#include <algorithm>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <sstream>
+#include <vector>
 namespace fs = std::filesystem;
 
 static std::string create_epub_container_xml() {

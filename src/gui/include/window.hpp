@@ -1,10 +1,17 @@
 #pragma once
 
+#include <QList>
 #include <QMainWindow>
+#include <QMap>
+#include <QProcess>
+#include <QQueue>
+#include <QString>
+#include <cstdint>
 #include <deque>
 #include <optional>
 #include <qtconfigmacros.h>
 #include <string>
+#include <utility>
 
 #include "../../include/task.hpp"
 

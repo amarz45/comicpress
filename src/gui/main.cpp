@@ -1,6 +1,17 @@
 #include "../worker/include/worker.hpp"
 #include "include/window.hpp"
 
+#include <QApplication>
+#include <QCoreApplication>
+#include <QIcon>
+#include <QSettings>
+
+#include <vips/vips8>
+
+#if defined(PDF_ENABLED)
+#include <fpdfview.h>
+#endif
+
 int main(int argc, char **argv) {
     if (argc > 1) {
         return worker_main(argc, argv);

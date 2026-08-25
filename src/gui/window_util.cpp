@@ -4,6 +4,9 @@
 #include <QLabel>
 #include <QSpinBox>
 #include <QWidget>
+#include <cstring>
+#include <iomanip>
+#include <sstream>
 #include <utility>
 
 QHBoxLayout *create_container_layout(QWidget *container) {

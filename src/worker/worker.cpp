@@ -7,6 +7,10 @@
 #include <stdexcept>
 #include <string>
 
+#if defined(PDF_ENABLED)
+#include <fpdfview.h>
+#endif
+
 // Helper function to parse arguments with error handling and cleanup
 template <typename T>
 T parse_arg(const std::string &arg_str, const std::string &error_msg) {

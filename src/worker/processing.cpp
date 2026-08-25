@@ -1,8 +1,15 @@
 #include <algorithm>
+#include <archive.h>
+#include <archive_entry.h>
 #include <filesystem>
 #include <functional>
 #include <stdexcept>
 #include <string>
+#include <vector>
+
+#if defined(PDF_ENABLED)
+#include <fpdfview.h>
+#endif
 
 #include "../include/task.hpp"
 #include "include/processing.hpp"

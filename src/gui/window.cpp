@@ -5,9 +5,42 @@
 #include "include/output_formats.hpp"
 #include "include/ui_constants.hpp"
 #include "include/window_util.hpp"
-#include "qboxlayout.h"
-#include "qnamespace.h"
+
+#include <QAbstractItemView>
+#include <QAction>
+#include <QBoxLayout>
+#include <QCheckBox>
+#include <QComboBox>
+#include <QCoreApplication>
+#include <QDoubleSpinBox>
+#include <QFileInfo>
+#include <QFont>
+#include <QFormLayout>
+#include <QFrame>
+#include <QGroupBox>
+#include <QLabel>
+#include <QLineEdit>
+#include <QListWidget>
+#include <QMenu>
+#include <QProcess>
+#include <QProgressBar>
+#include <QPushButton>
+#include <QScrollArea>
+#include <QSizePolicy>
+#include <QSpacerItem>
+#include <QSpinBox>
+#include <QStringList>
+#include <QStyle>
+#include <QTabWidget>
+#include <QTextEdit>
+#include <QTimer>
+#include <QWidget>
+#include <Qt>
+
+#include <vips/vips8>
+
 #include <chrono>
+#include <cmath>
 
 namespace fs = std::filesystem;
 

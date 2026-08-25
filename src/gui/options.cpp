@@ -1,7 +1,18 @@
 #include "include/options.hpp"
 #include "include/ui_constants.hpp"
 #include "include/window_util.hpp"
-#include "qcheckbox.h"
+
+#include <QCheckBox>
+#include <QComboBox>
+#include <QDoubleSpinBox>
+#include <QFormLayout>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QSizePolicy>
+#include <QSpinBox>
+#include <QWidget>
+#include <Qt>
+
 #include <thread>
 
 #if defined(PDF_ENABLED)

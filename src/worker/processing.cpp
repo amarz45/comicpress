@@ -131,7 +131,8 @@ LoadPageReturn load_archive_image(const PageTask &task) {
     );
 
     if (archive_open != ARCHIVE_OK) {
-        std::string err = archive_error_string(archive);
+        auto *archive_err = archive_error_string(archive);
+        std::string err = archive_err ? archive_err : "";
         archive_read_free(archive);
         throw std::runtime_error("LibArchive: Could not open file: " + err);
     }
@@ -163,11 +164,12 @@ LoadPageReturn load_archive_image(const PageTask &task) {
             auto bytes_read
                 = archive_read_data(archive, buffer.data(), buffer.size());
             if (bytes_read < 0) {
-                archive_read_close(archive);
+                auto *archive_err = archive_error_string(archive);
+                std::string err = archive_err ? archive_err : "";
                 archive_read_free(archive);
                 throw std::runtime_error(
                     "LibArchive: Read error for '" + task.path_in_archive
-                    + "': " + archive_error_string(archive)
+                    + "': " + err
                 );
             }
             buffer.resize(static_cast<size_t>(bytes_read));

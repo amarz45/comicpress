@@ -2,7 +2,6 @@
 #include "include/window.hpp"
 #include <QFile>
 #include <chrono>
-#include <stdexcept>
 
 #ifdef __linux__
 #include <sys/xattr.h>
@@ -64,6 +63,30 @@ static QString choose_directory(
 
     auto selected = dialog.selectedUrls();
     return selected.isEmpty() ? QString() : selected.constFirst().toLocalFile();
+}
+
+static bool create_output_dir(fs::path &output_dir) {
+    auto output_parent = output_dir.parent_path();
+    auto err_code = std::error_code{};
+    if (!output_parent.empty()) {
+        fs::create_directories(output_parent, err_code);
+        if (err_code) {
+            return false;
+        }
+    }
+
+    auto output_base_dir = output_dir;
+    auto i = 1;
+    while (!fs::create_directory(output_dir, err_code)) {
+        if (i > 1000 || (err_code && err_code != std::errc::file_exists)) {
+            return false;
+        }
+        output_dir = output_base_dir;
+        output_dir += "_" + std::to_string(i);
+        i += 1;
+    }
+
+    return true;
 }
 
 void Window::connect_signals() {
@@ -721,20 +744,13 @@ void Window::on_start_button_clicked() {
     std::ostringstream oss;
     oss << std::put_time(local_time, "%Y-%m-%d %H-%M-%S");
 
-    auto output_base_dir
+    auto output_dir
         = fs::path(effective_output_dir().toStdString()) / oss.str();
-
-    auto output_dir = output_base_dir;
-    auto i = 1;
-    while (fs::exists(output_dir)) {
-        if (i > 1000) {
-            throw std::runtime_error("Failed to create output directory.");
-        }
-        output_dir = output_dir.string() + "_" + std::to_string(i);
-        i += 1;
+    if (!create_output_dir(output_dir)) {
+        log_output->append("Failed to create output directory.");
+        log_output->setVisible(true);
+        return;
     }
-
-    fs::create_directories(output_dir);
     this->output_path = output_dir;
 
     QCoreApplication::processEvents();
@@ -942,21 +958,23 @@ void Window::on_cancel_button_clicked() {
 
     // Clean up base temp dir on cancel
     if (!this->temp_base_dir.empty()) {
-        try {
-            fs::remove_all(this->temp_base_dir);
-        }
-        catch (const std::exception &e) {
-            log_output->setVisible(true);
+        auto err_code = std::error_code{};
+        fs::remove_all(this->temp_base_dir, err_code);
+        if (err_code) {
             log_output->append(
-                QString("Error cleaning up temp directory: %1").arg(e.what())
+                QString("Warning: failed to delete temp directory '%1': %2")
+                    .arg(this->temp_base_dir, err_code.message())
             );
+            log_output->setVisible(true);
         }
         this->temp_base_dir.clear();
     }
 
-    if (fs::exists(this->output_path) && fs::is_directory(this->output_path)
-        && fs::is_empty(this->output_path)) {
-        fs::remove_all(this->output_path);
+    // Clean up empty output dir
+    auto err_code = std::error_code{};
+    if (fs::is_directory(this->output_path, err_code)
+        && fs::is_empty(this->output_path, err_code)) {
+        fs::remove(this->output_path, err_code);
     }
 }
 

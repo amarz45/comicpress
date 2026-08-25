@@ -773,9 +773,18 @@ void Window::on_start_button_clicked() {
                 auto archive = archive_read_new();
                 archive_read_support_filter_all(archive);
                 archive_read_support_format_all(archive);
-                archive_read_open_filename(
+
+                auto archive_open = archive_read_open_filename(
                     archive, source_file.string().c_str(), 10240
                 );
+                if (archive_open != ARCHIVE_OK) {
+                    log_output->append(
+                        QString("Error: failed to read archive '%1'.")
+                            .arg(source_file.string())
+                    );
+                    log_output->setVisible(true);
+                    return;
+                }
 
                 int page_count = 0;
                 struct archive_entry *entry;

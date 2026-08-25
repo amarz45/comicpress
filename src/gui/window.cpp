@@ -534,7 +534,7 @@ PageTask Window::create_task(
     }
     task.quantize_pages
         = options_.enable_image_quantization_check_box->isChecked();
-    task.bit_depth = std::pow(2, options_.bit_depth_combo_box->currentIndex());
+    task.bit_depth = 1 << options_.bit_depth_combo_box->currentIndex();
     task.dither = options_.dithering_spin_box->value();
     task.image_format
         = options_.image_format_combo_box->currentText().toStdString();

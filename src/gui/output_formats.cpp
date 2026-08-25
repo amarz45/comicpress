@@ -346,7 +346,9 @@ static void add_file_to_archive(
 ) {
     auto entry = archive_entry_new();
     archive_entry_set_pathname(entry, filename);
-    archive_entry_set_size(entry, file_contents.length());
+    archive_entry_set_size(
+        entry, static_cast<la_int64_t>(file_contents.length())
+    );
     archive_entry_set_filetype(entry, AE_IFREG);
     archive_entry_set_perm(entry, 0644);
     if (archive_write_header(archive, entry) == ARCHIVE_FATAL) {
@@ -469,7 +471,7 @@ void create_epub(
             archive,
             image_path_epub.c_str(),
             image_path_abs,
-            fs::file_size(image_path_abs)
+            static_cast<std::int64_t>(fs::file_size(image_path_abs))
         );
         archive_write_zip_set_compression_deflate(archive);
 
@@ -548,7 +550,9 @@ void create_cbz(const fs::path &image_dir, const fs::path &output_path) {
 
         auto entry = archive_entry_new();
         archive_entry_set_pathname(entry, image_path_rel.string().c_str());
-        archive_entry_set_size(entry, fs::file_size(image_path_abs));
+        archive_entry_set_size(
+            entry, static_cast<la_int64_t>(fs::file_size(image_path_abs))
+        );
         archive_entry_set_filetype(entry, AE_IFREG);
         archive_entry_set_perm(entry, 0644);
         if (archive_write_header(archive, entry) == ARCHIVE_FATAL) {

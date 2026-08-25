@@ -29,12 +29,11 @@ create_combo_box(const QStringList &items, const QString &current_text) {
 QComboBox *create_combo_box_with_layout(
     QHBoxLayout *layout,
     QWidget *widget,
-    QStringList items,
-    QString current_text
+    const QStringList &items,
+    const QString &current_text
 ) {
     layout->addWidget(widget);
-    auto combo_box
-        = create_combo_box(std::move(items), std::move(current_text));
+    auto combo_box = create_combo_box(items, current_text);
     layout->addWidget(combo_box);
     return combo_box;
 }

@@ -1,13 +1,14 @@
 #pragma once
 
+#include <cstdint>
 #include <filesystem>
 #include <string>
 #include <vips/vips8>
 
 namespace fs = std::filesystem;
 
-enum DoublePageSpreadActions { ROTATE, SPLIT, BOTH, NONE };
-enum RotationDirection { CLOCKWISE, COUNTERCLOCKWISE };
+enum DoublePageSpreadActions : std::uint8_t { ROTATE, SPLIT, BOTH, NONE };
+enum RotationDirection : std::uint8_t { CLOCKWISE, COUNTERCLOCKWISE };
 
 struct PageTask {
     fs::path source_file;

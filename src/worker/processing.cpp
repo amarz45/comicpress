@@ -26,7 +26,7 @@ static vips::VImage get_vips_img_from_pdf_page(
     int colour_mode,
     int bands,
     double ppi,
-    unsigned int render_flags
+    int render_flags
 );
 
 static bool is_preview_greyscale(FPDF_PAGE page, int page_number);
@@ -43,7 +43,7 @@ static bool should_image_rotate(
 static bool
 is_uniform_column(const vips::VImage &img, int col, double threshold);
 static bool
-should_image_stretch_contrast(vips::VImage img, const PageTask &task);
+should_image_stretch_contrast(const vips::VImage &img, const PageTask &task);
 
 static vips::VImage
 rotate_image(const vips::VImage &img, RotationDirection rotation_direction);
@@ -362,7 +362,7 @@ vips::VImage get_vips_img_from_pdf_page(
     int colour_mode,
     int bands,
     double ppi,
-    unsigned int render_flags
+    int render_flags
 ) {
     auto width_pt = FPDF_GetPageWidth(page);
     auto height_pt = FPDF_GetPageHeight(page);
@@ -525,10 +525,11 @@ bool should_image_rotate(
     return rotated_diff < original_diff;
 }
 
-bool should_image_stretch_contrast(vips::VImage img, const PageTask &task) {
+bool should_image_stretch_contrast(
+    const vips::VImage &img, const PageTask &task
+) {
     return task.stretch_page_contrast
-        && (!task.convert_pages_to_greyscale
-            || is_greyscale(std::move(img), 10.0));
+        && (!task.convert_pages_to_greyscale || is_greyscale(img, 10.0));
 }
 
 bool is_uniform_column(const vips::VImage &img, int col, double threshold) {

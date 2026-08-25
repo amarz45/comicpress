@@ -1,11 +1,12 @@
 #pragma once
 
+#include <cstdint>
 #include <map>
 #include <optional>
 #include <string>
 #include <vector>
 
-enum BitDepthIndex {
+enum BitDepthIndex : std::uint8_t {
     ONE = 0,
     TWO = 1,
     FOUR = 2,
@@ -14,8 +15,8 @@ enum BitDepthIndex {
 };
 
 struct DisplaySpec {
-    const unsigned int width;
-    const unsigned int height;
+    const int width;
+    const int height;
     const BitDepthIndex bit_depth_index;
     const bool colour;
 };

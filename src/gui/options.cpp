@@ -378,7 +378,8 @@ void add_parallel_workers_widget(QStyle *, Options *options) {
     options->workers_label = label;
 
     options->workers_spin_box = new QSpinBox();
-    auto threads = std::thread::hardware_concurrency();
+    auto threads
+        = std::max(1, static_cast<int>(std::thread::hardware_concurrency()));
     options->workers_spin_box->setRange(1, threads);
     options->workers_spin_box->setValue(threads);
     options->workers_spin_box->setSizePolicy(

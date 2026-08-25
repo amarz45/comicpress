@@ -327,15 +327,20 @@ static void add_file_to_archive(
     archive_entry_set_size(entry, file_contents.length());
     archive_entry_set_filetype(entry, AE_IFREG);
     archive_entry_set_perm(entry, 0644);
-    archive_write_header(archive, entry);
+    if (archive_write_header(archive, entry) == ARCHIVE_FATAL) {
+        throw ArchiveError();
+    }
 
     auto stream = std::istringstream(file_contents);
     char buffer[8192];
     while (stream.good()) {
         stream.read(buffer, sizeof(buffer));
-        archive_write_data(
+        auto write = archive_write_data(
             archive, buffer, static_cast<size_t>(stream.gcount())
         );
+        if (write == ARCHIVE_FATAL) {
+            throw ArchiveError();
+        }
     }
 
     archive_entry_free(entry);
@@ -352,7 +357,9 @@ static void add_file_to_archive(
     archive_entry_set_size(entry, size);
     archive_entry_set_filetype(entry, AE_IFREG);
     archive_entry_set_perm(entry, 0644);
-    archive_write_header(archive, entry);
+    if (archive_write_header(archive, entry) == ARCHIVE_FATAL) {
+        throw ArchiveError();
+    }
 
     auto stream = std::ifstream(path, std::ios::binary);
     char buffer[8192];
@@ -487,7 +494,9 @@ void create_epub(
         archive, "OEBPS/content.opf", content_opf_out.toStdString()
     );
 
-    archive_write_close(archive);
+    if (archive_write_close(archive) == ARCHIVE_FATAL) {
+        throw ArchiveError();
+    }
     archive_write_free(archive);
 }
 
@@ -520,7 +529,9 @@ void create_cbz(const fs::path &image_dir, const fs::path &output_path) {
         archive_entry_set_size(entry, fs::file_size(image_path_abs));
         archive_entry_set_filetype(entry, AE_IFREG);
         archive_entry_set_perm(entry, 0644);
-        archive_write_header(archive, entry);
+        if (archive_write_header(archive, entry) == ARCHIVE_FATAL) {
+            throw ArchiveError();
+        }
 
         auto file_stream = std::ifstream(image_path_abs, std::ios::binary);
         char buffer[8192];
@@ -534,6 +545,8 @@ void create_cbz(const fs::path &image_dir, const fs::path &output_path) {
         archive_entry_free(entry);
     }
 
-    archive_write_close(archive);
+    if (archive_write_close(archive) == ARCHIVE_FATAL) {
+        throw ArchiveError();
+    }
     archive_write_free(archive);
 }

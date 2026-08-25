@@ -600,6 +600,11 @@ void Window::create_archive(const QString &source_archive_path) {
         log_output->setVisible(true);
         return;
     }
+    catch (const ArchiveError &) {
+        log_output->append("Error: failed to create archive.");
+        log_output->setVisible(true);
+        return;
+    }
     catch (const std::exception &e) {
         log_output->append(
             QString("Error: %1").arg(QString::fromUtf8(e.what()))

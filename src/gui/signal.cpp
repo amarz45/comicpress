@@ -940,7 +940,6 @@ void Window::on_start_button_clicked() {
     start_time_ = ms;
     last_eta_time_ = ms;
     images_since_last_eta_ = 0;
-    last_progress_value_ = 0;
     elapsed_label_->setText("Elapsed: –");
     eta_label_->setText("ETA: –");
     timer_->start(1000);

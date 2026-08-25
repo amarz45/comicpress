@@ -52,7 +52,6 @@ Window::Window(QWidget *parent) : QMainWindow(parent), eta_samples_(5) {
     start_time_ = std::nullopt;
     last_eta_time_ = std::nullopt;
     images_since_last_eta_ = 0;
-    last_progress_value_ = 0.0;
     is_processing_cancelled_ = false;
     is_programmatically_changing_values_ = false;
     temp_base_dir_ = "";

@@ -182,7 +182,6 @@ class Window : public QMainWindow {
     std::optional<int64_t> start_time_;
     std::optional<int64_t> last_eta_time_;
     int images_since_last_eta_;
-    float last_progress_value_;
     BoundedDeque<std::pair<int64_t, int64_t>> eta_samples_;
 
     // Input and output
@@ -227,12 +226,9 @@ class Window : public QMainWindow {
     QMap<QString, QLabel *> file_elapsed_labels_;
     QMap<QString, QLabel *> file_eta_labels_;
     QMap<QString, FileTimer> file_timers_;
-    QMap<QString, fs::path> archive_temp_dirs_;
     int max_concurrent_workers_;
     bool is_processing_cancelled_;
     bool is_programmatically_changing_values_;
-
-    fs::path create_unique_temp_dir(const std::string &stem);
 
     // Timer
     void update_time_labels();

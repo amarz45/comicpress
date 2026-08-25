@@ -9,13 +9,6 @@
 #include <sstream>
 #include <utility>
 
-QHBoxLayout *create_container_layout(QWidget *container) {
-    auto layout = new QHBoxLayout(container);
-    layout->setContentsMargins(20, 0, 0, 0);
-    layout->setSpacing(10);
-    return layout;
-}
-
 QComboBox *
 create_combo_box(const QStringList &items, const QString &current_text) {
     auto combo_box = new QComboBox();
@@ -24,61 +17,6 @@ create_combo_box(const QStringList &items, const QString &current_text) {
     // Fix: Prevent combo box from expanding to fill width
     combo_box->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
     return combo_box;
-}
-
-QComboBox *create_combo_box_with_layout(
-    QHBoxLayout *layout,
-    QWidget *widget,
-    const QStringList &items,
-    const QString &current_text
-) {
-    layout->addWidget(widget);
-    auto combo_box = create_combo_box(items, current_text);
-    layout->addWidget(combo_box);
-    return combo_box;
-}
-
-QDoubleSpinBox *create_double_spin_box(
-    QHBoxLayout *layout,
-    QWidget *widget,
-    double lower,
-    double upper,
-    double step_size,
-    double value
-) {
-    layout->addWidget(widget);
-    auto spin_box = new QDoubleSpinBox();
-    spin_box->setRange(lower, upper);
-    spin_box->setSingleStep(step_size);
-    spin_box->setValue(value);
-    // Fix: Prevent spin box from expanding to fill width
-    spin_box->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
-    layout->addWidget(spin_box);
-    return spin_box;
-}
-
-QSpinBox *create_spin_box(int lower, int upper, int step_size, int value) {
-    auto spin_box = new QSpinBox();
-    spin_box->setRange(lower, upper);
-    spin_box->setSingleStep(step_size);
-    spin_box->setValue(value);
-    // Fix: Prevent spin box from expanding to fill width
-    spin_box->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
-    return spin_box;
-}
-
-QSpinBox *create_spin_box_with_label(
-    QHBoxLayout *layout,
-    QWidget *widget,
-    int lower,
-    int upper,
-    int step_size,
-    int value
-) {
-    layout->addWidget(widget);
-    auto spin_box = create_spin_box(lower, upper, step_size, value);
-    layout->addWidget(spin_box);
-    return spin_box;
 }
 
 QWidget *create_widget_with_info(

@@ -742,14 +742,7 @@ void Window::on_start_button_clicked() {
     task_queue_.clear();
     running_processes_.clear();
     running_tasks_.clear();
-    archive_task_counts_.clear();
-    total_pages_per_archive_.clear();
-    pages_processed_per_archive_.clear();
-    active_file_widgets_.clear();
-    active_progress_bars_.clear();
-    file_elapsed_labels_.clear();
-    file_eta_labels_.clear();
-    file_timers_.clear();
+    jobs_.clear();
     is_processing_cancelled_ = false;
     pages_processed_ = 0;
     total_pages_ = 0;
@@ -817,10 +810,10 @@ void Window::on_start_button_clicked() {
                 archive_read_close(archive);
                 archive_read_free(archive);
 
-                archive_task_counts_[file_qstr] = page_count;
-                total_pages_per_archive_[file_qstr] = page_count;
+                jobs_[file_qstr].tasks_remaining = page_count;
+                jobs_[file_qstr].pages_total = page_count;
                 total_pages_ += page_count;
-                pages_processed_per_archive_[file_qstr] = 0;
+                jobs_[file_qstr].pages_processed = 0;
                 if (page_count == 0) {
                     log_output_->setVisible(true);
                     log_output_->append(
@@ -884,10 +877,10 @@ void Window::on_start_button_clicked() {
                 auto temp_archive_dir
                     = fs::path(temp_base_dir_) / source_file.stem();
                 fs::create_directories(temp_archive_dir);
-                archive_task_counts_[file_qstr] = page_count;
-                total_pages_per_archive_[file_qstr] = page_count;
+                jobs_[file_qstr].tasks_remaining = page_count;
+                jobs_[file_qstr].pages_total = page_count;
                 total_pages_ += page_count;
-                pages_processed_per_archive_[file_qstr] = 0;
+                jobs_[file_qstr].pages_processed = 0;
 
                 for (int i = 0; i < page_count; i += 1) {
                     auto task = create_task(source_file, temp_archive_dir, i);
@@ -964,16 +957,12 @@ void Window::on_cancel_button_clicked() {
     running_processes_.clear();
     running_tasks_.clear();
 
-    for (QWidget *widget : active_file_widgets_.values()) {
+    for (auto &archive_job : jobs_) {
+        auto *widget = archive_job.widget;
         progress_bars_layout_->removeWidget(widget);
         delete widget;
     }
-    active_file_widgets_.clear();
-    active_progress_bars_.clear();
-    file_elapsed_labels_.clear();
-    file_eta_labels_.clear();
-    file_timers_.clear();
-    pages_processed_per_archive_.clear();
+    jobs_.clear();
     progress_bars_group_->setVisible(false);
 
     progress_bar_->setVisible(false);
@@ -1034,38 +1023,25 @@ void Window::on_worker_finished(
     QString source_qstr
         = QString::fromStdString(finished_task.source_file.string());
 
-    if (pages_processed_per_archive_.contains(source_qstr)) {
-        pages_processed_per_archive_[source_qstr]++;
-        if (file_timers_.contains(source_qstr)) {
-            file_timers_[source_qstr].images_since_last_eta++;
-        }
-        if (active_progress_bars_.contains(source_qstr)) {
-            auto progress_bar = active_progress_bars_.value(source_qstr);
-            progress_bar->setValue(
-                pages_processed_per_archive_.value(source_qstr)
-            );
-        }
-    }
+    if (jobs_.contains(source_qstr)) {
+        auto &job = jobs_[source_qstr];
+        job.pages_processed += 1;
+        job.timer.images_since_last_eta += 1;
+        auto progress_bar = job.progress_bar;
+        progress_bar->setValue(job.pages_processed);
 
-    if (archive_task_counts_.contains(source_qstr)) {
-        archive_task_counts_[source_qstr] -= 1;
-        if (archive_task_counts_[source_qstr] == 0) {
-            archive_task_counts_.remove(source_qstr);
+        job.tasks_remaining -= 1;
+        if (job.tasks_remaining == 0) {
             create_archive(source_qstr);
 
-            if (active_file_widgets_.contains(source_qstr)) {
-                auto widget = active_file_widgets_.take(source_qstr);
-                progress_bars_layout_->removeWidget(widget);
-                delete widget;
-                active_progress_bars_.remove(source_qstr);
-                file_elapsed_labels_.remove(source_qstr);
-                file_eta_labels_.remove(source_qstr);
-                file_timers_.remove(source_qstr);
-                total_pages_per_archive_.remove(source_qstr);
+            auto widget = job.widget;
+            progress_bars_layout_->removeWidget(widget);
+            delete widget;
 
-                if (active_file_widgets_.isEmpty()) {
-                    progress_bars_group_->setVisible(false);
-                }
+            jobs_.remove(source_qstr);
+
+            if (jobs_.isEmpty()) {
+                progress_bars_group_->setVisible(false);
             }
         }
     }

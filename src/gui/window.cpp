@@ -347,7 +347,8 @@ void Window::start_next_task() {
     PageTask task = task_queue_.dequeue();
     QString source_qstr = QString::fromStdString(task.source_file.string());
 
-    if (!active_progress_bars_.contains(source_qstr)) {
+    auto &job = jobs_[source_qstr];
+    if (job.progress_bar == nullptr) {
         progress_bars_group_->setVisible(true);
 
         auto widget = new QWidget();
@@ -358,7 +359,7 @@ void Window::start_next_task() {
         auto filename = QFileInfo(source_qstr).completeBaseName() + ".cbz";
         auto label = new QLabel("<code>" + filename + "</code>");
         auto progress_bar = new QProgressBar();
-        progress_bar->setMaximum(archive_task_counts_.value(source_qstr));
+        progress_bar->setMaximum(job.tasks_remaining);
         progress_bar->setValue(0);
         progress_bar->setTextVisible(true);
         progress_bar->setFormat("%p % (%v / %m pages)");
@@ -378,10 +379,10 @@ void Window::start_next_task() {
         vbox->addLayout(time_layout);
 
         progress_bars_layout_->addWidget(widget);
-        active_file_widgets_.insert(source_qstr, widget);
-        active_progress_bars_.insert(source_qstr, progress_bar);
-        file_elapsed_labels_.insert(source_qstr, elapsed_label);
-        file_eta_labels_.insert(source_qstr, eta_label);
+        job.widget = widget;
+        job.progress_bar = progress_bar;
+        job.elapsed_label = elapsed_label;
+        job.eta_label = eta_label;
 
         auto now = std::chrono::system_clock::now();
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -392,7 +393,7 @@ void Window::start_next_task() {
         file_timer.start_time = ms;
         file_timer.last_eta_time = ms;
         file_timer.images_since_last_eta = 0;
-        file_timers_.insert(source_qstr, file_timer);
+        job.timer = file_timer;
     }
 
     auto process = new QProcess(this);
@@ -475,7 +476,7 @@ PageTask Window::create_task(
     task.output_dir = std::move(output_dir);
     task.page_number = page_num;
 
-    auto total_pages = total_pages_per_archive_.value(source_qstr, 0);
+    auto total_pages = jobs_.value(source_qstr).pages_total;
     auto padding_width
         = total_pages > 0
             ? static_cast<int>(std::floor(std::log10(total_pages))) + 1

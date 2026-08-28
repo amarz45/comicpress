@@ -130,6 +130,17 @@ struct DisplayPreset {
     std::string model;
 };
 
+struct ArchiveJob {
+    int tasks_remaining = 0;
+    int pages_total = 0;
+    int pages_processed = 0;
+    QWidget *widget = nullptr;
+    QProgressBar *progress_bar = nullptr;
+    QLabel *elapsed_label = nullptr;
+    QLabel *eta_label = nullptr;
+    FileTimer timer;
+};
+
 class Window : public QMainWindow {
     Q_OBJECT
 
@@ -218,14 +229,7 @@ class Window : public QMainWindow {
     QQueue<PageTask> task_queue_;
     QList<QProcess *> running_processes_;
     QMap<QProcess *, PageTask> running_tasks_;
-    QMap<QString, int> archive_task_counts_;
-    QMap<QString, int> total_pages_per_archive_;
-    QMap<QString, int> pages_processed_per_archive_;
-    QMap<QString, QWidget *> active_file_widgets_;
-    QMap<QString, QProgressBar *> active_progress_bars_;
-    QMap<QString, QLabel *> file_elapsed_labels_;
-    QMap<QString, QLabel *> file_eta_labels_;
-    QMap<QString, FileTimer> file_timers_;
+    QMap<QString, ArchiveJob> jobs_;
     int max_concurrent_workers_;
     bool is_processing_cancelled_;
     bool is_programmatically_changing_values_;

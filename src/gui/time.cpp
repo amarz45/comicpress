@@ -4,7 +4,7 @@
 void Window::update_time_labels() {
     update_overall_time_labels();
 
-    for (const QString &file : active_progress_bars_.keys()) {
+    for (const auto &file : jobs_.keys()) {
         update_file_time_labels(file);
     }
 }
@@ -60,11 +60,12 @@ void Window::update_overall_time_labels() {
 }
 
 void Window::update_file_time_labels(const QString &file) {
-    if (!file_timers_.contains(file)) {
+    if (!jobs_.contains(file)) {
         return;
     }
 
-    auto &file_timer = file_timers_[file];
+    auto &job = jobs_[file];
+    auto &file_timer = job.timer;
 
     if (!file_timer.start_time.has_value()) {
         return;
@@ -80,14 +81,10 @@ void Window::update_file_time_labels(const QString &file) {
 
     auto elapsed = ms - start_time;
     auto elapsed_str = "Elapsed: " + time_to_str(elapsed);
-    if (file_elapsed_labels_.contains(file)) {
-        file_elapsed_labels_[file]->setText(
-            QString::fromStdString(elapsed_str)
-        );
-    }
+    job.elapsed_label->setText(QString::fromStdString(elapsed_str));
 
-    auto value = pages_processed_per_archive_.value(file, 0);
-    auto total = total_pages_per_archive_.value(file, 0);
+    auto value = job.pages_processed;
+    auto total = job.pages_total;
 
     if (file_timer.last_eta_time.has_value()
         && ms - file_timer.last_eta_time.value() >= 1000
@@ -116,11 +113,7 @@ void Window::update_file_time_labels(const QString &file) {
             auto eta_str
                 = "ETA: " + time_to_str(static_cast<int64_t>(remaining));
 
-            if (file_eta_labels_.contains(file)) {
-                file_eta_labels_[file]->setText(
-                    QString::fromStdString(eta_str)
-                );
-            }
+            job.eta_label->setText(QString::fromStdString(eta_str));
         }
     }
 }

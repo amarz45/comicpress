@@ -359,7 +359,7 @@ void Window::start_next_task() {
         auto filename = QFileInfo(source_qstr).completeBaseName() + ".cbz";
         auto label = new QLabel("<code>" + filename + "</code>");
         auto progress_bar = new QProgressBar();
-        progress_bar->setMaximum(job.tasks_remaining);
+        progress_bar->setMaximum(job.pages_total);
         progress_bar->setValue(0);
         progress_bar->setTextVisible(true);
         progress_bar->setFormat("%p % (%v / %m pages)");

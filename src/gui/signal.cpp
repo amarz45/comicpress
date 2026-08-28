@@ -810,7 +810,6 @@ void Window::on_start_button_clicked() {
                 archive_read_close(archive);
                 archive_read_free(archive);
 
-                jobs_[file_qstr].tasks_remaining = page_count;
                 jobs_[file_qstr].pages_total = page_count;
                 total_pages_ += page_count;
                 jobs_[file_qstr].pages_processed = 0;
@@ -877,7 +876,6 @@ void Window::on_start_button_clicked() {
                 auto temp_archive_dir
                     = fs::path(temp_base_dir_) / source_file.stem();
                 fs::create_directories(temp_archive_dir);
-                jobs_[file_qstr].tasks_remaining = page_count;
                 jobs_[file_qstr].pages_total = page_count;
                 total_pages_ += page_count;
                 jobs_[file_qstr].pages_processed = 0;
@@ -1030,8 +1028,7 @@ void Window::on_worker_finished(
         auto progress_bar = job.progress_bar;
         progress_bar->setValue(job.pages_processed);
 
-        job.tasks_remaining -= 1;
-        if (job.tasks_remaining == 0) {
+        if (job.pages_processed == job.pages_total) {
             create_archive(source_qstr);
 
             auto widget = job.widget;

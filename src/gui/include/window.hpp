@@ -131,7 +131,6 @@ struct DisplayPreset {
 };
 
 struct ArchiveJob {
-    int tasks_remaining = 0;
     int pages_total = 0;
     int pages_processed = 0;
     QWidget *widget = nullptr;

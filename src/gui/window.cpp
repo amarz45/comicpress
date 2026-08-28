@@ -45,13 +45,13 @@
 
 namespace fs = std::filesystem;
 
-Window::Window(QWidget *parent) : QMainWindow(parent), eta_samples_(5) {
+Window::Window(QWidget *parent) : QMainWindow(parent) {
     // Timer
     timer_ = new QTimer(this);
     connect(timer_, &QTimer::timeout, this, &Window::update_time_labels);
-    start_time_ = std::nullopt;
-    last_eta_time_ = std::nullopt;
-    images_since_last_eta_ = 0;
+    overall_timer_.start_time = std::nullopt;
+    overall_timer_.last_eta_time = std::nullopt;
+    overall_timer_.images_since_last_eta = 0;
     is_processing_cancelled_ = false;
     is_programmatically_changing_values_ = false;
     temp_base_dir_ = "";
@@ -389,7 +389,7 @@ void Window::start_next_task() {
                       now.time_since_epoch()
         )
                       .count();
-        FileTimer file_timer;
+        ProgressTimer file_timer;
         file_timer.start_time = ms;
         file_timer.last_eta_time = ms;
         file_timer.images_since_last_eta = 0;
@@ -462,7 +462,7 @@ void Window::handle_log_message(const QString &message) {
 
 void Window::handle_task_finished() {
     pages_processed_ += 1;
-    images_since_last_eta_ += 1;
+    overall_timer_.images_since_last_eta += 1;
     progress_bar_->setValue(pages_processed_);
 }
 

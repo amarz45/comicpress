@@ -930,9 +930,9 @@ void Window::on_start_button_clicked() {
                   now.time_since_epoch()
     )
                   .count();
-    start_time_ = ms;
-    last_eta_time_ = ms;
-    images_since_last_eta_ = 0;
+    overall_timer_.start_time = ms;
+    overall_timer_.last_eta_time = ms;
+    overall_timer_.images_since_last_eta = 0;
     elapsed_label_->setText("Elapsed: –");
     eta_label_->setText("ETA: –");
     timer_->start(1000);

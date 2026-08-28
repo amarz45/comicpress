@@ -115,13 +115,13 @@ struct Options {
     QComboBox *rotation_direction_combo_box;
 };
 
-struct FileTimer {
+struct ProgressTimer {
     std::optional<int64_t> start_time;
     std::optional<int64_t> last_eta_time;
     int images_since_last_eta = 0;
     BoundedDeque<std::pair<int64_t, int64_t>> eta_samples;
 
-    FileTimer() : eta_samples(5) {
+    ProgressTimer() : eta_samples(5) {
     }
 };
 
@@ -138,7 +138,7 @@ struct ArchiveJob {
     QProgressBar *progress_bar = nullptr;
     QLabel *elapsed_label = nullptr;
     QLabel *eta_label = nullptr;
-    FileTimer timer;
+    ProgressTimer timer;
 };
 
 class Window : public QMainWindow {
@@ -190,10 +190,7 @@ class Window : public QMainWindow {
 
     // Timer
     QTimer *timer_;
-    std::optional<int64_t> start_time_;
-    std::optional<int64_t> last_eta_time_;
-    int images_since_last_eta_;
-    BoundedDeque<std::pair<int64_t, int64_t>> eta_samples_;
+    ProgressTimer overall_timer_;
 
     // Input and output
     QListWidget *file_list_;

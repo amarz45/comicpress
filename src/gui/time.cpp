@@ -1,6 +1,14 @@
 #include "include/window.hpp"
 #include "include/window_util.hpp"
 
+static void update_progress_labels(
+    ProgressTimer &file_timer,
+    int pages_processed,
+    int pages_total,
+    QLabel *elapsed_label,
+    QLabel *eta_label
+);
+
 void Window::update_time_labels() {
     update_overall_time_labels();
 
@@ -10,67 +18,39 @@ void Window::update_time_labels() {
 }
 
 void Window::update_overall_time_labels() {
-    if (!start_time_.has_value()) {
-        return;
-    }
-
-    auto start_time = start_time_.value();
-
-    auto now = std::chrono::system_clock::now();
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                  now.time_since_epoch()
-    )
-                  .count();
-
-    auto elapsed = ms - start_time;
-    auto elapsed_str = "Elapsed: " + time_to_str(elapsed);
-    elapsed_label_->setText(QString::fromStdString(elapsed_str));
-
-    auto value = pages_processed_;
-
-    if (last_eta_time_.has_value() && ms - last_eta_time_.value() >= 1000
-        && images_since_last_eta_ > 0) {
-        auto images = images_since_last_eta_;
-        auto interval = ms - last_eta_time_.value();
-
-        eta_samples_.push_front({images, interval});
-
-        last_eta_time_ = ms;
-        images_since_last_eta_ = 0;
-    }
-
-    if (!eta_samples_.dq.empty()) {
-        int64_t images = 0;
-        int64_t interval = 0;
-
-        for (const auto &[i, d] : eta_samples_.dq) {
-            images += i;
-            interval += d;
-        }
-
-        if (images > 0) {
-            auto speed
-                = static_cast<double>(images) / static_cast<double>(interval);
-            auto remaining = static_cast<double>(total_pages_ - value) / speed;
-            auto eta_str
-                = "ETA: " + time_to_str(static_cast<int64_t>(remaining));
-            eta_label_->setText(QString::fromStdString(eta_str));
-        }
-    }
+    update_progress_labels(
+        overall_timer_,
+        pages_processed_,
+        total_pages_,
+        elapsed_label_,
+        eta_label_
+    );
 }
 
 void Window::update_file_time_labels(const QString &file) {
     if (!jobs_.contains(file)) {
         return;
     }
-
     auto &job = jobs_[file];
-    auto &file_timer = job.timer;
+    update_progress_labels(
+        job.timer,
+        job.pages_processed,
+        job.pages_total,
+        job.elapsed_label,
+        job.eta_label
+    );
+}
 
+static void update_progress_labels(
+    ProgressTimer &file_timer,
+    int pages_processed,
+    int pages_total,
+    QLabel *elapsed_label,
+    QLabel *eta_label
+) {
     if (!file_timer.start_time.has_value()) {
         return;
     }
-
     auto start_time = file_timer.start_time.value();
 
     auto now = std::chrono::system_clock::now();
@@ -81,10 +61,7 @@ void Window::update_file_time_labels(const QString &file) {
 
     auto elapsed = ms - start_time;
     auto elapsed_str = "Elapsed: " + time_to_str(elapsed);
-    job.elapsed_label->setText(QString::fromStdString(elapsed_str));
-
-    auto value = job.pages_processed;
-    auto total = job.pages_total;
+    elapsed_label->setText(QString::fromStdString(elapsed_str));
 
     if (file_timer.last_eta_time.has_value()
         && ms - file_timer.last_eta_time.value() >= 1000
@@ -109,11 +86,12 @@ void Window::update_file_time_labels(const QString &file) {
         if (images > 0) {
             auto speed
                 = static_cast<double>(images) / static_cast<double>(interval);
-            auto remaining = static_cast<double>(total - value) / speed;
+            auto remaining
+                = static_cast<double>(pages_total - pages_processed) / speed;
             auto eta_str
                 = "ETA: " + time_to_str(static_cast<int64_t>(remaining));
 
-            job.eta_label->setText(QString::fromStdString(eta_str));
+            eta_label->setText(QString::fromStdString(eta_str));
         }
     }
 }

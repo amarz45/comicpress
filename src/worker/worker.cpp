@@ -135,15 +135,15 @@ int worker_main(int argc, char *argv[]) {
         task.dither
             = parse_arg<double>(args.at("-dither"), "Invalid dither value");
 
-        task.image_format = args.at("-image_format");
-        task.is_lossy
-            = parse_arg<int>(args.at("-is_lossy"), "Invalid is lossy") != 0;
-        task.quality_type_is_distance
-            = parse_arg<int>(
-                  args.at("-quality_type_is_distance"),
-                  "Invalid quality type is distance"
-              )
-           != 0;
+        task.image_format = static_cast<ImageFormat>(
+            parse_arg<int>(args.at("-image_format"), "Invalid image format")
+        );
+        task.compression_type = (CompressionType)parse_arg<int>(
+            args.at("-compression_type"), "Invalid compression type"
+        );
+        task.quality_type = (QualityType)parse_arg<int>(
+            args.at("-quality_type"), "Invalid quality type"
+        );
 
         task.quality
             = parse_arg<double>(args.at("-quality"), "Invalid quality value");

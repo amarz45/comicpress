@@ -220,8 +220,8 @@ void process_vimage(
 
         bool rotate_option;
         switch (task.double_page_spread_action) {
-        case ROTATE:
-        case BOTH:
+        case DoublePageSpreadActions::ROTATE:
+        case DoublePageSpreadActions::BOTH:
             rotate_option = true;
             break;
         default:
@@ -282,7 +282,7 @@ void process_vimage(
             img = stretch_image_contrast(img);
         }
 
-        if (task.image_format == "PNG") {
+        if (task.image_format == ImageFormat::PNG) {
             // When `task.quantize_pages` is true, the image has already been
             // quantized, so re-quantizing here is a no-op.
             auto base_options = task.quantize_pages ? make_palette_options()
@@ -298,48 +298,57 @@ void process_vimage(
         }
 
         auto options = vips::VImage::option();
-        if (task.image_format == "AVIF") {
+        switch (task.image_format) {
+        case ImageFormat::AVIF: {
             auto output_path = base_path.string() + ".avif";
             options
                 = options->set("compression", VIPS_FOREIGN_HEIF_COMPRESSION_AV1)
                       ->set("effort", task.compression_effort)
                       ->set("subsample_mode", VIPS_FOREIGN_SUBSAMPLE_ON);
-            if (task.is_lossy) {
+            if (task.compression_type == CompressionType::LOSSY) {
                 options = options->set("Q", task.quality);
             }
             else {
                 options = options->set("lossless", true);
             }
             img.heifsave(output_path.c_str(), options);
+            break;
         }
-        else if (task.image_format == "JPEG") {
+        case ImageFormat::JPEG: {
             auto output_path = base_path.string() + ".jpg";
             img.jpegsave(output_path.c_str(), options->set("Q", task.quality));
+            break;
         }
-        else if (task.image_format == "JPEG XL") {
+        case ImageFormat::JPEG_XL: {
             auto output_path = base_path.string() + ".jxl";
             options = options->set("effort", task.compression_effort);
-            if (!task.is_lossy) {
+            if (task.compression_type == CompressionType::LOSSLESS) {
                 options = options->set("distance", 0.0);
             }
-            else if (task.quality_type_is_distance) {
+            else if (task.quality_type == QualityType::DISTANCE) {
                 options = options->set("distance", task.quality);
             }
             else {
                 options = options->set("Q", task.quality);
             }
             img.jxlsave(output_path.c_str(), options);
+            break;
         }
-        else if (task.image_format == "WebP") {
+        case ImageFormat::WEBP: {
             auto output_path = base_path.string() + ".webp";
             options = options->set("effort", task.compression_effort);
-            if (task.is_lossy) {
+            if (task.compression_type == CompressionType::LOSSY) {
                 options = options->set("Q", task.quality);
             }
             else {
                 options = options->set("lossless", true);
             }
             img.webpsave(output_path.c_str(), options);
+            break;
+        }
+        case ImageFormat::PNG:
+            // Handled above, before the shared option object is built.
+            break;
         }
 
         if (png_blob != nullptr) {
@@ -541,10 +550,10 @@ vips::VImage
 rotate_image(const vips::VImage &img, RotationDirection rotation_direction) {
     double angle = 0.0;
     switch (rotation_direction) {
-    case CLOCKWISE:
+    case RotationDirection::CLOCKWISE:
         angle = 90.0;
         break;
-    case COUNTERCLOCKWISE:
+    case RotationDirection::COUNTERCLOCKWISE:
         angle = -90.0;
         break;
     }

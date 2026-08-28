@@ -7,15 +7,18 @@
 
 namespace fs = std::filesystem;
 
-enum DoublePageSpreadActions : std::uint8_t { ROTATE, SPLIT, BOTH, NONE };
-enum RotationDirection : std::uint8_t { CLOCKWISE, COUNTERCLOCKWISE };
+enum class DoublePageSpreadActions : std::uint8_t { ROTATE, SPLIT, BOTH, NONE };
+enum class RotationDirection : std::uint8_t { CLOCKWISE, COUNTERCLOCKWISE };
+enum class ImageFormat : std::uint8_t { AVIF, JPEG, JPEG_XL, PNG, WEBP };
+enum class CompressionType : std::uint8_t { LOSSLESS, LOSSY };
+enum class QualityType : std::uint8_t { QUALITY, DISTANCE };
 
 struct PageTask {
     fs::path source_file;
     fs::path output_dir;
     std::string output_base_name;
     std::string path_in_archive;
-    std::string image_format;
+    ImageFormat image_format;
     double dither;
     double quality;
     int page_number = -1;
@@ -35,6 +38,6 @@ struct PageTask {
     bool linear_light_resampling;
     bool scale_pages;
     bool quantize_pages;
-    bool is_lossy;
-    bool quality_type_is_distance;
+    CompressionType compression_type;
+    QualityType quality_type;
 };

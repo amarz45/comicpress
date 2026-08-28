@@ -392,14 +392,25 @@ void Window::on_output_format_combo_box_changed(const QString &text) {
         return;
     }
 
-    // EPUB does not support the AVIF or JPEG XL image formats.
-    auto hidden = text == "EPUB";
-    auto image_format = image_format_combo->currentText();
-    if (hidden && (image_format == "AVIF" || image_format == "JPEG XL")) {
-        image_format_combo->setCurrentText("PNG");
+    static constexpr ImageFormat EPUB_UNSUPPORTED[]
+        = {ImageFormat::AVIF, ImageFormat::JPEG_XL};
+
+    auto is_epub = text == "EPUB";
+    auto image_format = current_image_format();
+    if (is_epub && std::ranges::contains(EPUB_UNSUPPORTED, image_format)) {
+        image_format_combo->setCurrentIndex(
+            image_format_combo->findData(QVariant::fromValue(ImageFormat::PNG))
+        );
     }
-    view->setRowHidden(0, hidden); // AVIF
-    view->setRowHidden(2, hidden); // JPEG XL
+    for (auto format : EPUB_UNSUPPORTED) {
+        view->setRowHidden(
+            image_format_combo->findData(QVariant::fromValue(format)), is_epub
+        );
+    }
+}
+
+ImageFormat Window::current_image_format() const {
+    return options_.image_format_combo_box->currentData().value<ImageFormat>();
 }
 
 #if defined(PDF_ENABLED)
@@ -513,106 +524,65 @@ void Window::on_enable_image_scaling_changed(int state) {
 void Window::on_enable_image_quantization_changed(int state) {
     bool is_checked = state == Qt::Checked;
     options_.quantization_options_container->setVisible(is_checked);
+    auto combo = options_.image_compression_type_combo_box;
     if (is_checked) {
-        options_.image_compression_type_combo_box->setCurrentText("Lossless");
+        combo->setCurrentIndex(
+            combo->findData(QVariant::fromValue(CompressionType::LOSSLESS))
+        );
     }
     else if (!compression_type_changed_) {
-        options_.image_compression_type_combo_box->setCurrentText("Lossy");
+        combo->setCurrentIndex(
+            combo->findData(QVariant::fromValue(CompressionType::LOSSY))
+        );
     }
 }
 
 void Window::on_image_format_changed() {
     options_.image_format_options_container->setVisible(true);
-    auto img_format = options_.image_format_combo_box->currentText();
 
-    auto compression_min = 0;
-    auto compression_max = 9;
-    auto compression_effort = 0;
-    QWidget *quality_label = options_.image_quality_label_original;
-    auto jxl_quality_label_visible = false;
-    std::string quality_type = "Quality";
-    double distance = 0.0;
-    auto quality = 0;
-    auto compression_type_visible = false;
-    auto compression_effort_visible = true;
-
-    if (img_format == "AVIF") {
-        compression_effort = avif_compression_effort_;
-        quality = avif_quality_;
-        compression_type_visible = true;
-    }
-    else if (img_format == "JPEG") {
-        quality = jpeg_quality_;
-        compression_effort_visible = false;
-    }
-    else if (img_format == "JPEG XL") {
-        compression_min = 1;
-        compression_effort = jpeg_xl_compression_effort_;
-        quality_label = options_.image_quality_label_jpeg_xl;
-        jxl_quality_label_visible = true;
-        quality_type
-            = options_.image_quality_label_jpeg_xl->currentText().toStdString();
-        distance = jpeg_xl_distance_;
-        quality = jpeg_xl_quality_;
-        compression_type_visible = true;
-    }
-    else if (img_format == "PNG") {
-        compression_effort = png_compression_effort_;
-    }
-    else if (img_format == "WebP") {
-        compression_max = 6;
-        compression_effort = webp_compression_effort_;
-        quality = webp_quality_;
-        compression_type_visible = true;
-    }
+    auto img_format = current_image_format();
+    const auto &settings = format_settings_.at(img_format);
+    auto is_jpeg_xl = img_format == ImageFormat::JPEG_XL;
 
     // Important: This should be before the others.
     on_jpeg_xl_quality_type_changed();
 
     options_.image_compression_spin_box->setRange(
-        compression_min, compression_max
+        settings.compression_effort_min, settings.compression_effort_max
     );
-    options_.image_compression_spin_box->setValue(compression_effort);
-    options_.image_quality_label = quality_label;
-    options_.image_quality_label_original->setVisible(
-        !jxl_quality_label_visible
+    options_.image_compression_spin_box->setValue(settings.compression_effort);
+    options_.image_quality_label
+        = is_jpeg_xl
+            ? static_cast<QWidget *>(options_.image_quality_label_jpeg_xl)
+            : options_.image_quality_label_original;
+    options_.image_quality_label_original->setVisible(!is_jpeg_xl);
+    options_.image_quality_label_jpeg_xl->setVisible(is_jpeg_xl);
+
+    options_.image_quality_spin_box->setValue(
+        jpeg_xl_distance_selected() ? jpeg_xl_distance_ : settings.quality
     );
-    options_.image_quality_label_jpeg_xl->setVisible(jxl_quality_label_visible);
 
-    if (quality_type == "Quality") {
-        options_.image_quality_spin_box->setValue(quality);
-    }
-    else {
-        options_.image_quality_spin_box->setValue(distance);
-    }
-
-    options_.image_compression_type_label->setVisible(compression_type_visible);
+    options_.image_compression_type_label->setVisible(
+        settings.has_compression_type
+    );
     options_.image_compression_type_combo_box->setVisible(
-        compression_type_visible
+        settings.has_compression_type
     );
     options_.image_compression_type_tooltip->setVisible(
-        compression_type_visible
+        settings.has_compression_type
     );
-    options_.image_compression_label->setVisible(compression_effort_visible);
-    options_.image_compression_spin_box->setVisible(compression_effort_visible);
+    options_.image_compression_label->setVisible(
+        settings.has_compression_effort
+    );
+    options_.image_compression_spin_box->setVisible(
+        settings.has_compression_effort
+    );
 
     on_image_compression_type_changed(false);
 }
 
 void Window::on_image_compression_changed(int state) {
-    auto img_format = options_.image_format_combo_box->currentText();
-    if (img_format == "AVIF") {
-        avif_compression_effort_ = state;
-    }
-    else if (img_format == "JPEG XL") {
-        jpeg_xl_compression_effort_ = state;
-    }
-    else if (img_format == "PNG") {
-        png_compression_effort_ = state;
-    }
-    else if (img_format == "WebP") {
-        webp_compression_effort_ = state;
-    }
+    format_settings_[current_image_format()].compression_effort = state;
 }
 
 void Window::on_image_compression_type_changed_explicit() {
@@ -620,14 +590,16 @@ void Window::on_image_compression_type_changed_explicit() {
 }
 
 void Window::on_image_compression_type_changed(bool is_explicit) {
-    auto img_format = options_.image_format_combo_box->currentText();
+    auto img_format = current_image_format();
     auto compression_type
-        = options_.image_compression_type_combo_box->currentText();
-    auto image_quality_visible
-        = img_format != "PNG"
-       && (img_format == "JPEG" || compression_type == "Lossy");
+        = options_.image_compression_type_combo_box->currentData()
+              .value<CompressionType>();
+    auto is_lossy = compression_type == CompressionType::LOSSY;
+
+    auto image_quality_visible = img_format != ImageFormat::PNG
+                              && (img_format == ImageFormat::JPEG || is_lossy);
     auto jpeg_xl_quality_tooltip_visible
-        = img_format == "JPEG XL" && compression_type == "Lossy";
+        = img_format == ImageFormat::JPEG_XL && is_lossy;
 
     options_.image_quality_label->setVisible(image_quality_visible);
     options_.image_quality_spin_box->setVisible(image_quality_visible);
@@ -641,55 +613,34 @@ void Window::on_image_compression_type_changed(bool is_explicit) {
 }
 
 void Window::on_image_quality_changed(double value) {
-    auto img_format = options_.image_format_combo_box->currentText();
-    if (img_format == "AVIF") {
-        avif_quality_ = static_cast<int>(value);
+    if (current_image_format() == ImageFormat::JPEG_XL
+        && jpeg_xl_distance_selected()) {
+        jpeg_xl_distance_ = value;
+        return;
     }
-    else if (img_format == "JPEG") {
-        jpeg_quality_ = static_cast<int>(value);
-    }
-    else if (img_format == "JPEG XL") {
-        if (options_.image_quality_label_jpeg_xl->currentText() == "Distance") {
-            jpeg_xl_distance_ = value;
-        }
-        else {
-            jpeg_xl_quality_ = static_cast<int>(value);
-        }
-    }
-    else if (img_format == "WebP") {
-        webp_quality_ = static_cast<int>(value);
-    }
+    format_settings_[current_image_format()].quality = static_cast<int>(value);
+}
+
+bool Window::jpeg_xl_distance_selected() const {
+    return options_.image_quality_label_jpeg_xl->currentData()
+               .value<QualityType>()
+        == QualityType::DISTANCE;
 }
 
 void Window::on_jpeg_xl_quality_type_changed() {
-    auto quality_type = options_.image_quality_label_jpeg_xl->currentText();
-
-    auto min = 0.0;
-    auto max = 100.0;
-    auto step = 1.0;
-    auto decimals = 0;
-
-    auto img_format = options_.image_format_combo_box->currentText();
-    if (img_format != "JPEG XL") {
-        options_.image_quality_spin_box->setRange(min, max);
-        options_.image_quality_spin_box->setSingleStep(step);
-        options_.image_quality_spin_box->setDecimals(decimals);
-        return;
+    auto *spin_box = options_.image_quality_spin_box;
+    if (jpeg_xl_distance_selected()) {
+        spin_box->setRange(0.0, 15.0);
+        spin_box->setSingleStep(0.1);
+        spin_box->setDecimals(2);
+        spin_box->setValue(jpeg_xl_distance_);
     }
-
-    if (quality_type == "Distance") {
-        max = 15.0;
-        step = 0.1;
-        decimals = 2;
-        auto quality = jpeg_xl_distance_;
-        options_.image_quality_spin_box->setValue(quality);
+    else {
+        spin_box->setRange(0.0, 100.0);
+        spin_box->setSingleStep(1.0);
+        spin_box->setDecimals(0);
+        spin_box->setValue(format_settings_.at(ImageFormat::JPEG_XL).quality);
     }
-
-    options_.image_quality_spin_box->setRange(min, max);
-    options_.image_quality_spin_box->setSingleStep(step);
-    options_.image_quality_spin_box->setDecimals(decimals);
-    auto quality = jpeg_xl_quality_;
-    options_.image_quality_spin_box->setValue(quality);
 }
 
 void Window::on_start_button_clicked() {

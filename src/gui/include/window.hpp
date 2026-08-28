@@ -8,6 +8,7 @@
 #include <QString>
 #include <cstdint>
 #include <deque>
+#include <map>
 #include <optional>
 #include <qtconfigmacros.h>
 #include <string>
@@ -128,6 +129,16 @@ struct ProgressTimer {
 struct DisplayPreset {
     std::string brand;
     std::string model;
+};
+
+// The controls an image format exposes, plus the values last chosen for it.
+struct FormatSettings {
+    int compression_effort_min = 0;
+    int compression_effort_max = 9;
+    int compression_effort = 0;
+    int quality = 0;
+    bool has_compression_effort = true;
+    bool has_compression_type = true;
 };
 
 struct ArchiveJob {
@@ -255,16 +266,30 @@ class Window : public QMainWindow {
     int total_pages_;
     int pages_processed_;
 
-    int avif_compression_effort_ = 4;
-    int avif_quality_ = 50;
-    int jpeg_quality_ = 80;
-    int jpeg_xl_compression_effort_ = 7;
+    // Per-format settings, remembered so switching formats back and forth
+    // restores what the user last chose for each.
+    std::map<ImageFormat, FormatSettings> format_settings_ = {
+        {ImageFormat::AVIF, {.compression_effort = 4, .quality = 50}},
+        {ImageFormat::JPEG,
+         {.quality = 80,
+          .has_compression_effort = false,
+          .has_compression_type = false}},
+        {ImageFormat::JPEG_XL,
+         {.compression_effort_min = 1, .compression_effort = 7, .quality = 75}},
+        {ImageFormat::PNG,
+         {.compression_effort = 6, .has_compression_type = false}},
+        {ImageFormat::WEBP,
+         {.compression_effort_max = 6, .compression_effort = 4, .quality = 80}},
+    };
+
+    // JPEG XL alone offers a second quality scale ("distance"), so it does not
+    // fit the shared `quality` field above.
     double jpeg_xl_distance_ = 1.0;
-    int jpeg_xl_quality_ = 75;
-    int png_compression_effort_ = 6;
-    int webp_compression_effort_ = 4;
-    int webp_quality_ = 80;
+
     bool compression_type_changed_ = false;
+
+    ImageFormat current_image_format() const;
+    bool jpeg_xl_distance_selected() const;
 
     std::string temp_base_dir_;
 };

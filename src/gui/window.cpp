@@ -415,42 +415,42 @@ void Window::start_next_task() {
 
     QString program = QCoreApplication::applicationFilePath();
     QStringList arguments;
-    arguments << "-source_file"
-              << QString::fromStdString(task.source_file.string())
-              << "-output_dir"
-              << QString::fromStdString(task.output_dir.string())
-              << "-output_base_name"
-              << QString::fromStdString(task.output_base_name) << "-page_number"
-              << QString::number(task.page_number) << "-path_in_archive"
-              << QString::fromStdString(
-                     task.path_in_archive
-                 ) // Empty string if not set
+    arguments
+        << "-source_file" << QString::fromStdString(task.source_file.string())
+        << "-output_dir" << QString::fromStdString(task.output_dir.string())
+        << "-output_base_name" << QString::fromStdString(task.output_base_name)
+        << "-page_number" << QString::number(task.page_number)
+        << "-path_in_archive"
+        << QString::fromStdString(
+               task.path_in_archive
+           ) // Empty string if not set
 #if defined(PDF_ENABLED)
-              << "-pdf_pixel_density" << QString::number(task.pdf_pixel_density)
+        << "-pdf_pixel_density" << QString::number(task.pdf_pixel_density)
 #endif
-              << "-convert_pages_to_greyscale"
-              << (task.convert_pages_to_greyscale ? "1" : "0")
-              << "-double_page_spread_actions"
-              << QString::number(task.double_page_spread_action)
-              << "-rotation_direction"
-              << QString::number(task.rotation_direction)
-              << "-linear_light_resampling"
-              << QString::number(task.linear_light_resampling)
-              << "-remove_spine" << QString::number(task.remove_spine)
-              << "-stretch_page_contrast"
-              << (task.stretch_page_contrast ? "1" : "0") << "-scale_pages"
-              << (task.scale_pages ? "1" : "0") << "-page_width"
-              << QString::number(task.page_width) << "-page_height"
-              << QString::number(task.page_height) << "-page_resampler"
-              << QString::number(static_cast<int>(task.page_resampler))
-              << "-quantize_pages" << (task.quantize_pages ? "1" : "0")
-              << "-bit_depth" << QString::number(task.bit_depth) << "-dither"
-              << QString::number(task.dither) << "-image_format"
-              << QString::fromStdString(task.image_format) << "-is_lossy"
-              << (task.is_lossy ? "1" : "0") << "-quality_type_is_distance"
-              << (task.quality_type_is_distance ? "1" : "0") << "-quality"
-              << QString::number(task.quality) << "-compression_effort"
-              << QString::number(task.compression_effort);
+        << "-convert_pages_to_greyscale"
+        << (task.convert_pages_to_greyscale ? "1" : "0")
+        << "-double_page_spread_actions"
+        << QString::number(static_cast<int>(task.double_page_spread_action))
+        << "-rotation_direction"
+        << QString::number(static_cast<int>(task.rotation_direction))
+        << "-linear_light_resampling"
+        << QString::number(task.linear_light_resampling) << "-remove_spine"
+        << QString::number(task.remove_spine) << "-stretch_page_contrast"
+        << (task.stretch_page_contrast ? "1" : "0") << "-scale_pages"
+        << (task.scale_pages ? "1" : "0") << "-page_width"
+        << QString::number(task.page_width) << "-page_height"
+        << QString::number(task.page_height) << "-page_resampler"
+        << QString::number(static_cast<int>(task.page_resampler))
+        << "-quantize_pages" << (task.quantize_pages ? "1" : "0")
+        << "-bit_depth" << QString::number(task.bit_depth) << "-dither"
+        << QString::number(task.dither) << "-image_format"
+        << QString::number(static_cast<int>(task.image_format))
+        << "-compression_type"
+        << QString::number(static_cast<int>(task.compression_type))
+        << "-quality_type"
+        << QString::number(static_cast<int>(task.quality_type)) << "-quality"
+        << QString::number(task.quality) << "-compression_effort"
+        << QString::number(task.compression_effort);
 
     process->start(program, arguments);
 }
@@ -495,10 +495,10 @@ PageTask Window::create_task(
         = (DoublePageSpreadActions)
               options_.double_page_spread_combo_box->currentIndex();
     if (options_.rotation_direction_combo_box->currentText() == "Clockwise") {
-        task.rotation_direction = CLOCKWISE;
+        task.rotation_direction = RotationDirection::CLOCKWISE;
     }
     else {
-        task.rotation_direction = COUNTERCLOCKWISE;
+        task.rotation_direction = RotationDirection::COUNTERCLOCKWISE;
     }
     task.remove_spine = options_.remove_spine_check_box->isChecked();
     task.linear_light_resampling
@@ -513,12 +513,12 @@ PageTask Window::create_task(
         = options_.enable_image_quantization_check_box->isChecked();
     task.bit_depth = 1 << options_.bit_depth_combo_box->currentIndex();
     task.dither = options_.dithering_spin_box->value();
-    task.image_format
-        = options_.image_format_combo_box->currentText().toStdString();
-    task.is_lossy
-        = options_.image_compression_type_combo_box->currentText() == "Lossy";
-    task.quality_type_is_distance
-        = options_.image_quality_label_jpeg_xl->currentText() == "Distance";
+    task.image_format = current_image_format();
+    task.compression_type
+        = options_.image_compression_type_combo_box->currentData()
+              .value<CompressionType>();
+    task.quality_type = options_.image_quality_label_jpeg_xl->currentData()
+                            .value<QualityType>();
     task.quality = options_.image_quality_spin_box->value();
     task.compression_effort = options_.image_compression_spin_box->value();
     return task;

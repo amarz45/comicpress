@@ -1,4 +1,5 @@
 #include "include/options.hpp"
+#include "../include/task.hpp"
 #include "include/ui_constants.hpp"
 #include "include/window_util.hpp"
 
@@ -284,8 +285,28 @@ void add_quantization_widgets(QStyle *style, Options *options) {
 }
 
 void add_image_format_widgets(QStyle *style, Options *options) {
-    options->image_format_combo_box
-        = create_combo_box({"AVIF", "JPEG", "JPEG XL", "PNG", "WebP"}, "PNG");
+    static constexpr std::pair<const char *, ImageFormat> IMAGE_FORMATS[] = {
+        {"AVIF", ImageFormat::AVIF},
+        {"JPEG", ImageFormat::JPEG},
+        {"JPEG XL", ImageFormat::JPEG_XL},
+        {"PNG", ImageFormat::PNG},
+        {"WebP", ImageFormat::WEBP},
+    };
+
+    options->image_format_combo_box = new QComboBox();
+    for (const auto &[label, format] : IMAGE_FORMATS) {
+        options->image_format_combo_box->addItem(
+            label, QVariant::fromValue(format)
+        );
+    }
+    options->image_format_combo_box->setCurrentIndex(
+        options->image_format_combo_box->findData(
+            QVariant::fromValue(ImageFormat::PNG)
+        )
+    );
+    options->image_format_combo_box->setSizePolicy(
+        QSizePolicy::Maximum, QSizePolicy::Fixed
+    );
     auto image_format_label = new QLabel("Image format");
     options->image_format_label = image_format_label;
     auto image_format_container = create_control_with_info(
@@ -308,11 +329,24 @@ void add_image_format_widgets(QStyle *style, Options *options) {
     );
 
     // Compression type
+    static constexpr std::pair<const char *, CompressionType>
+        COMPRESSION_TYPES[] = {
+            {"Lossless", CompressionType::LOSSLESS},
+            {"Lossy", CompressionType::LOSSY},
+        };
+    options->image_compression_type_combo_box = new QComboBox();
+    for (const auto &[label, compression_type] : COMPRESSION_TYPES) {
+        options->image_compression_type_combo_box->addItem(
+            label, QVariant::fromValue(compression_type)
+        );
+    }
+    options->image_compression_type_combo_box->setCurrentIndex(
+        options->image_compression_type_combo_box->findData(
+            QVariant::fromValue(CompressionType::LOSSLESS)
+        )
+    );
     auto compression_type_label = new QLabel("Compression type");
     options->image_compression_type_label = compression_type_label;
-    options->image_compression_type_combo_box = new QComboBox();
-    options->image_compression_type_combo_box->addItems({"Lossless", "Lossy"});
-    options->image_compression_type_combo_box->setCurrentText("Lossless");
     options->image_compression_type_combo_box->setSizePolicy(
         QSizePolicy::Maximum, QSizePolicy::Fixed
     );
@@ -349,10 +383,23 @@ void add_image_format_widgets(QStyle *style, Options *options) {
     quality_label_hbox->setContentsMargins(0, 0, 0, 0);
     quality_label_hbox->setSpacing(0);
 
-    options->image_quality_label_original = new QLabel("Quality");
+    // Quality/distance combo box
     options->image_quality_label_jpeg_xl = new QComboBox();
-    options->image_quality_label_jpeg_xl->addItems({"Distance", "Quality"});
-    options->image_quality_label_jpeg_xl->setCurrentText("Distance");
+    static constexpr std::pair<const char *, QualityType> QUALITY_TYPES[] = {
+        {"Distance", QualityType::DISTANCE},
+        {"Quality", QualityType::QUALITY},
+    };
+    for (const auto &[label, quality_type] : QUALITY_TYPES) {
+        options->image_quality_label_jpeg_xl->addItem(
+            label, QVariant::fromValue(quality_type)
+        );
+    }
+    options->image_quality_label_jpeg_xl->setCurrentIndex(
+        options->image_quality_label_jpeg_xl->findData(
+            QVariant::fromValue(QualityType::DISTANCE)
+        )
+    );
+    options->image_quality_label_original = new QLabel("Quality");
     options->image_quality_label_jpeg_xl->setVisible(false);
     options->image_quality_label_jpeg_xl->setSizePolicy(
         QSizePolicy::Maximum, QSizePolicy::Fixed

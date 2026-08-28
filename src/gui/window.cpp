@@ -507,31 +507,8 @@ PageTask Window::create_task(
     task.scale_pages = options_.enable_image_scaling_check_box->isChecked();
     task.page_width = options_.width_spin_box->value();
     task.page_height = options_.height_spin_box->value();
-    auto resampler = options_.resampler_combo_box->currentText();
-    if (resampler == "Bicubic interpolation") {
-        task.page_resampler = VIPS_KERNEL_CUBIC;
-    }
-    else if (resampler == "Bilinear interpolation") {
-        task.page_resampler = VIPS_KERNEL_LINEAR;
-    }
-    else if (resampler == "Lanczos 2") {
-        task.page_resampler = VIPS_KERNEL_LANCZOS2;
-    }
-    else if (resampler == "Lanczos 3") {
-        task.page_resampler = VIPS_KERNEL_LANCZOS3;
-    }
-    else if (resampler == "Magic Kernel Sharp 2013") {
-        task.page_resampler = VIPS_KERNEL_MKS2013;
-    }
-    else if (resampler == "Magic Kernel Sharp 2021") {
-        task.page_resampler = VIPS_KERNEL_MKS2021;
-    }
-    else if (resampler == "Mitchell") {
-        task.page_resampler = VIPS_KERNEL_MITCHELL;
-    }
-    else {
-        task.page_resampler = VIPS_KERNEL_NEAREST;
-    }
+    task.page_resampler
+        = options_.resampler_combo_box->currentData().value<VipsKernel>();
     task.quantize_pages
         = options_.enable_image_quantization_check_box->isChecked();
     task.bit_depth = 1 << options_.bit_depth_combo_box->currentIndex();

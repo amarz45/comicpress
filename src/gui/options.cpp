@@ -10,10 +10,14 @@
 #include <QLabel>
 #include <QSizePolicy>
 #include <QSpinBox>
+#include <QVariant>
 #include <QWidget>
 #include <Qt>
 
+#include <vips/vips8>
+
 #include <thread>
+#include <utility>
 
 #if defined(PDF_ENABLED)
 void add_pdf_pixel_density_widget(QStyle *style, Options *options) {
@@ -184,20 +188,29 @@ void add_scaling_widgets(QStyle *style, Options *options) {
     auto height_label = new QLabel("Max height");
     scaling_layout->addRow(height_label, options->height_spin_box);
 
-    // Resampler
+    static constexpr std::pair<const char *, VipsKernel> RESAMPLERS[] = {
+        {"Bicubic interpolation", VIPS_KERNEL_CUBIC},
+        {"Bilinear interpolation", VIPS_KERNEL_LINEAR},
+        {"Lanczos 2", VIPS_KERNEL_LANCZOS2},
+        {"Lanczos 3", VIPS_KERNEL_LANCZOS3},
+        {"Magic Kernel Sharp 2013", VIPS_KERNEL_MKS2013},
+        {"Magic Kernel Sharp 2021", VIPS_KERNEL_MKS2021},
+        {"Mitchell", VIPS_KERNEL_MITCHELL},
+        {"Nearest neighbour", VIPS_KERNEL_NEAREST},
+    };
+
     auto resampler_label = new QLabel("Resampler");
     options->resampler_combo_box = new QComboBox();
-    options->resampler_combo_box->addItems(
-        {"Bicubic interpolation",
-         "Bilinear interpolation",
-         "Lanczos 2",
-         "Lanczos 3",
-         "Magic Kernel Sharp 2013",
-         "Magic Kernel Sharp 2021",
-         "Mitchell",
-         "Nearest neighbour"}
+    for (const auto &[label, kernel] : RESAMPLERS) {
+        options->resampler_combo_box->addItem(
+            label, QVariant::fromValue(kernel)
+        );
+    }
+    options->resampler_combo_box->setCurrentIndex(
+        options->resampler_combo_box->findData(
+            QVariant::fromValue(VIPS_KERNEL_MKS2021)
+        )
     );
-    options->resampler_combo_box->setCurrentText("Magic Kernel Sharp 2021");
     options->resampler_combo_box->setSizePolicy(
         QSizePolicy::Maximum, QSizePolicy::Fixed
     );

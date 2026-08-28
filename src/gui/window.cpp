@@ -461,8 +461,8 @@ void Window::handle_log_message(const QString &message) {
 }
 
 void Window::handle_task_finished() {
-    pages_processed_++;
-    images_since_last_eta_++;
+    pages_processed_ += 1;
+    images_since_last_eta_ += 1;
     progress_bar_->setValue(pages_processed_);
 }
 

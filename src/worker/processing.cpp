@@ -449,7 +449,7 @@ vips::VImage remove_uniform_middle_columns(const vips::VImage &img) {
         double high = global_range;
         const int max_iter = 20;
 
-        for (int iter = 0; iter < max_iter; ++iter) {
+        for (int iter = 0; iter < max_iter; iter += 1) {
             double mid_th = (low + high) / 2.0;
             auto bounds = get_uniform_bounds(mid_th);
             int remove_width = bounds.second - bounds.first - 1;

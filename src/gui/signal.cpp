@@ -937,7 +937,7 @@ void Window::on_start_button_clicked() {
     eta_label_->setText("ETA: –");
     timer_->start(1000);
 
-    for (int i = 0; i < max_concurrent_workers_; ++i) {
+    for (int i = 0; i < max_concurrent_workers_; i += 1) {
         start_next_task();
     }
 }

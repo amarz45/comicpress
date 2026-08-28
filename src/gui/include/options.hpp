@@ -25,7 +25,7 @@ class DensitySpinBox : public QSpinBox {
         const bool up = steps > 0;
         const int num_steps = qAbs(steps);
 
-        for (int i = 0; i < num_steps; ++i) {
+        for (int i = 0; i < num_steps; i += 1) {
             int current = value();
             int target;
 

@@ -88,14 +88,14 @@ int worker_main(int argc, char *argv[]) {
            != 0;
 
         task.double_page_spread_action
-            = (DoublePageSpreadActions)parse_arg<int>(
+            = static_cast<DoublePageSpreadActions>(parse_arg<int>(
                 args.at("-double_page_spread_actions"),
                 "Invalid double page spread options"
-            );
+            ));
 
-        task.rotation_direction = (RotationDirection)parse_arg<int>(
+        task.rotation_direction = static_cast<RotationDirection>(parse_arg<int>(
             args.at("-rotation_direction"), "Invalid rotation direction"
-        );
+        ));
 
         task.linear_light_resampling = parse_arg<int>(
                                            args.at("-linear_light_resampling"),
@@ -138,11 +138,11 @@ int worker_main(int argc, char *argv[]) {
         task.image_format = static_cast<ImageFormat>(
             parse_arg<int>(args.at("-image_format"), "Invalid image format")
         );
-        task.compression_type = (CompressionType)parse_arg<int>(
+        task.compression_type = static_cast<CompressionType>(parse_arg<int>(
             args.at("-compression_type"), "Invalid compression type"
-        );
-        task.quality_type = (QualityType)parse_arg<int>(
-            args.at("-quality_type"), "Invalid quality type"
+        ));
+        task.quality_type = static_cast<QualityType>(
+            parse_arg<int>(args.at("-quality_type"), "Invalid quality type")
         );
 
         task.quality

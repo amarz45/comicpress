@@ -65,12 +65,8 @@ Window::Window(QWidget *parent) : QMainWindow(parent) {
     on_enable_image_scaling_changed(
         options_.enable_image_scaling_check_box->checkState()
     );
-    on_double_page_spread_changed(
-        options_.double_page_spread_combo_box->currentText()
-    );
-    on_output_format_combo_box_changed(
-        options_.output_format_combo_box->currentText()
-    );
+    on_double_page_spread_changed();
+    on_output_format_combo_box_changed();
     connect_signals();
 
     restore_output_dir();
@@ -325,8 +321,24 @@ void Window::add_display_presets_widget() {
     options_.display_preset_button->setMenu(display_menu);
 
     auto output_format_label = new QLabel("Output format");
-    options_.output_format_combo_box
-        = create_combo_box({"EPUB", "CBZ"}, "EPUB");
+    static constexpr std::pair<const char *, OutputFormat> OUTPUT_FORMATS[] = {
+        {"EPUB", OutputFormat::EPUB},
+        {"CBZ", OutputFormat::CBZ},
+    };
+    options_.output_format_combo_box = new QComboBox();
+    for (const auto &[label, format] : OUTPUT_FORMATS) {
+        options_.output_format_combo_box->addItem(
+            label, QVariant::fromValue(format)
+        );
+    }
+    options_.output_format_combo_box->setCurrentIndex(
+        options_.output_format_combo_box->findData(
+            QVariant::fromValue(OutputFormat::EPUB)
+        )
+    );
+    options_.output_format_combo_box->setSizePolicy(
+        QSizePolicy::Maximum, QSizePolicy::Fixed
+    );
     auto output_format_container = create_control_with_info(
         style(), options_.output_format_combo_box, OUTPUT_FORMAT_TOOLTIP
     );
@@ -492,14 +504,11 @@ PageTask Window::create_task(
     task.convert_pages_to_greyscale
         = options_.convert_to_greyscale->isChecked();
     task.double_page_spread_action
-        = (DoublePageSpreadActions)
-              options_.double_page_spread_combo_box->currentIndex();
-    if (options_.rotation_direction_combo_box->currentText() == "Clockwise") {
-        task.rotation_direction = RotationDirection::CLOCKWISE;
-    }
-    else {
-        task.rotation_direction = RotationDirection::COUNTERCLOCKWISE;
-    }
+        = options_.double_page_spread_combo_box->currentData()
+              .value<DoublePageSpreadActions>();
+    task.rotation_direction
+        = options_.rotation_direction_combo_box->currentData()
+              .value<RotationDirection>();
     task.remove_spine = options_.remove_spine_check_box->isChecked();
     task.linear_light_resampling
         = options_.linear_light_resampling_check_box->isChecked();
@@ -583,7 +592,9 @@ void Window::create_archive(const QString &source_archive_path) {
     QCoreApplication::processEvents();
 
     try {
-        if (options_.output_format_combo_box->currentText() == "EPUB") {
+        auto output_format = options_.output_format_combo_box->currentData()
+                                 .value<OutputFormat>();
+        if (output_format == OutputFormat::EPUB) {
             output_filename = output_filename.replace_extension(".epub");
             auto final_output_path = output_path_ / output_filename;
             create_epub(temp_dir, final_output_path, title.generic_string());

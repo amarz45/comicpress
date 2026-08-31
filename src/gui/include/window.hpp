@@ -39,6 +39,14 @@ class QVBoxLayout;
 class QWidget;
 QT_END_NAMESPACE
 
+enum class OutputFormat : std::uint8_t { EPUB, CBZ };
+enum class PdfQuality : std::uint16_t {
+    STANDARD = 300,
+    HIGH = 600,
+    ULTRA = 1200,
+    CUSTOM = 0,
+};
+
 template <typename T>
 class BoundedDeque {
     size_t max_size_;
@@ -177,11 +185,11 @@ class Window : public QMainWindow {
     // Folder to actually write to, which may differ from what output_dir_field
     // shows.
     QString effective_output_dir() const;
-    void on_output_format_combo_box_changed(const QString &text);
+    void on_output_format_combo_box_changed();
 #if defined(PDF_ENABLED)
-    void on_pdf_pixel_density_combo_box_changed(const QString &text);
+    void on_pdf_pixel_density_combo_box_changed();
 #endif
-    void on_double_page_spread_changed(const QString &text);
+    void on_double_page_spread_changed();
     void on_display_preset_changed();
     void on_preset_option_modified();
     void on_advanced_options_changed(int state);

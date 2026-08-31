@@ -31,12 +31,25 @@ void add_pdf_pixel_density_widget(QStyle *style, Options *options) {
     auto label = new QLabel("PDF pixel density");
     options->pdf_pixel_density_label = label;
 
-    options->pdf_pixel_density_combo_box = create_combo_box(
-        {"Standard (300\u202fPPI, fast)",
-         "High (600\u202fPPI)",
-         "Ultra (1200\u202fPPI, recommended)",
-         "Custom"},
-        "Standard (300\u202fPPI, fast)"
+    static constexpr std::pair<const char *, PdfQuality> PDF_QUALITY_OPTIONS[]{
+        {"Standard (300\u202fPPI, fast)", PdfQuality::STANDARD},
+        {"High (600\u202fPPI)", PdfQuality::HIGH},
+        {"Ultra (1200\u202fPPI, recommended)", PdfQuality::ULTRA},
+        {"Custom", PdfQuality::CUSTOM},
+    };
+    options->pdf_pixel_density_combo_box = new QComboBox();
+    for (const auto &[label, option] : PDF_QUALITY_OPTIONS) {
+        options->pdf_pixel_density_combo_box->addItem(
+            label, QVariant::fromValue(option)
+        );
+    }
+    options->pdf_pixel_density_combo_box->setCurrentIndex(
+        options->pdf_pixel_density_combo_box->findData(
+            QVariant::fromValue(PdfQuality::STANDARD)
+        )
+    );
+    options->pdf_pixel_density_combo_box->setSizePolicy(
+        QSizePolicy::Maximum, QSizePolicy::Fixed
     );
 
     auto control_pair = create_control_with_info_pair(
@@ -76,12 +89,26 @@ void add_convert_to_greyscale_widget(QStyle *style, Options *options) {
 
 void add_double_page_spread_widget(QStyle *style, Options *options) {
     auto label = new QLabel("Two-page spreads");
-    options->double_page_spread_combo_box = create_combo_box(
-        {"Do nothing",
-         "Rotate page",
-         "Split into two pages",
-         "Rotate and split"},
-        "Do nothing"
+    static constexpr std::pair<const char *, DoublePageSpreadActions>
+        DOUBLE_PAGE_SPREAD_ACTIONS[] = {
+            {"Do nothing", DoublePageSpreadActions::NONE},
+            {"Rotate page", DoublePageSpreadActions::ROTATE},
+            {"Split into two pages", DoublePageSpreadActions::SPLIT},
+            {"Rotate and split", DoublePageSpreadActions::BOTH},
+        };
+    options->double_page_spread_combo_box = new QComboBox();
+    for (const auto &[label, action] : DOUBLE_PAGE_SPREAD_ACTIONS) {
+        options->double_page_spread_combo_box->addItem(
+            label, QVariant::fromValue(action)
+        );
+    }
+    options->double_page_spread_combo_box->setCurrentIndex(
+        options->double_page_spread_combo_box->findData(
+            QVariant::fromValue(DoublePageSpreadActions::NONE)
+        )
+    );
+    options->double_page_spread_combo_box->setSizePolicy(
+        QSizePolicy::Maximum, QSizePolicy::Fixed
     );
     auto control_container = create_control_with_info(
         style, options->double_page_spread_combo_box, DOUBLE_PAGE_SPREAD_TOOLTIP
@@ -98,9 +125,21 @@ void add_double_page_spread_widget(QStyle *style, Options *options) {
     rotation_layout->setFieldGrowthPolicy(QFormLayout::FieldsStayAtSizeHint);
 
     auto rotation_label = new QLabel("Rotation direction");
+    static constexpr std::pair<const char *, RotationDirection>
+        ROTATION_DIRECTIONS[] = {
+            {"Clockwise", RotationDirection::CLOCKWISE},
+            {"Counterclockwise", RotationDirection::COUNTERCLOCKWISE},
+        };
     options->rotation_direction_combo_box = new QComboBox();
-    options->rotation_direction_combo_box->addItems(
-        {"Clockwise", "Counterclockwise"}
+    for (const auto &[label, direction] : ROTATION_DIRECTIONS) {
+        options->rotation_direction_combo_box->addItem(
+            label, QVariant::fromValue(direction)
+        );
+    }
+    options->rotation_direction_combo_box->setCurrentIndex(
+        options->rotation_direction_combo_box->findData(
+            QVariant::fromValue(RotationDirection::CLOCKWISE)
+        )
     );
     options->rotation_direction_combo_box->setSizePolicy(
         QSizePolicy::Maximum, QSizePolicy::Fixed

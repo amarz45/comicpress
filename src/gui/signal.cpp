@@ -150,21 +150,21 @@ void Window::connect_signals() {
     );
     connect(
         options_.output_format_combo_box,
-        &QComboBox::currentTextChanged,
+        &QComboBox::currentIndexChanged,
         this,
         &Window::on_output_format_combo_box_changed
     );
 #if defined(PDF_ENABLED)
     connect(
         options_.pdf_pixel_density_combo_box,
-        &QComboBox::currentTextChanged,
+        &QComboBox::currentIndexChanged,
         this,
         &Window::on_pdf_pixel_density_combo_box_changed
     );
 #endif
     connect(
         options_.double_page_spread_combo_box,
-        &QComboBox::currentTextChanged,
+        &QComboBox::currentIndexChanged,
         this,
         &Window::on_double_page_spread_changed
     );
@@ -385,7 +385,7 @@ QString Window::effective_output_dir() const {
     return output_dir_io_path_;
 }
 
-void Window::on_output_format_combo_box_changed(const QString &text) {
+void Window::on_output_format_combo_box_changed() {
     auto image_format_combo = options_.image_format_combo_box;
     auto *view = qobject_cast<QListView *>(image_format_combo->view());
     if (!view) {
@@ -395,7 +395,9 @@ void Window::on_output_format_combo_box_changed(const QString &text) {
     static constexpr ImageFormat EPUB_UNSUPPORTED[]
         = {ImageFormat::AVIF, ImageFormat::JPEG_XL};
 
-    auto is_epub = text == "EPUB";
+    auto output_format
+        = options_.output_format_combo_box->currentData().value<OutputFormat>();
+    auto is_epub = output_format == OutputFormat::EPUB;
     auto image_format = current_image_format();
     if (is_epub && std::ranges::contains(EPUB_UNSUPPORTED, image_format)) {
         image_format_combo->setCurrentIndex(
@@ -414,28 +416,23 @@ ImageFormat Window::current_image_format() const {
 }
 
 #if defined(PDF_ENABLED)
-void Window::on_pdf_pixel_density_combo_box_changed(const QString &text) {
+void Window::on_pdf_pixel_density_combo_box_changed() {
     auto spin = options_.pdf_pixel_density_spin_box;
-    if (text == "Custom") {
-        spin->setVisible(true);
-        return;
-    }
-
-    spin->setVisible(false);
-    if (text == "Standard (300\u202fPPI, fast)") {
-        spin->setValue(300);
-    }
-    else if (text == "High (600\u202fPPI)") {
-        spin->setValue(600);
-    }
-    else if (text == "Ultra (1200\u202fPPI, recommended)") {
-        spin->setValue(1200);
+    auto quality = options_.pdf_pixel_density_combo_box->currentData()
+                       .value<PdfQuality>();
+    auto is_custom = quality == PdfQuality::CUSTOM;
+    spin->setVisible(is_custom);
+    if (!is_custom) {
+        spin->setValue(static_cast<int>(quality));
     }
 }
 #endif
 
-void Window::on_double_page_spread_changed(const QString &text) {
-    bool should_show = (text == "Rotate page" || text == "Rotate and split");
+void Window::on_double_page_spread_changed() {
+    auto action = options_.double_page_spread_combo_box->currentData()
+                      .value<DoublePageSpreadActions>();
+    auto should_show = action == DoublePageSpreadActions::ROTATE
+                    || action == DoublePageSpreadActions::BOTH;
     options_.rotation_options_container->setVisible(should_show);
 }
 

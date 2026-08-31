@@ -19,7 +19,8 @@ Checks: >
   readability-braces-around-statements,
   readability-identifier-naming,
   readability-redundant-member-init,
-  readability-redundant-string-cstr
+  readability-redundant-string-cstr,
+  google-readability-casting
 
 CheckOptions:
   # `auto x = new T` / `auto x = static_cast<T>(...)`. Note this check does not

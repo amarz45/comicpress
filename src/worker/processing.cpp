@@ -261,7 +261,7 @@ void process_vimage(
         auto make_palette_options = [&] {
             return vips::VImage::option()
                 ->set("palette", true)
-                ->set("bitdepth", task.bit_depth)
+                ->set("bitdepth", static_cast<int>(task.bit_depth))
                 ->set("dither", task.dither)
                 ->set("effort", 10);
         };

@@ -13,6 +13,14 @@ enum class ImageFormat : std::uint8_t { AVIF, JPEG, JPEG_XL, PNG, WEBP };
 enum class CompressionType : std::uint8_t { LOSSLESS, LOSSY };
 enum class QualityType : std::uint8_t { QUALITY, DISTANCE };
 
+enum class BitDepth : std::uint8_t {
+    ONE = 1,
+    TWO = 2,
+    FOUR = 4,
+    EIGHT = 8,
+    SIXTEEN = 16,
+};
+
 struct PageTask {
     fs::path source_file;
     fs::path output_dir;
@@ -27,7 +35,7 @@ struct PageTask {
 #endif
     int page_width;
     int page_height;
-    int bit_depth;
+    BitDepth bit_depth;
     int compression_effort;
     DoublePageSpreadActions double_page_spread_action;
     RotationDirection rotation_direction;

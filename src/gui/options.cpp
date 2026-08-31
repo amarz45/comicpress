@@ -17,6 +17,7 @@
 
 #include <vips/vips8>
 
+#include <array>
 #include <thread>
 #include <utility>
 
@@ -31,26 +32,15 @@ void add_pdf_pixel_density_widget(QStyle *style, Options *options) {
     auto label = new QLabel("PDF pixel density");
     options->pdf_pixel_density_label = label;
 
-    static constexpr std::pair<const char *, PdfQuality> PDF_QUALITY_OPTIONS[]{
-        {"Standard (300\u202fPPI, fast)", PdfQuality::STANDARD},
-        {"High (600\u202fPPI)", PdfQuality::HIGH},
-        {"Ultra (1200\u202fPPI, recommended)", PdfQuality::ULTRA},
-        {"Custom", PdfQuality::CUSTOM},
-    };
-    options->pdf_pixel_density_combo_box = new QComboBox();
-    for (const auto &[label, option] : PDF_QUALITY_OPTIONS) {
-        options->pdf_pixel_density_combo_box->addItem(
-            label, QVariant::fromValue(option)
-        );
-    }
-    options->pdf_pixel_density_combo_box->setCurrentIndex(
-        options->pdf_pixel_density_combo_box->findData(
-            QVariant::fromValue(PdfQuality::STANDARD)
-        )
-    );
-    options->pdf_pixel_density_combo_box->setSizePolicy(
-        QSizePolicy::Maximum, QSizePolicy::Fixed
-    );
+    static constexpr auto PDF_QUALITY_OPTIONS
+        = std::to_array<std::pair<const char *, PdfQuality>>({
+            {"Standard (300\u202fPPI, fast)", PdfQuality::STANDARD},
+            {"High (600\u202fPPI)", PdfQuality::HIGH},
+            {"Ultra (1200\u202fPPI, recommended)", PdfQuality::ULTRA},
+            {"Custom", PdfQuality::CUSTOM},
+        });
+    options->pdf_pixel_density_combo_box
+        = create_combo_box(PDF_QUALITY_OPTIONS, PdfQuality::STANDARD);
 
     auto control_pair = create_control_with_info_pair(
         style, options->pdf_pixel_density_combo_box, PDF_TOOLTIP
@@ -89,26 +79,15 @@ void add_convert_to_greyscale_widget(QStyle *style, Options *options) {
 
 void add_double_page_spread_widget(QStyle *style, Options *options) {
     auto label = new QLabel("Two-page spreads");
-    static constexpr std::pair<const char *, DoublePageSpreadActions>
-        DOUBLE_PAGE_SPREAD_ACTIONS[] = {
+    static constexpr auto DOUBLE_PAGE_SPREAD_ACTIONS
+        = std::to_array<std::pair<const char *, DoublePageSpreadActions>>({
             {"Do nothing", DoublePageSpreadActions::NONE},
             {"Rotate page", DoublePageSpreadActions::ROTATE},
             {"Split into two pages", DoublePageSpreadActions::SPLIT},
             {"Rotate and split", DoublePageSpreadActions::BOTH},
-        };
-    options->double_page_spread_combo_box = new QComboBox();
-    for (const auto &[label, action] : DOUBLE_PAGE_SPREAD_ACTIONS) {
-        options->double_page_spread_combo_box->addItem(
-            label, QVariant::fromValue(action)
-        );
-    }
-    options->double_page_spread_combo_box->setCurrentIndex(
-        options->double_page_spread_combo_box->findData(
-            QVariant::fromValue(DoublePageSpreadActions::NONE)
-        )
-    );
-    options->double_page_spread_combo_box->setSizePolicy(
-        QSizePolicy::Maximum, QSizePolicy::Fixed
+        });
+    options->double_page_spread_combo_box = create_combo_box(
+        DOUBLE_PAGE_SPREAD_ACTIONS, DoublePageSpreadActions::NONE
     );
     auto control_container = create_control_with_info(
         style, options->double_page_spread_combo_box, DOUBLE_PAGE_SPREAD_TOOLTIP
@@ -125,25 +104,14 @@ void add_double_page_spread_widget(QStyle *style, Options *options) {
     rotation_layout->setFieldGrowthPolicy(QFormLayout::FieldsStayAtSizeHint);
 
     auto rotation_label = new QLabel("Rotation direction");
-    static constexpr std::pair<const char *, RotationDirection>
-        ROTATION_DIRECTIONS[] = {
+
+    static constexpr auto ROTATION_DIRECTIONS
+        = std::to_array<std::pair<const char *, RotationDirection>>({
             {"Clockwise", RotationDirection::CLOCKWISE},
             {"Counterclockwise", RotationDirection::COUNTERCLOCKWISE},
-        };
-    options->rotation_direction_combo_box = new QComboBox();
-    for (const auto &[label, direction] : ROTATION_DIRECTIONS) {
-        options->rotation_direction_combo_box->addItem(
-            label, QVariant::fromValue(direction)
-        );
-    }
-    options->rotation_direction_combo_box->setCurrentIndex(
-        options->rotation_direction_combo_box->findData(
-            QVariant::fromValue(RotationDirection::CLOCKWISE)
-        )
-    );
-    options->rotation_direction_combo_box->setSizePolicy(
-        QSizePolicy::Maximum, QSizePolicy::Fixed
-    );
+        });
+    options->rotation_direction_combo_box
+        = create_combo_box(ROTATION_DIRECTIONS, RotationDirection::CLOCKWISE);
 
     rotation_layout->addRow(
         rotation_label, options->rotation_direction_combo_box
@@ -228,32 +196,22 @@ void add_scaling_widgets(QStyle *style, Options *options) {
     auto height_label = new QLabel("Max height");
     scaling_layout->addRow(height_label, options->height_spin_box);
 
-    static constexpr std::pair<const char *, VipsKernel> RESAMPLERS[] = {
-        {"Bicubic interpolation", VIPS_KERNEL_CUBIC},
-        {"Bilinear interpolation", VIPS_KERNEL_LINEAR},
-        {"Lanczos 2", VIPS_KERNEL_LANCZOS2},
-        {"Lanczos 3", VIPS_KERNEL_LANCZOS3},
-        {"Magic Kernel Sharp 2013", VIPS_KERNEL_MKS2013},
-        {"Magic Kernel Sharp 2021", VIPS_KERNEL_MKS2021},
-        {"Mitchell", VIPS_KERNEL_MITCHELL},
-        {"Nearest neighbour", VIPS_KERNEL_NEAREST},
-    };
-
     auto resampler_label = new QLabel("Resampler");
-    options->resampler_combo_box = new QComboBox();
-    for (const auto &[label, kernel] : RESAMPLERS) {
-        options->resampler_combo_box->addItem(
-            label, QVariant::fromValue(kernel)
-        );
-    }
-    options->resampler_combo_box->setCurrentIndex(
-        options->resampler_combo_box->findData(
-            QVariant::fromValue(VIPS_KERNEL_MKS2021)
-        )
-    );
-    options->resampler_combo_box->setSizePolicy(
-        QSizePolicy::Maximum, QSizePolicy::Fixed
-    );
+
+    static constexpr auto RESAMPLERS
+        = std::to_array<std::pair<const char *, VipsKernel>>({
+            {"Bicubic interpolation", VIPS_KERNEL_CUBIC},
+            {"Bilinear interpolation", VIPS_KERNEL_LINEAR},
+            {"Lanczos 2", VIPS_KERNEL_LANCZOS2},
+            {"Lanczos 3", VIPS_KERNEL_LANCZOS3},
+            {"Magic Kernel Sharp 2013", VIPS_KERNEL_MKS2013},
+            {"Magic Kernel Sharp 2021", VIPS_KERNEL_MKS2021},
+            {"Mitchell", VIPS_KERNEL_MITCHELL},
+            {"Nearest neighbour", VIPS_KERNEL_NEAREST},
+        });
+    options->resampler_combo_box
+        = create_combo_box(RESAMPLERS, VIPS_KERNEL_MKS2021);
+
     auto resampler_container = create_control_with_info(
         style, options->resampler_combo_box, RESAMPLER_TOOLTIP
     );
@@ -287,18 +245,16 @@ void add_quantization_widgets(QStyle *style, Options *options) {
 
     // Bit depth
     auto bit_depth_label = new QLabel("Bit depth");
-    options->bit_depth_combo_box = new QComboBox();
-    options->bit_depth_combo_box->addItems(
-        {"1 (2 colours)",
-         "2 (4 colours)",
-         "4 (16 colours)",
-         "8 (256 colours)",
-         "16 (65\u202f536 colours)"}
-    );
-    options->bit_depth_combo_box->setCurrentIndex(2);
-    options->bit_depth_combo_box->setSizePolicy(
-        QSizePolicy::Maximum, QSizePolicy::Fixed
-    );
+    static constexpr auto BIT_DEPTH_OPTIONS
+        = std::to_array<std::pair<const char *, BitDepth>>({
+            {"1 (2 colours)", BitDepth::ONE},
+            {"2 (4 colours)", BitDepth::TWO},
+            {"4 (16 colours)", BitDepth::FOUR},
+            {"8 (256 colours)", BitDepth::EIGHT},
+            {"16 (65\u202f536 colours)", BitDepth::SIXTEEN},
+        });
+    options->bit_depth_combo_box
+        = create_combo_box(BIT_DEPTH_OPTIONS, BitDepth::FOUR);
     auto bit_depth_container = create_control_with_info(
         style, options->bit_depth_combo_box, BIT_DEPTH_TOOLTIP
     );
@@ -324,37 +280,26 @@ void add_quantization_widgets(QStyle *style, Options *options) {
 }
 
 void add_image_format_widgets(QStyle *style, Options *options) {
-    static constexpr std::pair<const char *, ImageFormat> IMAGE_FORMATS[] = {
-        {"AVIF", ImageFormat::AVIF},
-        {"JPEG", ImageFormat::JPEG},
-        {"JPEG XL", ImageFormat::JPEG_XL},
-        {"PNG", ImageFormat::PNG},
-        {"WebP", ImageFormat::WEBP},
-    };
+    options->image_format_label = new QLabel("Image format");
 
-    options->image_format_combo_box = new QComboBox();
-    for (const auto &[label, format] : IMAGE_FORMATS) {
-        options->image_format_combo_box->addItem(
-            label, QVariant::fromValue(format)
-        );
-    }
-    options->image_format_combo_box->setCurrentIndex(
-        options->image_format_combo_box->findData(
-            QVariant::fromValue(ImageFormat::PNG)
-        )
-    );
-    options->image_format_combo_box->setSizePolicy(
-        QSizePolicy::Maximum, QSizePolicy::Fixed
-    );
-    auto image_format_label = new QLabel("Image format");
-    options->image_format_label = image_format_label;
+    static constexpr auto IMAGE_FORMATS
+        = std::to_array<std::pair<const char *, ImageFormat>>({
+            {"AVIF", ImageFormat::AVIF},
+            {"JPEG", ImageFormat::JPEG},
+            {"JPEG XL", ImageFormat::JPEG_XL},
+            {"PNG", ImageFormat::PNG},
+            {"WebP", ImageFormat::WEBP},
+        });
+    options->image_format_combo_box
+        = create_combo_box(IMAGE_FORMATS, ImageFormat::PNG);
+
     auto image_format_container = create_control_with_info(
         style, options->image_format_combo_box, IMG_FORMAT_TOOLTIP
     );
     options->image_format_container = image_format_container;
 
     options->settings_layout->addRow(
-        image_format_label, image_format_container
+        options->image_format_label, image_format_container
     );
 
     auto image_format_options_container = new QWidget();
@@ -368,27 +313,16 @@ void add_image_format_widgets(QStyle *style, Options *options) {
     );
 
     // Compression type
-    static constexpr std::pair<const char *, CompressionType>
-        COMPRESSION_TYPES[] = {
+    static constexpr auto COMPRESSION_TYPES
+        = std::to_array<std::pair<const char *, CompressionType>>({
             {"Lossless", CompressionType::LOSSLESS},
             {"Lossy", CompressionType::LOSSY},
-        };
-    options->image_compression_type_combo_box = new QComboBox();
-    for (const auto &[label, compression_type] : COMPRESSION_TYPES) {
-        options->image_compression_type_combo_box->addItem(
-            label, QVariant::fromValue(compression_type)
-        );
-    }
-    options->image_compression_type_combo_box->setCurrentIndex(
-        options->image_compression_type_combo_box->findData(
-            QVariant::fromValue(CompressionType::LOSSLESS)
-        )
-    );
+        });
+    options->image_compression_type_combo_box
+        = create_combo_box(COMPRESSION_TYPES, CompressionType::LOSSLESS);
+
     auto compression_type_label = new QLabel("Compression type");
     options->image_compression_type_label = compression_type_label;
-    options->image_compression_type_combo_box->setSizePolicy(
-        QSizePolicy::Maximum, QSizePolicy::Fixed
-    );
     options->image_compression_type_label->setVisible(false);
     options->image_compression_type_combo_box->setVisible(false);
     auto image_compression_type_pair = create_control_with_info_pair(
@@ -423,26 +357,16 @@ void add_image_format_widgets(QStyle *style, Options *options) {
     quality_label_hbox->setSpacing(0);
 
     // Quality/distance combo box
-    options->image_quality_label_jpeg_xl = new QComboBox();
-    static constexpr std::pair<const char *, QualityType> QUALITY_TYPES[] = {
-        {"Distance", QualityType::DISTANCE},
-        {"Quality", QualityType::QUALITY},
-    };
-    for (const auto &[label, quality_type] : QUALITY_TYPES) {
-        options->image_quality_label_jpeg_xl->addItem(
-            label, QVariant::fromValue(quality_type)
-        );
-    }
-    options->image_quality_label_jpeg_xl->setCurrentIndex(
-        options->image_quality_label_jpeg_xl->findData(
-            QVariant::fromValue(QualityType::DISTANCE)
-        )
-    );
-    options->image_quality_label_original = new QLabel("Quality");
+    static constexpr auto QUALITY_TYPES
+        = std::to_array<std::pair<const char *, QualityType>>({
+            {"Distance", QualityType::DISTANCE},
+            {"Quality", QualityType::QUALITY},
+        });
+    options->image_quality_label_jpeg_xl
+        = create_combo_box(QUALITY_TYPES, QualityType::DISTANCE);
     options->image_quality_label_jpeg_xl->setVisible(false);
-    options->image_quality_label_jpeg_xl->setSizePolicy(
-        QSizePolicy::Maximum, QSizePolicy::Fixed
-    );
+
+    options->image_quality_label_original = new QLabel("Quality");
 
     quality_label_hbox->addWidget(options->image_quality_label_original);
     quality_label_hbox->addWidget(options->image_quality_label_jpeg_xl);

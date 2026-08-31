@@ -469,7 +469,11 @@ void Window::on_display_preset_changed() {
         options_.enable_image_scaling_check_box->setChecked(true);
         options_.width_spin_box->setValue(display.width);
         options_.height_spin_box->setValue(display.height);
-        options_.bit_depth_combo_box->setCurrentIndex(display.bit_depth_index);
+        options_.bit_depth_combo_box->setCurrentIndex(
+            options_.bit_depth_combo_box->findData(
+                QVariant::fromValue(display.bit_depth)
+            )
+        );
         options_.convert_to_greyscale->setChecked(!display.colour);
     }
 

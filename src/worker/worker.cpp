@@ -130,8 +130,9 @@ int worker_main(int argc, char *argv[]) {
               )
            != 0;
 
-        task.bit_depth
-            = parse_arg<int>(args.at("-bit_depth"), "Invalid bit depth");
+        task.bit_depth = static_cast<BitDepth>(
+            parse_arg<int>(args.at("-bit_depth"), "Invalid bit depth")
+        );
         task.dither
             = parse_arg<double>(args.at("-dither"), "Invalid dither value");
 

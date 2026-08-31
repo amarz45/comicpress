@@ -321,24 +321,13 @@ void Window::add_display_presets_widget() {
     options_.display_preset_button->setMenu(display_menu);
 
     auto output_format_label = new QLabel("Output format");
-    static constexpr std::pair<const char *, OutputFormat> OUTPUT_FORMATS[] = {
-        {"EPUB", OutputFormat::EPUB},
-        {"CBZ", OutputFormat::CBZ},
-    };
-    options_.output_format_combo_box = new QComboBox();
-    for (const auto &[label, format] : OUTPUT_FORMATS) {
-        options_.output_format_combo_box->addItem(
-            label, QVariant::fromValue(format)
-        );
-    }
-    options_.output_format_combo_box->setCurrentIndex(
-        options_.output_format_combo_box->findData(
-            QVariant::fromValue(OutputFormat::EPUB)
-        )
-    );
-    options_.output_format_combo_box->setSizePolicy(
-        QSizePolicy::Maximum, QSizePolicy::Fixed
-    );
+    static constexpr auto OUTPUT_FORMATS
+        = std::to_array<std::pair<const char *, OutputFormat>>({
+            {"EPUB", OutputFormat::EPUB},
+            {"CBZ", OutputFormat::CBZ},
+        });
+    options_.output_format_combo_box
+        = create_combo_box(OUTPUT_FORMATS, OutputFormat::EPUB);
     auto output_format_container = create_control_with_info(
         style(), options_.output_format_combo_box, OUTPUT_FORMAT_TOOLTIP
     );
@@ -454,8 +443,8 @@ void Window::start_next_task() {
         << QString::number(task.page_height) << "-page_resampler"
         << QString::number(static_cast<int>(task.page_resampler))
         << "-quantize_pages" << (task.quantize_pages ? "1" : "0")
-        << "-bit_depth" << QString::number(task.bit_depth) << "-dither"
-        << QString::number(task.dither) << "-image_format"
+        << "-bit_depth" << QString::number(static_cast<int>(task.bit_depth))
+        << "-dither" << QString::number(task.dither) << "-image_format"
         << QString::number(static_cast<int>(task.image_format))
         << "-compression_type"
         << QString::number(static_cast<int>(task.compression_type))
@@ -520,7 +509,8 @@ PageTask Window::create_task(
         = options_.resampler_combo_box->currentData().value<VipsKernel>();
     task.quantize_pages
         = options_.enable_image_quantization_check_box->isChecked();
-    task.bit_depth = 1 << options_.bit_depth_combo_box->currentIndex();
+    task.bit_depth
+        = options_.bit_depth_combo_box->currentData().value<BitDepth>();
     task.dither = options_.dithering_spin_box->value();
     task.image_format = current_image_format();
     task.compression_type

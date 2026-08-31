@@ -9,16 +9,6 @@
 #include <sstream>
 #include <utility>
 
-QComboBox *
-create_combo_box(const QStringList &items, const QString &current_text) {
-    auto combo_box = new QComboBox();
-    combo_box->addItems(items);
-    combo_box->setCurrentText(current_text);
-    // Fix: Prevent combo box from expanding to fill width
-    combo_box->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
-    return combo_box;
-}
-
 QWidget *create_widget_with_info(
     QStyle *style, QWidget *main_widget, const char *tooltip_text
 ) {

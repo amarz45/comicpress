@@ -20,7 +20,8 @@ Checks: >
   readability-identifier-naming,
   readability-redundant-member-init,
   readability-redundant-string-cstr,
-  google-readability-casting
+  google-readability-casting,
+  modernize-avoid-c-arrays
 
 CheckOptions:
   # `auto x = new T` / `auto x = static_cast<T>(...)`. Note this check does not

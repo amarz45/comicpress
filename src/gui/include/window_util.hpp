@@ -22,6 +22,31 @@ QComboBox *create_combo_box(
     return combo;
 }
 
+template <typename Box = QSpinBox>
+struct SpinBoxParams {
+    using Value = decltype(std::declval<Box>().value());
+    std::pair<Value, Value> range;
+    Value step;
+    Value value;
+};
+
+template <typename Box = QSpinBox>
+Box *create_spin_box(const SpinBoxParams<Box> &params, auto &&...args) {
+    auto *box = new Box(std::forward<decltype(args)>(args)...);
+    box->setRange(params.range.first, params.range.second);
+    box->setSingleStep(params.step);
+    box->setValue(params.value);
+    box->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
+    return box;
+}
+
+template <typename Box>
+Box *create_spin_box(auto &&...args) {
+    auto *box = new Box(std::forward<decltype(args)>(args)...);
+    box->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
+    return box;
+}
+
 QWidget *create_widget_with_info(
     QStyle *style, QWidget *main_widget, const char *tooltip_text
 );

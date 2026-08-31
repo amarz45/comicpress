@@ -10,7 +10,6 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QSizePolicy>
-#include <QSpinBox>
 #include <QVariant>
 #include <QWidget>
 #include <Qt>
@@ -21,13 +20,12 @@
 #include <thread>
 #include <utility>
 
+static QFormLayout *create_form_layout(QWidget *container);
+
 #if defined(PDF_ENABLED)
 void add_pdf_pixel_density_widget(QStyle *style, Options *options) {
-    options->pdf_pixel_density_spin_box = new DensitySpinBox();
+    options->pdf_pixel_density_spin_box = create_spin_box<DensitySpinBox>();
     options->pdf_pixel_density_spin_box->setVisible(false);
-    options->pdf_pixel_density_spin_box->setSizePolicy(
-        QSizePolicy::Maximum, QSizePolicy::Fixed
-    );
 
     auto label = new QLabel("PDF pixel density");
     options->pdf_pixel_density_label = label;
@@ -49,12 +47,7 @@ void add_pdf_pixel_density_widget(QStyle *style, Options *options) {
     options->pdf_pixel_density_tooltip = control_pair.second;
 
     options->pdf_options_container = new QWidget();
-    auto pdf_layout = new QFormLayout(options->pdf_options_container);
-    pdf_layout->setContentsMargins(25, 0, 0, 0);
-    pdf_layout->setHorizontalSpacing(10);
-    pdf_layout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
-    pdf_layout->setFieldGrowthPolicy(QFormLayout::FieldsStayAtSizeHint);
-
+    auto pdf_layout = create_form_layout(options->pdf_options_container);
     pdf_layout->addRow(options->pdf_pixel_density_spin_box);
 
     options->pdf_pixel_density_label->setVisible(false);
@@ -97,11 +90,8 @@ void add_double_page_spread_widget(QStyle *style, Options *options) {
 
     // Rotation options
     options->rotation_options_container = new QWidget();
-    auto rotation_layout = new QFormLayout(options->rotation_options_container);
-    rotation_layout->setContentsMargins(25, 0, 0, 0);
-    rotation_layout->setHorizontalSpacing(10);
-    rotation_layout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
-    rotation_layout->setFieldGrowthPolicy(QFormLayout::FieldsStayAtSizeHint);
+    auto rotation_layout
+        = create_form_layout(options->rotation_options_container);
 
     auto rotation_label = new QLabel("Rotation direction");
 
@@ -168,31 +158,28 @@ void add_scaling_widgets(QStyle *style, Options *options) {
     options->settings_layout->addRow(label, enable_container);
 
     options->scaling_options_container = new QWidget();
-    auto scaling_layout = new QFormLayout(options->scaling_options_container);
-    scaling_layout->setContentsMargins(25, 0, 0, 0);
-    scaling_layout->setHorizontalSpacing(10);
-    scaling_layout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
-    scaling_layout->setFieldGrowthPolicy(QFormLayout::FieldsStayAtSizeHint);
+    auto scaling_layout
+        = create_form_layout(options->scaling_options_container);
+
+    const auto dimension_min = 100;
+    const auto dimension_max = 4000;
+    const auto dimension_step = 100;
 
     // Width
-    options->width_spin_box = new QSpinBox();
-    options->width_spin_box->setRange(100, 4'000);
-    options->width_spin_box->setSingleStep(100);
-    options->width_spin_box->setValue(1440);
-    options->width_spin_box->setSizePolicy(
-        QSizePolicy::Maximum, QSizePolicy::Fixed
-    );
+    options->width_spin_box = create_spin_box({
+        .range = {dimension_min, dimension_max},
+        .step = dimension_step,
+        .value = 1440,
+    });
     auto width_label = new QLabel("Max width");
     scaling_layout->addRow(width_label, options->width_spin_box);
 
     // Height
-    options->height_spin_box = new QSpinBox();
-    options->height_spin_box->setRange(100, 4'000);
-    options->height_spin_box->setSingleStep(100);
-    options->height_spin_box->setValue(1920);
-    options->height_spin_box->setSizePolicy(
-        QSizePolicy::Maximum, QSizePolicy::Fixed
-    );
+    options->height_spin_box = create_spin_box({
+        .range = {dimension_min, dimension_max},
+        .step = dimension_step,
+        .value = 1920,
+    });
     auto height_label = new QLabel("Max height");
     scaling_layout->addRow(height_label, options->height_spin_box);
 
@@ -235,13 +222,7 @@ void add_quantization_widgets(QStyle *style, Options *options) {
 
     options->quantization_options_container = new QWidget();
     auto quantization_layout
-        = new QFormLayout(options->quantization_options_container);
-    quantization_layout->setContentsMargins(25, 0, 0, 0);
-    quantization_layout->setHorizontalSpacing(10);
-    quantization_layout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
-    quantization_layout->setFieldGrowthPolicy(
-        QFormLayout::FieldsStayAtSizeHint
-    );
+        = create_form_layout(options->quantization_options_container);
 
     // Bit depth
     auto bit_depth_label = new QLabel("Bit depth");
@@ -262,12 +243,8 @@ void add_quantization_widgets(QStyle *style, Options *options) {
 
     // Dithering
     auto dithering_label = new QLabel("Dithering");
-    options->dithering_spin_box = new QDoubleSpinBox();
-    options->dithering_spin_box->setRange(0.0, 1.0);
-    options->dithering_spin_box->setSingleStep(0.1);
-    options->dithering_spin_box->setValue(1.0);
-    options->dithering_spin_box->setSizePolicy(
-        QSizePolicy::Maximum, QSizePolicy::Fixed
+    options->dithering_spin_box = create_spin_box<QDoubleSpinBox>(
+        {.range = {0.0, 1.0}, .step = 0.1, .value = 1.0}
     );
     auto dithering_container = create_control_with_info(
         style, options->dithering_spin_box, DITHERING_TOOLTIP
@@ -302,15 +279,9 @@ void add_image_format_widgets(QStyle *style, Options *options) {
         options->image_format_label, image_format_container
     );
 
-    auto image_format_options_container = new QWidget();
-    options->image_format_options_container = image_format_options_container;
-    auto image_format_layout = new QFormLayout(image_format_options_container);
-    image_format_layout->setContentsMargins(25, 0, 0, 0);
-    image_format_layout->setHorizontalSpacing(10);
-    image_format_layout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
-    image_format_layout->setFieldGrowthPolicy(
-        QFormLayout::FieldsStayAtSizeHint
-    );
+    options->image_format_options_container = new QWidget();
+    auto image_format_layout
+        = create_form_layout(options->image_format_options_container);
 
     // Compression type
     static constexpr auto COMPRESSION_TYPES
@@ -339,13 +310,8 @@ void add_image_format_widgets(QStyle *style, Options *options) {
 
     // Compression effort
     options->image_compression_label = new QLabel("Compression effort");
-    options->image_compression_spin_box = new QSpinBox();
-    options->image_compression_spin_box->setRange(0, 9);
-    options->image_compression_spin_box->setSingleStep(1);
-    options->image_compression_spin_box->setValue(6);
-    options->image_compression_spin_box->setSizePolicy(
-        QSizePolicy::Maximum, QSizePolicy::Fixed
-    );
+    options->image_compression_spin_box
+        = create_spin_box({.range = {0, 9}, .step = 1, .value = 6});
     image_format_layout->addRow(
         options->image_compression_label, options->image_compression_spin_box
     );
@@ -372,15 +338,11 @@ void add_image_format_widgets(QStyle *style, Options *options) {
     quality_label_hbox->addWidget(options->image_quality_label_jpeg_xl);
 
     // Quality spin box
-    options->image_quality_spin_box = new QDoubleSpinBox();
-    options->image_quality_spin_box->setRange(0, 100);
-    options->image_quality_spin_box->setSingleStep(1);
-    options->image_quality_spin_box->setValue(50);
+    options->image_quality_spin_box = create_spin_box<QDoubleSpinBox>(
+        {.range = {0, 100}, .step = 1, .value = 50}
+    );
     options->image_quality_spin_box->setDecimals(0);
     options->image_quality_spin_box->setVisible(false);
-    options->image_quality_spin_box->setSizePolicy(
-        QSizePolicy::Maximum, QSizePolicy::Fixed
-    );
     options->image_quality_label = options->image_quality_label_original;
     options->image_quality_label->setVisible(false); // Initial hidden state
 
@@ -393,21 +355,28 @@ void add_image_format_widgets(QStyle *style, Options *options) {
     options->image_quality_jpeg_xl_tooltip = image_quality_jpeg_xl_pair.second;
     options->image_quality_jpeg_xl_tooltip->setVisible(false);
 
-    options->settings_layout->addWidget(image_format_options_container);
+    options->settings_layout->addWidget(
+        options->image_format_options_container
+    );
 }
 
 void add_parallel_workers_widget(QStyle *, Options *options) {
     auto label = new QLabel("Parallel jobs");
     options->workers_label = label;
 
-    options->workers_spin_box = new QSpinBox();
     auto threads
         = std::max(1, static_cast<int>(std::thread::hardware_concurrency()));
-    options->workers_spin_box->setRange(1, threads);
-    options->workers_spin_box->setValue(threads);
-    options->workers_spin_box->setSizePolicy(
-        QSizePolicy::Maximum, QSizePolicy::Fixed
-    );
+    options->workers_spin_box
+        = create_spin_box({.range = {1, threads}, .step = 1, .value = threads});
 
     options->settings_layout->addRow(label, options->workers_spin_box);
+}
+
+static QFormLayout *create_form_layout(QWidget *container) {
+    auto layout = new QFormLayout(container);
+    layout->setContentsMargins(25, 0, 0, 0);
+    layout->setHorizontalSpacing(10);
+    layout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    layout->setFieldGrowthPolicy(QFormLayout::FieldsStayAtSizeHint);
+    return layout;
 }

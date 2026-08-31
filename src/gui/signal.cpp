@@ -392,7 +392,7 @@ void Window::on_output_format_combo_box_changed() {
         return;
     }
 
-    static constexpr ImageFormat EPUB_UNSUPPORTED[]
+    static constexpr auto EPUB_UNSUPPORTED
         = {ImageFormat::AVIF, ImageFormat::JPEG_XL};
 
     auto output_format
@@ -404,7 +404,7 @@ void Window::on_output_format_combo_box_changed() {
             image_format_combo->findData(QVariant::fromValue(ImageFormat::PNG))
         );
     }
-    for (auto format : EPUB_UNSUPPORTED) {
+    for (const auto format : EPUB_UNSUPPORTED) {
         view->setRowHidden(
             image_format_combo->findData(QVariant::fromValue(format)), is_epub
         );

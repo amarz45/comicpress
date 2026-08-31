@@ -21,6 +21,10 @@ int main(int argc, char **argv) {
     if (VIPS_INIT(argv[0])) {
         vips_error_exit(nullptr);
     }
+    // This prevents libvips from stopping the cleanup of temp directories on
+    // Windows. Also, the cache isn’t needed anyway since the GUI opens each
+    // page exactly once and never reuses the result.
+    vips_cache_set_max(0);
 
 #if defined(PDF_ENABLED)
     // PDFium is needed here to discover the number of pages in PDF files.

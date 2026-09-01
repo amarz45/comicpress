@@ -363,7 +363,7 @@ static std::vector<fs::path> collect_cbz_images(const fs::path &dir) {
     for (const auto &entry : fs::recursive_directory_iterator(dir)) {
         auto media_type = image_media_type(entry.path());
         if (!media_type.empty()) {
-            image_paths.push_back(entry.path());
+            image_paths.push_back(fs::relative(entry.path(), dir));
         }
     }
     return image_paths;

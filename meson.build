@@ -57,6 +57,7 @@ executable(
     qt_processed_files,
     dependencies: [qt6_dep, vips_dep, pdfium_dep, libarchive_dep],
     cpp_pch: 'pch/pch.hpp',
+    win_subsystem: 'windows', # prevents the console from opening on Windows
     install: true,
 )
 

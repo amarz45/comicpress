@@ -579,7 +579,9 @@ void create_cbz(const fs::path &image_dir, const fs::path &output_path) {
         auto image_path_abs = image_dir / image_path_rel;
 
         auto entry = archive_entry_new();
-        archive_entry_set_pathname(entry, image_path_rel.string().c_str());
+        archive_entry_set_pathname(
+            entry, image_path_rel.generic_string().c_str()
+        );
         archive_entry_set_size(
             entry, static_cast<la_int64_t>(fs::file_size(image_path_abs))
         );

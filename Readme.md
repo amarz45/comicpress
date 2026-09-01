@@ -88,6 +88,83 @@ $ meson setup build --buildtype=release
 $ meson compile -C build
 ```
 
+`comicpress` will then be located in the `build` directory.
+
+### Windows
+
+Comicpress is built on Windows using [MSYS2](https://www.msys2.org) with the
+UCRT64 environment.
+
+#### Installing dependencies
+
+##### MSYS2
+
+Download the installer from https://www.msys2.org and run it. Open **MSYS2
+UCRT64** from the Start menu (not _MSYS2 MSYS_ or _MSYS2 MINGW64_) and update:
+
+```console
+$ pacman -Syu
+```
+
+The terminal may close partway through. Reopen it and rerun `pacman -Syu` until
+it reports there is nothing to do. Then install the dependencies:
+
+```console
+$ pacman -S --needed git curl tar \
+    mingw-w64-ucrt-x86_64-toolchain \
+    mingw-w64-ucrt-x86_64-meson \
+    mingw-w64-ucrt-x86_64-ninja \
+    mingw-w64-ucrt-x86_64-pkgconf \
+    mingw-w64-ucrt-x86_64-libvips \
+    mingw-w64-ucrt-x86_64-libheif \
+    mingw-w64-ucrt-x86_64-libjxl \
+    mingw-w64-ucrt-x86_64-qt6-base \
+    mingw-w64-ucrt-x86_64-libarchive
+```
+
+##### Prerequisites
+
+Go to https://github.com/bblanchon/pdfium-binaries/releases/latest. Download the
+file that matches your CPU. For example, on x86-64 this would be
+`pdfium-win-x64.tgz`. `cd` into the directory containing the tarball. Extract
+and install:
+
+```console
+$ mkdir pdfium
+$ tar -xzf pdfium-win-x64.tgz -C pdfium
+$ cd pdfium
+$ cp -r include/* /ucrt64/include/
+$ cp bin/pdfium.dll /ucrt64/bin/
+$ cp lib/pdfium.dll.lib /ucrt64/lib/libpdfium.dll.a
+```
+
+##### Compiling
+
+```console
+$ git clone --depth=1 https://github.com/amarz45/comicpress
+$ cd comicpress
+$ meson setup build --buildtype=release
+$ meson compile -C build
+```
+
+`comicpress.exe` will then be located in the `build` directory.
+
+##### Bundling
+
+To run Comicpress outside MSYS2, collect it and its libraries into one folder:
+
+```console
+$ dist=~/comicpress-dist
+$ mkdir -p "$dist/lib"
+$ cp build/comicpress.exe "$dist"
+$ cp -r /ucrt64/lib/vips-modules-* "$dist/lib/"
+$ rm "$dist"/lib/vips-modules-*/vips-{magick,openslide,poppler}.dll
+$ windeployqt.exe "$dist/comicpress.exe"
+$ for f in "$dist/comicpress.exe" "$dist"/lib/vips-modules-*/*.dll; do
+      ldd "$f" | awk '/\/ucrt64\/bin\//{print $3}'
+  done | sort -u | xargs -r cp -n -t "$dist"
+```
+
 ## Copyright
 
 Copyright (C) 2026 Amar Al-Zubaidi.

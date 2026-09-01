@@ -276,12 +276,42 @@ static std::string create_epub_mimetype() {
 }
 
 static std::string create_epub_style_css() {
-    return "@page { margin: 0; }\n"
-           "html, body { margin: 0; padding: 0; height: 100%; }\n"
-           "body { background-color: #000000; }\n"
-           "div.page { width: 100%; height: 100%; margin: 0; padding: 0; }\n"
-           "img { width: 100%; height: 100%; margin: 0; padding: 0; display: "
-           "block; }\n";
+    return R"css(@page { margin: 0; padding: 0; }
+
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    text-align: center;
+}
+
+div.page {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    /* Centers the image on engines that treat it as inline content. */
+    text-align: center;
+    /* Collapses the pretty-printing whitespace around <img> and removes the
+       line-box strut, so an inline image occupies exactly its own height. */
+    font-size: 0;
+    line-height: 0;
+}
+
+div.page img {
+    /* Deliberately no width/height. In a fixed-layout reader the viewport is
+       already the image's pixel size, so natural size fills the page exactly.
+       In a reflowable engine the max-* rules scale it down to fit while
+       preserving the aspect ratio. */
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
+    margin: 0 auto;
+    padding: 0;
+    vertical-align: top;
+    object-fit: contain;
+}
+)css";
 }
 
 struct EpubImage {

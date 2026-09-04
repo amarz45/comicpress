@@ -39,7 +39,10 @@ int main(int argc, char **argv) {
     QCoreApplication::setOrganizationName("io.github.amarz45");
     QCoreApplication::setApplicationName("Comicpress");
     QApplication::setWindowIcon(
-        QIcon::fromTheme("io.github.amarz45.Comicpress")
+        QIcon::fromTheme(
+            "io.github.amarz45.Comicpress",
+            QIcon(":/icons/io.github.amarz45.Comicpress.svg")
+        )
     );
 
     auto font = app.font();

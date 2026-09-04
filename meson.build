@@ -41,7 +41,35 @@ elif pdfium_opt.enabled()
 endif
 
 qt6 = import('qt6')
-qt_processed_files = qt6.preprocess(moc_headers: ['src/gui/include/window.hpp', 'src/gui/include/options.hpp'])
+qt_processed_files = qt6.preprocess(
+    moc_headers: ['src/gui/include/window.hpp', 'src/gui/include/options.hpp'],
+    qresources: 'data/comicpress.qrc',
+)
+
+if host_machine.system() == 'windows'
+    windows = import('windows')
+
+    # Takes four comma-separated fields. The project version is x.y.z, so the
+    # last field is always zero.
+    version_comma = ','.join(meson.project_version().split('.')) +  ',0'
+
+    comicpress_rc = configure_file(
+        input: 'packaging/windows/comicpress.rc.in',
+        output: 'comicpress.rc',
+        configuration: {
+            'VERSION_COMMA': version_comma,
+            'VERSION_STRING': meson.project_version(),
+        },
+    )
+
+    windows_resources = windows.compile_resources(
+        comicpress_rc,
+        include_directories: include_directories('packaging/windows'),
+        depend_files: files('packaging/windows/comicpress.ico'),
+    )
+else
+    windows_resources = []
+endif
 
 executable(
     'comicpress',
@@ -56,6 +84,7 @@ executable(
     'src/worker/processing.cpp',
     'src/archive.cpp',
     qt_processed_files,
+    windows_resources,
     dependencies: [qt6_dep, vips_dep, pdfium_dep, libarchive_dep],
     cpp_pch: 'pch/pch.hpp',
     win_subsystem: 'windows', # prevents the console from opening on Windows

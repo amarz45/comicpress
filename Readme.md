@@ -119,6 +119,7 @@ $ pacman -S --needed git curl tar \
     mingw-w64-ucrt-x86_64-libheif \
     mingw-w64-ucrt-x86_64-libjxl \
     mingw-w64-ucrt-x86_64-qt6-base \
+    mingw-w64-ucrt-x86_64-qt6-svg \
     mingw-w64-ucrt-x86_64-libarchive
 ```
 

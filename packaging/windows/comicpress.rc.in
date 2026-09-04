@@ -1,0 +1,34 @@
+#include <windows.h>
+
+// Explorer and the taskbar use the numerically lowest icon resource.
+1 ICON "comicpress.ico"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION @VERSION_COMMA@
+PRODUCTVERSION @VERSION_COMMA@
+FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+FILEFLAGS 0x0L
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+FILESUBTYPE VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName", "Amar Al-Zubaidi"
+            VALUE "FileDescription", "Comicpress"
+            VALUE "FileVersion", "@VERSION_STRING@"
+            VALUE "InternalName", "comicpress"
+            VALUE "LegalCopyright",
+                "Copyright (C) 2026 Amar Al-Zubaidi. GPL-3.0-or-later."
+            VALUE "OriginalFilename", "comicpress.exe"
+            VALUE "ProductName", "Comicpress"
+            VALUE "ProductVersion", "@VERSION_STRING@"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END

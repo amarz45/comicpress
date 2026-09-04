@@ -171,13 +171,16 @@ class Window : public QMainWindow {
     ~Window() override;
 
   private slots:
+    void finish_run();
     void on_start_button_clicked();
     void on_cancel_button_clicked();
     void handle_log_message(const QString &message);
     void handle_task_finished();
+    void handle_worker_exit(QProcess *process);
     void start_next_task();
     void on_worker_finished(int exit_code, QProcess::ExitStatus exit_status);
     void on_worker_output();
+    void on_worker_error(QProcess::ProcessError error);
     void on_add_files_clicked();
     void on_remove_selected_clicked();
     void on_clear_all_clicked();

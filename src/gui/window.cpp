@@ -424,6 +424,15 @@ void Window::start_next_task() {
         this,
         &Window::on_worker_finished
     );
+    // Queued: on Windows, `start()` reports a failed launch synchronously, and
+    // handling it inline would re-enter `start_next_task` once per queued page.
+    connect(
+        process,
+        &QProcess::errorOccurred,
+        this,
+        &Window::on_worker_error,
+        Qt::QueuedConnection
+    );
 
     QString program = QCoreApplication::applicationFilePath();
     QStringList arguments;

@@ -714,8 +714,10 @@ void Window::on_start_button_clicked() {
     auto output_dir
         = fs::path(effective_output_dir().toStdString()) / oss.str();
     if (!create_output_dir(output_dir)) {
-        log_output_->append("Failed to create output directory.");
         log_output_->setVisible(true);
+        log_output_->append("Failed to create output directory.");
+        progress_bar_->setVisible(false);
+        finish_run();
         return;
     }
     output_path_ = output_dir;
@@ -744,7 +746,7 @@ void Window::on_start_button_clicked() {
                             .arg(source_file.string())
                     );
                     log_output_->setVisible(true);
-                    return;
+                    continue;
                 }
 
                 int page_num = 0;
@@ -828,25 +830,8 @@ void Window::on_start_button_clicked() {
     if (task_queue_.isEmpty()) {
         log_output_->setVisible(true);
         log_output_->append("No pages found to process.");
-        options_.settings_group->setEnabled(true);
-        start_button_->setEnabled(true);
-        cancel_button_->setEnabled(false);
         progress_bar_->setVisible(false);
-
-        // Clean up base temp dir on early exit
-        if (!temp_base_dir_.empty()) {
-            try {
-                fs::remove_all(temp_base_dir_);
-            }
-            catch (const std::exception &e) {
-                log_output_->setVisible(true);
-                log_output_->append(
-                    QString("Error cleaning up temp directory: %1")
-                        .arg(e.what())
-                );
-            }
-            temp_base_dir_.clear();
-        }
+        finish_run();
         return;
     }
 
@@ -896,24 +881,7 @@ void Window::on_cancel_button_clicked() {
     progress_bar_->setVisible(false);
     progress_bar_->setValue(0);
 
-    timer_->stop();
-    options_.settings_group->setEnabled(true);
-    start_button_->setEnabled(true);
-    cancel_button_->setEnabled(false);
-
-    // Clean up base temp dir on cancel
-    if (!temp_base_dir_.empty()) {
-        auto err_code = std::error_code{};
-        fs::remove_all(temp_base_dir_, err_code);
-        if (err_code) {
-            log_output_->append(
-                QString("Warning: failed to delete temp directory '%1': %2")
-                    .arg(temp_base_dir_, err_code.message())
-            );
-            log_output_->setVisible(true);
-        }
-        temp_base_dir_.clear();
-    }
+    finish_run();
 
     // Clean up empty output dir
     auto err_code = std::error_code{};
@@ -931,13 +899,6 @@ void Window::on_worker_finished(
         return;
     }
 
-    running_processes_.removeAll(process);
-    if (!running_tasks_.contains(process)) {
-        process->deleteLater();
-        return;
-    }
-    PageTask finished_task = running_tasks_.take(process);
-
     if (exit_status == QProcess::CrashExit || exit_code != 0) {
         log_output_->setVisible(true);
         log_output_->append(
@@ -945,6 +906,33 @@ void Window::on_worker_finished(
                 .arg(exit_code)
         );
     }
+
+    handle_worker_exit(process);
+}
+
+void Window::on_worker_error(QProcess::ProcessError error) {
+    // `finished` handles the cases where the process actually exists.
+    if (error != QProcess::FailedToStart) {
+        return;
+    }
+
+    auto process = qobject_cast<QProcess *>(sender());
+    if (!process) {
+        return;
+    }
+
+    log_output_->setVisible(true);
+    log_output_->append("Worker process failed to start.");
+    handle_worker_exit(process);
+}
+
+void Window::handle_worker_exit(QProcess *process) {
+    running_processes_.removeAll(process);
+    if (!running_tasks_.contains(process)) {
+        process->deleteLater();
+        return;
+    }
+    PageTask finished_task = running_tasks_.take(process);
 
     handle_task_finished();
 
@@ -981,25 +969,7 @@ void Window::on_worker_finished(
     }
     else {
         if (pages_processed_ == total_pages_) {
-            timer_->stop();
-            options_.settings_group->setEnabled(true);
-            start_button_->setEnabled(true);
-            cancel_button_->setEnabled(false);
-
-            // Clean up base temp dir on success
-            if (!temp_base_dir_.empty()) {
-                try {
-                    fs::remove_all(temp_base_dir_);
-                }
-                catch (const std::exception &e) {
-                    log_output_->setVisible(true);
-                    log_output_->append(
-                        QString("Error cleaning up temp directory: %1")
-                            .arg(e.what())
-                    );
-                }
-                temp_base_dir_.clear();
-            }
+            finish_run();
         }
         else {
             start_next_task();
@@ -1018,4 +988,28 @@ void Window::on_worker_output() {
             log_output_->append(process->readLine().trimmed());
         }
     }
+}
+
+// Every exit from a run goes through here, so a failure can’t leave the
+// button disabled or the temp directory behind.
+void Window::finish_run() {
+    timer_->stop();
+    options_.settings_group->setEnabled(true);
+    start_button_->setEnabled(true);
+    cancel_button_->setEnabled(false);
+
+    if (temp_base_dir_.empty()) {
+        return;
+    }
+
+    auto err_code = std::error_code{};
+    fs::remove_all(temp_base_dir_, err_code);
+    if (err_code) {
+        log_output_->setVisible(true);
+        log_output_->append(
+            QString("Warning: failed to delete temp directory '%1': %2")
+                .arg(temp_base_dir_, err_code.message())
+        );
+    }
+    temp_base_dir_.clear();
 }

@@ -349,6 +349,9 @@ void Window::start_next_task() {
     PageTask task = task_queue_.dequeue();
     QString source_qstr = QString::fromStdString(task.source_file.string());
 
+    auto output_format
+        = options_.output_format_combo_box->currentData().value<OutputFormat>();
+
     auto &job = jobs_[source_qstr];
     if (job.progress_bar == nullptr) {
         progress_bars_group_->setVisible(true);
@@ -357,8 +360,15 @@ void Window::start_next_task() {
         auto vbox = new QVBoxLayout(widget);
         vbox->setContentsMargins(5, 2, 5, 2);
 
+        auto filename = QFileInfo(source_qstr).completeBaseName();
+        if (output_format == OutputFormat::EPUB) {
+            filename += ".epub";
+        }
+        else if (output_format == OutputFormat::CBZ) {
+            filename += ".cbz";
+        }
+
         auto progress_layout = new QHBoxLayout();
-        auto filename = QFileInfo(source_qstr).completeBaseName() + ".cbz";
         auto label = new QLabel("<code>" + filename + "</code>");
         auto progress_bar = new QProgressBar();
         progress_bar->setMaximum(job.pages_total);

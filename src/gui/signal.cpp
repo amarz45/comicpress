@@ -1,3 +1,4 @@
+#include "../include/archive.hpp"
 #include "include/display_presets.hpp"
 #include "include/window.hpp"
 
@@ -735,14 +736,9 @@ void Window::on_start_button_clicked() {
                     = fs::path(temp_base_dir_) / source_file.stem();
                 fs::create_directories(temp_archive_dir);
 
-                auto archive = archive_read_new();
-                archive_read_support_filter_all(archive);
-                archive_read_support_format_all(archive);
-
-                auto archive_open = archive_read_open_filename(
-                    archive, source_file.string().c_str(), 10240
-                );
-                if (archive_open != ARCHIVE_OK) {
+                auto archive
+                    = ArchiveReader::open(source_file.string().c_str());
+                if (!archive) {
                     log_output_->append(
                         QString("Error: failed to read archive '%1'.")
                             .arg(source_file.string())
@@ -751,17 +747,26 @@ void Window::on_start_button_clicked() {
                     return;
                 }
 
-                int page_count = 0;
-                struct archive_entry *entry;
-                while (archive_read_next_header(archive, &entry)
-                       == ARCHIVE_OK) {
-                    if (archive_entry_filetype(entry) == AE_IFREG) {
-                        page_count += 1;
+                int page_num = 0;
+                while (auto entry = archive->next()) {
+                    if (!entry->is_regular_file()) {
+                        continue;
                     }
-                }
-                archive_read_close(archive);
-                archive_read_free(archive);
 
+                    auto task
+                        = create_task(source_file, temp_archive_dir, page_num);
+                    task.path_in_archive = entry->pathname();
+
+                    fs::path entry_path(task.path_in_archive);
+                    task.output_base_name
+                        = entry_path.replace_extension("").string();
+
+                    task_queue_.enqueue(task);
+
+                    page_num += 1;
+                }
+
+                auto page_count = page_num;
                 jobs_[file_qstr].pages_total = page_count;
                 total_pages_ += page_count;
                 jobs_[file_qstr].pages_processed = 0;
@@ -772,33 +777,6 @@ void Window::on_start_button_clicked() {
                     );
                     continue;
                 }
-
-                archive = archive_read_new();
-                archive_read_support_filter_all(archive);
-                archive_read_support_format_all(archive);
-                archive_read_open_filename(
-                    archive, source_file.string().c_str(), 10240
-                );
-
-                int i = 0;
-                while (archive_read_next_header(archive, &entry)
-                       == ARCHIVE_OK) {
-                    if (archive_entry_filetype(entry) != AE_IFREG) {
-                        continue;
-                    }
-
-                    auto task = create_task(source_file, temp_archive_dir, i);
-                    task.path_in_archive = archive_entry_pathname(entry);
-
-                    fs::path entry_path(task.path_in_archive);
-                    task.output_base_name
-                        = entry_path.replace_extension("").string();
-
-                    task_queue_.enqueue(task);
-                    i += 1;
-                }
-                archive_read_close(archive);
-                archive_read_free(archive);
             }
 #if defined(PDF_ENABLED)
             else if (extension == ".pdf") {

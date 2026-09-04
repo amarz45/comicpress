@@ -6,11 +6,6 @@
 
 namespace fs = std::filesystem;
 
-struct ArchiveError : std::runtime_error {
-    ArchiveError() : std::runtime_error("archive error") {
-    }
-};
-
 struct NoImagesError : std::runtime_error {
     NoImagesError() : std::runtime_error("no images") {
     }

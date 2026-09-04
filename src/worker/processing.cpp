@@ -12,6 +12,7 @@
 #include <fpdfview.h>
 #endif
 
+#include "../include/archive.hpp"
 #include "../include/task.hpp"
 #include "include/processing.hpp"
 
@@ -131,63 +132,44 @@ LoadPageReturn load_pdf_page(const PageTask &task) {
 #endif
 
 LoadPageReturn load_archive_image(const PageTask &task) {
-    auto archive = archive_read_new();
-    archive_read_support_filter_all(archive);
-    archive_read_support_format_all(archive);
+    auto archive = ArchiveReader::open(task.source_file.string().c_str());
 
-    auto archive_open = archive_read_open_filename(
-        archive, task.source_file.string().c_str(), 10240
-    );
-
-    if (archive_open != ARCHIVE_OK) {
-        auto *archive_err = archive_error_string(archive);
-        std::string err = archive_err ? archive_err : "";
-        archive_read_free(archive);
-        throw std::runtime_error("LibArchive: Could not open file: " + err);
+    if (!archive) {
+        throw std::runtime_error(
+            "LibArchive: Could not open file: " + archive.error()
+        );
     }
 
-    struct archive_entry *entry;
     std::vector<char> buffer;
 
-    while (archive_read_next_header(archive, &entry) == ARCHIVE_OK) {
-        auto path_name = std::string(archive_entry_pathname(entry));
+    while (auto entry = archive->next()) {
+        auto path_name = std::string(entry->pathname());
         if (path_name == task.path_in_archive) {
-            if (!archive_entry_size_is_set(entry)) {
-                archive_read_close(archive);
-                archive_read_free(archive);
+            if (!entry->size_is_set()) {
                 throw std::runtime_error(
                     "LibArchive: Unknown entry size for '"
                     + task.path_in_archive + "'"
                 );
             }
-            auto size = archive_entry_size(entry);
+            auto size = entry->size();
             if (size <= 0) {
-                archive_read_close(archive);
-                archive_read_free(archive);
                 throw std::runtime_error(
                     "LibArchive: Invalid entry size for '"
                     + task.path_in_archive + "'"
                 );
             }
             buffer.resize(static_cast<size_t>(size));
-            auto bytes_read
-                = archive_read_data(archive, buffer.data(), buffer.size());
-            if (bytes_read < 0) {
-                auto *archive_err = archive_error_string(archive);
-                std::string err = archive_err ? archive_err : "";
-                archive_read_free(archive);
+            auto bytes_read = archive->read_data(buffer.data(), buffer.size());
+            if (!bytes_read) {
                 throw std::runtime_error(
                     "LibArchive: Read error for '" + task.path_in_archive
-                    + "': " + err
+                    + "': " + bytes_read.error()
                 );
             }
-            buffer.resize(static_cast<size_t>(bytes_read));
+            buffer.resize(*bytes_read);
             break;
         }
     }
-
-    archive_read_close(archive);
-    archive_read_free(archive);
 
     if (buffer.empty()) {
         throw std::runtime_error(

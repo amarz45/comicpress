@@ -1,4 +1,5 @@
 #include "include/window.hpp"
+#include "../include/archive.hpp"
 #include "../include/task.hpp"
 #include "include/display_presets.hpp"
 #include "include/options.hpp"

@@ -1,4 +1,5 @@
 #include "include/output_formats.hpp"
+#include "../include/archive.hpp"
 
 #include <QAnyStringView>
 #include <QBuffer>
@@ -17,10 +18,7 @@
 #include <vips/vips8>
 
 #include <algorithm>
-#include <cstdint>
 #include <filesystem>
-#include <fstream>
-#include <sstream>
 #include <vector>
 namespace fs = std::filesystem;
 
@@ -369,104 +367,35 @@ static std::vector<fs::path> collect_cbz_images(const fs::path &dir) {
     return image_paths;
 }
 
-static void add_file_to_archive(
-    struct archive *archive,
-    const char *filename,
-    const std::string &file_contents
-) {
-    auto entry = archive_entry_new();
-    archive_entry_set_pathname(entry, filename);
-    archive_entry_set_size(
-        entry, static_cast<la_int64_t>(file_contents.length())
-    );
-    archive_entry_set_filetype(entry, AE_IFREG);
-    archive_entry_set_perm(entry, 0644);
-    if (archive_write_header(archive, entry) == ARCHIVE_FATAL) {
-        throw ArchiveError();
-    }
-
-    auto stream = std::istringstream(file_contents);
-    char buffer[8192];
-    while (stream.good()) {
-        stream.read(buffer, sizeof(buffer));
-        auto write = archive_write_data(
-            archive, buffer, static_cast<size_t>(stream.gcount())
-        );
-        if (write == ARCHIVE_FATAL) {
-            throw ArchiveError();
-        }
-    }
-
-    archive_entry_free(entry);
-}
-
-static void add_file_to_archive(
-    struct archive *archive,
-    const char *filename,
-    const fs::path &path,
-    std::int64_t size
-) {
-    auto entry = archive_entry_new();
-    archive_entry_set_pathname(entry, filename);
-    archive_entry_set_size(entry, size);
-    archive_entry_set_filetype(entry, AE_IFREG);
-    archive_entry_set_perm(entry, 0644);
-    if (archive_write_header(archive, entry) == ARCHIVE_FATAL) {
-        throw ArchiveError();
-    }
-
-    auto stream = std::ifstream(path, std::ios::binary);
-    char buffer[8192];
-    while (stream.good()) {
-        stream.read(buffer, sizeof(buffer));
-        archive_write_data(
-            archive, buffer, static_cast<size_t>(stream.gcount())
-        );
-    }
-
-    archive_entry_free(entry);
-}
-
 void create_epub(
     const fs::path &image_dir,
     const fs::path &output_path,
     const std::string &title
 ) {
-    auto archive = archive_write_new();
-    archive_write_set_format_zip(archive);
-
-    // Check if we can actually open the output archive path.
-    if (archive_write_open_filename(archive, output_path.string().c_str())
-        != ARCHIVE_OK) {
-        const auto *error = archive_error_string(archive);
-        auto message = std::string(error ? error : "");
-        archive_write_free(archive);
-        throw std::runtime_error(message);
-    }
+    auto archive = ArchiveWriter(output_path.string().c_str());
 
     auto epub_images = collect_epub_images(image_dir);
     if (epub_images.empty()) {
-        archive_write_free(archive);
         throw NoImagesError();
         return;
     }
 
-    archive_write_zip_set_compression_store(archive);
-    add_file_to_archive(archive, "mimetype", create_epub_mimetype());
-    archive_write_zip_set_compression_deflate(archive);
+    archive.set_compression_store();
+    archive.add_file("mimetype", create_epub_mimetype());
+    archive.set_compression_deflate();
 
     auto first_image_path = fs::path(epub_images[0].path);
     auto first_page_path
         = "text/"
         + first_image_path.replace_extension(".xhtml").generic_string();
     auto nav_xhtml = create_epub_nav_xhtml(first_page_path);
-    add_file_to_archive(archive, "OEBPS/nav.xhtml", nav_xhtml);
+    archive.add_file("OEBPS/nav.xhtml", nav_xhtml);
 
     auto container_xml = create_epub_container_xml();
-    add_file_to_archive(archive, "META-INF/container.xml", container_xml);
+    archive.add_file("META-INF/container.xml", container_xml);
 
     auto style_css = create_epub_style_css();
-    add_file_to_archive(archive, "OEBPS/style.css", style_css);
+    archive.add_file("OEBPS/style.css", style_css);
 
     QByteArray content_opf_out;
     QBuffer content_opf_buf(&content_opf_out);
@@ -494,23 +423,18 @@ void create_epub(
 
         // Add the image file. Store the bytes directly instead of compressing
         // since images are already compressed.
-        archive_write_zip_set_compression_store(archive);
+        archive.set_compression_store();
         auto image_path_epub
             = "OEBPS/images/" + image_path_rel.generic_string();
-        add_file_to_archive(
-            archive,
-            image_path_epub.c_str(),
-            image_path_abs,
-            static_cast<std::int64_t>(fs::file_size(image_path_abs))
-        );
-        archive_write_zip_set_compression_deflate(archive);
+        archive.add_file(image_path_epub.c_str(), image_path_abs);
+        archive.set_compression_deflate();
 
         // Add the page file.
         auto page_path_epub = "OEBPS/text/" + page_path;
         auto page_xhtml = create_epub_page_xhtml(
             page_num, image_path_rel, image.width(), image.height()
         );
-        add_file_to_archive(archive, page_path_epub.c_str(), page_xhtml);
+        archive.add_file(page_path_epub.c_str(), page_xhtml);
 
         // Write an element for the image.
         auto image_id = "img" + std::to_string(page_num);
@@ -544,67 +468,27 @@ void create_epub(
     content_opf_writer.writeEndElement(); // package
     content_opf_writer.writeEndDocument();
 
-    add_file_to_archive(
-        archive, "OEBPS/content.opf", content_opf_out.toStdString()
-    );
+    archive.add_file("OEBPS/content.opf", content_opf_out.toStdString());
 
-    if (archive_write_close(archive) == ARCHIVE_FATAL) {
-        throw ArchiveError();
-    }
-    archive_write_free(archive);
+    archive.close();
 }
 
 void create_cbz(const fs::path &image_dir, const fs::path &output_path) {
-    auto archive = archive_write_new();
-    archive_write_set_format_zip(archive);
-    archive_write_zip_set_compression_store(archive);
-
-    // Check if we can actually open the output archive path.
-    if (archive_write_open_filename(archive, output_path.string().c_str())
-        != ARCHIVE_OK) {
-        const auto *error = archive_error_string(archive);
-        auto message = std::string(error ? error : "");
-        archive_write_free(archive);
-        throw std::runtime_error(message);
-    }
+    auto archive = ArchiveWriter(output_path.string().c_str());
+    archive.set_compression_store();
 
     auto cbz_images = collect_cbz_images(image_dir);
     if (cbz_images.empty()) {
-        archive_write_free(archive);
         throw NoImagesError();
         return;
     }
 
     for (const auto &image_path_rel : cbz_images) {
         auto image_path_abs = image_dir / image_path_rel;
-
-        auto entry = archive_entry_new();
-        archive_entry_set_pathname(
-            entry, image_path_rel.generic_string().c_str()
+        archive.add_file(
+            image_path_rel.generic_string().c_str(), image_path_abs
         );
-        archive_entry_set_size(
-            entry, static_cast<la_int64_t>(fs::file_size(image_path_abs))
-        );
-        archive_entry_set_filetype(entry, AE_IFREG);
-        archive_entry_set_perm(entry, 0644);
-        if (archive_write_header(archive, entry) == ARCHIVE_FATAL) {
-            throw ArchiveError();
-        }
-
-        auto file_stream = std::ifstream(image_path_abs, std::ios::binary);
-        char buffer[8192];
-        while (file_stream.good()) {
-            file_stream.read(buffer, sizeof(buffer));
-            archive_write_data(
-                archive, buffer, static_cast<size_t>(file_stream.gcount())
-            );
-        }
-
-        archive_entry_free(entry);
     }
 
-    if (archive_write_close(archive) == ARCHIVE_FATAL) {
-        throw ArchiveError();
-    }
-    archive_write_free(archive);
+    archive.close();
 }

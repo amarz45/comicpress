@@ -54,6 +54,7 @@ executable(
     'src/gui/output_formats.cpp',
     'src/worker/worker.cpp',
     'src/worker/processing.cpp',
+    'src/archive.cpp',
     qt_processed_files,
     dependencies: [qt6_dep, vips_dep, pdfium_dep, libarchive_dep],
     cpp_pch: 'pch/pch.hpp',

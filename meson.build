@@ -46,7 +46,11 @@ qt_processed_files = qt6.preprocess(
     qresources: 'data/comicpress.qrc',
 )
 
+winsparkle_dep = dependency('', required: false)
+
 if host_machine.system() == 'windows'
+    winsparkle_dep = cpp.find_library('WinSparkle', required: true)
+
     windows = import('windows')
 
     # Takes four comma-separated fields. The project version is x.y.z, so the
@@ -85,7 +89,7 @@ executable(
     'src/archive.cpp',
     qt_processed_files,
     windows_resources,
-    dependencies: [qt6_dep, vips_dep, pdfium_dep, libarchive_dep],
+    dependencies: [qt6_dep, vips_dep, pdfium_dep, libarchive_dep, winsparkle_dep],
     cpp_pch: 'pch/pch.hpp',
     win_subsystem: 'windows', # prevents the console from opening on Windows
     install: true,

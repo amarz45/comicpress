@@ -45,7 +45,8 @@ distribution before installing.
 
 ## Windows
 
-Installation for Windows is coming soon.
+Download the latest installer from the
+[releases page](https://github.com/amarz45/comicpress/releases) and run it.
 
 ## Building From Source
 
@@ -110,7 +111,7 @@ The terminal may close partway through. Reopen it and rerun `pacman -Syu` until
 it reports there is nothing to do. Then install the dependencies:
 
 ```console
-$ pacman -S --needed git curl tar \
+$ pacman -S --needed git curl tar unzip \
     mingw-w64-ucrt-x86_64-toolchain \
     mingw-w64-ucrt-x86_64-meson \
     mingw-w64-ucrt-x86_64-ninja \
@@ -139,6 +140,18 @@ $ cp bin/pdfium.dll /ucrt64/bin/
 $ cp lib/pdfium.dll.lib /ucrt64/lib/libpdfium.dll.a
 ```
 
+Comicpress uses [WinSparkle](https://winsparkle.org) for automatic updates.
+Download the binary release, extract and install:
+
+```console
+$ curl -LO https://github.com/vslavik/winsparkle/releases/download/v0.9.4/WinSparkle-0.9.4.zip
+$ unzip WinSparkle-0.9.4.zip
+$ cd WinSparkle-0.9.4
+$ cp include/winsparkle.h include/winsparkle-version.h /ucrt64/include/
+$ cp x64/Release/WinSparkle.dll /ucrt64/bin/
+$ cp x64/Release/WinSparkle.lib /ucrt64/lib/libWinSparkle.dll.a
+```
+
 ##### Compiling
 
 ```console
@@ -155,15 +168,14 @@ $ meson compile -C build
 To run Comicpress outside MSYS2, collect it and its libraries into one folder:
 
 ```console
-$ dist=~/comicpress-dist
-$ mkdir -p "$dist/lib"
-$ cp build/comicpress.exe "$dist"
-$ cp -r /ucrt64/lib/vips-modules-* "$dist/lib/"
-$ rm "$dist"/lib/vips-modules-*/vips-{magick,openslide,poppler}.dll
-$ windeployqt.exe "$dist/comicpress.exe"
-$ for f in "$dist/comicpress.exe" "$dist"/lib/vips-modules-*/*.dll; do
-      ldd "$f" | awk '/\/ucrt64\/bin\//{print $3}'
-  done | sort -u | xargs -r cp -n -t "$dist"
+$ bash packaging/windows/bundle.sh
+```
+
+This writes to `~/comicpress-dist`. To override the build directory and the
+destination:
+
+```console
+$ bash packaging/windows/bundle.sh build ~/somewhere-else
 ```
 
 ## Copyright

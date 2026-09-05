@@ -12,6 +12,22 @@
 #include <fpdfview.h>
 #endif
 
+#if defined(_WIN32)
+#include <winsparkle.h>
+
+static int can_shutdown() {
+    return is_converting.load() ? 0 : 1;
+}
+
+static void request_shutdown() {
+    QMetaObject::invokeMethod(
+        QCoreApplication::instance(),
+        &QCoreApplication::quit,
+        Qt::QueuedConnection
+    );
+}
+#endif
+
 int main(int argc, char **argv) {
     if (argc > 1) {
         return worker_main(argc, argv);
@@ -51,7 +67,18 @@ int main(int argc, char **argv) {
 
     Window window;
     window.show();
+
+#if defined(_WIN32)
+    win_sparkle_set_can_shutdown_callback(can_shutdown);
+    win_sparkle_set_shutdown_request_callback(request_shutdown);
+    win_sparkle_init();
+#endif
+
     auto result = app.exec();
+
+#if defined(_WIN32)
+    win_sparkle_cleanup();
+#endif
 
 #if defined(PDF_ENABLED)
     FPDF_DestroyLibrary();

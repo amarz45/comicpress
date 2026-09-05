@@ -690,6 +690,7 @@ void Window::on_start_button_clicked() {
 
     options_.settings_group->setEnabled(false);
     start_button_->setEnabled(false);
+    is_converting.store(true);
     cancel_button_->setEnabled(true);
     log_output_->clear();
     task_queue_.clear();
@@ -993,6 +994,7 @@ void Window::on_worker_output() {
 // Every exit from a run goes through here, so a failure can’t leave the
 // button disabled or the temp directory behind.
 void Window::finish_run() {
+    is_converting.store(false);
     timer_->stop();
     options_.settings_group->setEnabled(true);
     start_button_->setEnabled(true);

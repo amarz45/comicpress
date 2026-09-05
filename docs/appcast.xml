@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+     xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+    <channel>
+        <title>Comicpress</title>
+        <description>Updates to Comicpress</description>
+        <language>en</language>
+        <item>
+            <title>Version 1.2.1</title>
+            <sparkle:version>1.2.1</sparkle:version>
+            <pubDate>Sat, 05 Sep 2026 22:35:15 +0000</pubDate>
+            <enclosure url="https://github.com/amarz45/comicpress/releases/download/v1.2.1/comicpress-1.2.1-windows-x64.exe"
+                       length="62537613"
+                       type="application/octet-stream"
+                       sparkle:edSignature="gfN1BdTLb9LIAvoMj9vjcEh8r4YTQ7nnhYjGDam2NOp5spauB8ima8Mu9Qu1sHsnyA/Ch/IzO9ZzspHO2HMjCA==" />
+        </item>
+    </channel>
+</rss>

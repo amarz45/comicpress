@@ -39,9 +39,9 @@
   </screenshots>
 
   <releases>
-    <release version="1.2.0" date="2026-07-13">
+    <release version="1.2.1" date="2026-09-05">
       <description>
-        <p>Added EPUB output support</p>
+        <p>Bug fixes and improvements</p>
       </description>
     </release>
   </releases>

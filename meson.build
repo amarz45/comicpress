@@ -1,7 +1,7 @@
 project(
     'comicpress',
     'cpp',
-    version: '1.2.0',
+    version: '1.2.1',
     license: 'GPL-3.0-or-later',
     license_files: 'Licence.txt',
     default_options: ['warning_level=3', 'werror=true', 'cpp_std=c++26'],

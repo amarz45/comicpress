@@ -1,0 +1,163 @@
+name: Windows release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      length: ${{ steps.sign.outputs.length }}
+      signature: ${{ steps.sign.outputs.signature }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            git curl tar unzip
+            mingw-w64-ucrt-x86_64-toolchain
+            mingw-w64-ucrt-x86_64-meson
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-pkgconf
+            mingw-w64-ucrt-x86_64-libvips
+            mingw-w64-ucrt-x86_64-libheif
+            mingw-w64-ucrt-x86_64-libjxl
+            mingw-w64-ucrt-x86_64-qt6-base
+            mingw-w64-ucrt-x86_64-qt6-svg
+            mingw-w64-ucrt-x86_64-libarchive
+
+      - name: Check tag matches project version
+        id: version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version=$(sed -n "s/^    version: '\(.*\)',$/\1/p" meson.build)
+          if [ "$tag" != "$version" ]; then
+            echo "tag $tag does not match meson.build version $version" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Install PDFium
+        run: |
+          curl -L -o pdfium.tgz \
+            https://github.com/bblanchon/pdfium-binaries/releases/latest/download/pdfium-win-x64.tgz
+          mkdir pdfium && tar -xzf pdfium.tgz -C pdfium
+          cp -r pdfium/include/* /ucrt64/include/
+          cp pdfium/bin/pdfium.dll /ucrt64/bin/
+          cp pdfium/lib/pdfium.dll.lib /ucrt64/lib/libpdfium.dll.a
+
+      - name: Install WinSparkle
+        run: |
+          curl -L -o winsparkle.zip \
+            https://github.com/vslavik/winsparkle/releases/download/v0.9.4/WinSparkle-0.9.4.zip
+          unzip -q winsparkle.zip
+          cp WinSparkle-0.9.4/include/winsparkle.h \
+             WinSparkle-0.9.4/include/winsparkle-version.h /ucrt64/include/
+          cp WinSparkle-0.9.4/x64/Release/WinSparkle.dll /ucrt64/bin/
+          cp WinSparkle-0.9.4/x64/Release/WinSparkle.lib \
+             /ucrt64/lib/libWinSparkle.dll.a
+
+      - name: Build
+        run: |
+          meson setup build --buildtype=release
+          meson compile -C build
+
+      - name: Bundle
+        run: bash packaging/windows/bundle.sh build "$PWD/dist"
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup -y --no-progress
+
+      - name: Build installer
+        run: |
+          iscc=$(find "/c/Program Files" "/c/Program Files (x86)" \
+              -maxdepth 2 -name ISCC.exe | head -1)
+          test -n "$iscc" || { echo "ISCC.exe not found" >&2; exit 1; }
+          "$iscc" //DDistDir="$(cygpath -w "$PWD/dist")" \
+                  //DOutputDir="$(cygpath -w "$PWD")" \
+                  packaging/windows/comicpress.iss
+
+      - name: Sign update
+        id: sign
+        env:
+          WINSPARKLE_PRIVATE_KEY: ${{ secrets.WINSPARKLE_PRIVATE_KEY }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          printf '%s' "$WINSPARKLE_PRIVATE_KEY" > private.key
+          installer="comicpress-${VERSION}-windows-x64.exe"
+          test -f "$installer"
+          sig=$(WinSparkle-0.9.4/bin/winsparkle-tool.exe sign -f private.key "$installer")
+          rm -f private.key
+          test -n "$sig"
+          echo "signature=$sig" >> "$GITHUB_OUTPUT"
+          echo "length=$(stat -c %s "$installer")" >> "$GITHUB_OUTPUT"
+
+      - name: Create release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh release create $env:GITHUB_REF_NAME `
+            "comicpress-$env:VERSION-windows-x64.exe" `
+            --title $env:VERSION --generate-notes
+
+  appcast:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - name: Write appcast
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+          LENGTH: ${{ needs.build.outputs.length }}
+          SIGNATURE: ${{ needs.build.outputs.signature }}
+        run: |
+          mkdir -p docs
+          cat > docs/appcast.xml <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <rss version="2.0"
+               xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+              <channel>
+                  <title>Comicpress</title>
+                  <description>Updates to Comicpress</description>
+                  <language>en</language>
+                  <item>
+                      <title>Version ${VERSION}</title>
+                      <sparkle:version>${VERSION}</sparkle:version>
+                      <pubDate>$(date -R)</pubDate>
+                      <enclosure url="https://github.com/amarz45/comicpress/releases/download/v${VERSION}/comicpress-${VERSION}-windows-x64.exe"
+                                 length="${LENGTH}"
+                                 type="application/octet-stream"
+                                 sparkle:edSignature="${SIGNATURE}" />
+                  </item>
+              </channel>
+          </rss>
+          EOF
+
+      - name: Commit
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/appcast.xml
+          git diff --staged --quiet || git commit -m "Update appcast for ${VERSION}"
+          git push origin master

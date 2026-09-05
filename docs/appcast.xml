@@ -8,11 +8,11 @@
         <item>
             <title>Version 1.2.1</title>
             <sparkle:version>1.2.1</sparkle:version>
-            <pubDate>Sat, 05 Sep 2026 22:35:15 +0000</pubDate>
+            <pubDate>Sat, 05 Sep 2026 23:33:39 +0000</pubDate>
             <enclosure url="https://github.com/amarz45/comicpress/releases/download/v1.2.1/comicpress-1.2.1-windows-x64.exe"
-                       length="62537613"
+                       length="62560480"
                        type="application/octet-stream"
-                       sparkle:edSignature="gfN1BdTLb9LIAvoMj9vjcEh8r4YTQ7nnhYjGDam2NOp5spauB8ima8Mu9Qu1sHsnyA/Ch/IzO9ZzspHO2HMjCA==" />
+                       sparkle:edSignature="h7MbRHsLF84eUO9pjOnrHY77C1ebJJrZYPpgpWqSTAjHfMe4ZPBPS2x+bM8d09A58nos47h/1uIj302gFeARDQ==" />
         </item>
     </channel>
 </rss>

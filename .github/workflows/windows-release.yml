@@ -7,10 +7,12 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   build:
     runs-on: windows-latest
+    environment: release
     defaults:
       run:
         shell: msys2 {0}
@@ -78,6 +80,24 @@ jobs:
       - name: Bundle
         run: bash packaging/windows/bundle.sh build "$PWD/dist"
 
+      - name: Azure login
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Sign application
+        uses: azure/artifact-signing-action@v2
+        with:
+          endpoint: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
+          signing-account-name: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ secrets.AZURE_SIGNING_PROFILE }}
+          files: ${{ github.workspace }}\dist\comicpress.exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+
       - name: Install Inno Setup
         shell: pwsh
         run: choco install innosetup -y --no-progress
@@ -90,6 +110,17 @@ jobs:
           "$iscc" //DDistDir="$(cygpath -w "$PWD/dist")" \
                   //DOutputDir="$(cygpath -w "$PWD")" \
                   packaging/windows/comicpress.iss
+
+      - name: Sign installer
+        uses: azure/artifact-signing-action@v2
+        with:
+          endpoint: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
+          signing-account-name: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ secrets.AZURE_SIGNING_PROFILE }}
+          files: ${{ github.workspace }}\comicpress-${{ steps.version.outputs.version }}-windows-x64.exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
 
       - name: Sign update
         id: sign

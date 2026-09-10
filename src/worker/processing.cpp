@@ -3,6 +3,7 @@
 #include <archive_entry.h>
 #include <filesystem>
 #include <functional>
+#include <ranges>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -17,8 +18,21 @@
 #include "include/processing.hpp"
 
 using Logger = const std::function<void(const std::string &)> &;
+using std::views::enumerate;
 
 namespace fs = std::filesystem;
+
+struct SplitImage {
+    vips::VImage left;
+    vips::VImage right;
+};
+
+static void save_image(
+    vips::VImage img,
+    const PageTask &task,
+    bool stretch_page_contrast,
+    const std::string &base_path
+);
 
 #if defined(PDF_ENABLED)
 static vips::VImage get_vips_img_from_pdf_page(
@@ -35,7 +49,7 @@ static bool is_preview_greyscale(FPDF_PAGE page, int page_number);
 
 static vips::VImage remove_uniform_middle_columns(const vips::VImage &img);
 static bool is_greyscale(const vips::VImage &img, double threshold);
-static bool should_image_rotate(
+static bool is_two_page_spread(
     double image_width,
     double image_height,
     double display_width,
@@ -48,6 +62,7 @@ should_image_stretch_contrast(const vips::VImage &img, const PageTask &task);
 
 static vips::VImage
 rotate_image(const vips::VImage &img, RotationDirection rotation_direction);
+static SplitImage split_image(const vips::VImage &img);
 
 static vips::VImage scale_image(
     vips::VImage img,
@@ -192,157 +207,182 @@ LoadPageReturn load_archive_image(const PageTask &task) {
 }
 
 void process_vimage(
-    const LoadPageReturn &page_info, PageTask task, Logger log
+    const LoadPageReturn &page_info, const PageTask &task, Logger log
 ) {
-    VipsBlob *png_blob = nullptr;
     try {
         auto base_path = task.output_dir / task.output_base_name;
-        auto png_path = base_path.string() + ".png";
+        auto base_path_str = base_path.string();
         fs::create_directories(base_path.parent_path());
 
-        bool rotate_option;
-        switch (task.double_page_spread_action) {
-        case DoublePageSpreadActions::ROTATE:
-        case DoublePageSpreadActions::BOTH:
-            rotate_option = true;
-            break;
-        default:
-            rotate_option = false;
-            break;
-        }
+        using enum DoublePageSpreadActions;
+        auto action = task.double_page_spread_action;
+        auto rotate_option = action == ROTATE || action == BOTH;
+        auto split_option = action == SPLIT || action == BOTH;
 
         auto img = page_info.image;
 
-        auto image_should_rotate = should_image_rotate(
+        auto two_page_spread = is_two_page_spread(
             img.width(), img.height(), task.page_width, task.page_height
         );
 
-        if (image_should_rotate) {
-            if (task.remove_spine) {
-                img = remove_uniform_middle_columns(img);
-            }
+        if (two_page_spread && task.remove_spine) {
+            img = remove_uniform_middle_columns(img);
+        }
+
+        auto output_images = std::vector<vips::VImage>{};
+        if (!two_page_spread) {
+            output_images.push_back(img);
+        }
+        else if (!split_option) {
             if (rotate_option) {
                 img = rotate_image(img, task.rotation_direction);
             }
+            output_images.push_back(img);
+        }
+        else if (split_option) {
+            auto [left, right] = split_image(img);
+            if (rotate_option) {
+                img = rotate_image(img, task.rotation_direction);
+                output_images.push_back(img);
+            }
+            output_images.push_back(left);
+            output_images.push_back(right);
         }
 
-        if (task.scale_pages) {
-            img = scale_image(
-                img,
-                img.width(),
-                img.height(),
-                task.page_width,
-                task.page_height,
-                task.page_resampler,
-                task.linear_light_resampling
-            );
-        }
-
-        // Build fresh palette options per save: a VOption is consumed by the
-        // operation it is passed to, so it must not be reused across calls.
-        auto make_palette_options = [&] {
-            return vips::VImage::option()
-                ->set("palette", true)
-                ->set("bitdepth", static_cast<int>(task.bit_depth))
-                ->set("dither", task.dither)
-                ->set("effort", 10);
+        auto save = [&](const vips::VImage &image, const std::string &path) {
+            save_image(image, task, page_info.stretch_page_contrast, path);
         };
 
-        // Quantize FIRST so the palette is built from the original tones.
-        // Doing this before the contrast stretch matters: it ensures that each
-        // page stretches the full colour range.
-        if (task.quantize_pages) {
-            png_blob = img.pngsave_buffer(
-                make_palette_options()->set("compression", 0)
-            );
-            size_t buffer_size = 0;
-            const void *buffer_data = vips_blob_get(png_blob, &buffer_size);
-            img = vips::VImage::new_from_buffer(buffer_data, buffer_size, "");
+        if (output_images.size() == 1) {
+            save(output_images[0], base_path_str);
         }
-
-        if (page_info.stretch_page_contrast) {
-            img = stretch_image_contrast(img);
-        }
-
-        if (task.image_format == ImageFormat::PNG) {
-            // When `task.quantize_pages` is true, the image has already been
-            // quantized, so re-quantizing here is a no-op.
-            auto base_options = task.quantize_pages ? make_palette_options()
-                                                    : vips::VImage::option();
-            img.pngsave(
-                png_path.c_str(),
-                base_options->set("compression", task.compression_effort)
-            );
-            if (png_blob != nullptr) {
-                vips_area_unref(VIPS_AREA(png_blob));
+        else {
+            for (const auto &[i, image] : enumerate(output_images)) {
+                save(image, std::format("{}_{}", base_path_str, i));
             }
-            return;
-        }
-
-        auto options = vips::VImage::option();
-        switch (task.image_format) {
-        case ImageFormat::AVIF: {
-            auto output_path = base_path.string() + ".avif";
-            options
-                = options->set("compression", VIPS_FOREIGN_HEIF_COMPRESSION_AV1)
-                      ->set("effort", task.compression_effort)
-                      ->set("subsample_mode", VIPS_FOREIGN_SUBSAMPLE_ON);
-            if (task.compression_type == CompressionType::LOSSY) {
-                options = options->set("Q", task.quality);
-            }
-            else {
-                options = options->set("lossless", true);
-            }
-            img.heifsave(output_path.c_str(), options);
-            break;
-        }
-        case ImageFormat::JPEG: {
-            auto output_path = base_path.string() + ".jpg";
-            img.jpegsave(output_path.c_str(), options->set("Q", task.quality));
-            break;
-        }
-        case ImageFormat::JPEG_XL: {
-            auto output_path = base_path.string() + ".jxl";
-            options = options->set("effort", task.compression_effort);
-            if (task.compression_type == CompressionType::LOSSLESS) {
-                options = options->set("distance", 0.0);
-            }
-            else if (task.quality_type == QualityType::DISTANCE) {
-                options = options->set("distance", task.quality);
-            }
-            else {
-                options = options->set("Q", task.quality);
-            }
-            img.jxlsave(output_path.c_str(), options);
-            break;
-        }
-        case ImageFormat::WEBP: {
-            auto output_path = base_path.string() + ".webp";
-            options = options->set("effort", task.compression_effort);
-            if (task.compression_type == CompressionType::LOSSY) {
-                options = options->set("Q", task.quality);
-            }
-            else {
-                options = options->set("lossless", true);
-            }
-            img.webpsave(output_path.c_str(), options);
-            break;
-        }
-        case ImageFormat::PNG:
-            // Handled above, before the shared option object is built.
-            break;
-        }
-
-        if (png_blob != nullptr) {
-            vips_area_unref(VIPS_AREA(png_blob));
         }
     }
     catch (const vips::VError &e) {
-        if (png_blob != nullptr) {
-            vips_area_unref(VIPS_AREA(png_blob));
-        }
         log("  -> VIPS Error processing in-memory image "
             + task.output_base_name + ": " + e.what());
+    }
+}
+
+void save_image(
+    vips::VImage img,
+    const PageTask &task,
+    bool stretch_page_contrast,
+    const std::string &base_path
+) {
+    struct BlobDeleter {
+        void operator()(VipsBlob *blob) const noexcept {
+            vips_area_unref(VIPS_AREA(blob));
+        }
+    };
+    using Blob = std::unique_ptr<VipsBlob, BlobDeleter>;
+
+    auto png_path = base_path + ".png";
+
+    if (task.scale_pages) {
+        img = scale_image(
+            img,
+            img.width(),
+            img.height(),
+            task.page_width,
+            task.page_height,
+            task.page_resampler,
+            task.linear_light_resampling
+        );
+    }
+
+    // Build fresh palette options per save: a VOption is consumed by
+    // the operation it is passed to, so it must not be reused across
+    // calls.
+    auto make_palette_options = [&] {
+        return vips::VImage::option()
+            ->set("palette", true)
+            ->set("bitdepth", static_cast<int>(task.bit_depth))
+            ->set("dither", task.dither)
+            ->set("effort", 10);
+    };
+
+    // Quantize FIRST so the palette is built from the original tones.
+    // Doing this before the contrast stretch matters: it ensures that
+    // each page stretches the full colour range.
+    if (task.quantize_pages) {
+        auto png_blob = Blob{
+            img.pngsave_buffer(make_palette_options()->set("compression", 0))
+        };
+        img = img.pngload_buffer(png_blob.get());
+    }
+
+    if (stretch_page_contrast) {
+        img = stretch_image_contrast(img);
+    }
+
+    if (task.image_format == ImageFormat::PNG) {
+        // When `task.quantize_pages` is true, the image has already
+        // been quantized, so re-quantizing here is a no-op.
+        auto base_options = task.quantize_pages ? make_palette_options()
+                                                : vips::VImage::option();
+        img.pngsave(
+            png_path.c_str(),
+            base_options->set("compression", task.compression_effort)
+        );
+        return;
+    }
+
+    auto options = vips::VImage::option();
+    switch (task.image_format) {
+    case ImageFormat::AVIF: {
+        auto output_path = base_path + ".avif";
+        options = options->set("compression", VIPS_FOREIGN_HEIF_COMPRESSION_AV1)
+                      ->set("effort", task.compression_effort)
+                      ->set("subsample_mode", VIPS_FOREIGN_SUBSAMPLE_ON);
+        if (task.compression_type == CompressionType::LOSSY) {
+            options = options->set("Q", task.quality);
+        }
+        else {
+            options = options->set("lossless", true);
+        }
+        img.heifsave(output_path.c_str(), options);
+        break;
+    }
+    case ImageFormat::JPEG: {
+        auto output_path = base_path + ".jpg";
+        img.jpegsave(output_path.c_str(), options->set("Q", task.quality));
+        break;
+    }
+    case ImageFormat::JPEG_XL: {
+        auto output_path = base_path + ".jxl";
+        options = options->set("effort", task.compression_effort);
+        if (task.compression_type == CompressionType::LOSSLESS) {
+            options = options->set("distance", 0.0);
+        }
+        else if (task.quality_type == QualityType::DISTANCE) {
+            options = options->set("distance", task.quality);
+        }
+        else {
+            options = options->set("Q", task.quality);
+        }
+        img.jxlsave(output_path.c_str(), options);
+        break;
+    }
+    case ImageFormat::WEBP: {
+        auto output_path = base_path + ".webp";
+        options = options->set("effort", task.compression_effort);
+        if (task.compression_type == CompressionType::LOSSY) {
+            options = options->set("Q", task.quality);
+        }
+        else {
+            options = options->set("lossless", true);
+        }
+        img.webpsave(output_path.c_str(), options);
+        break;
+    }
+    case ImageFormat::PNG:
+        // Handled above, before the shared option object is built.
+        break;
     }
 }
 
@@ -434,8 +474,8 @@ vips::VImage remove_uniform_middle_columns(const vips::VImage &img) {
         best_right_bound = bounds_at_max.second;
     }
     else {
-        // Max threshold was too aggressive. Fall back to binary search to find
-        // a smaller, acceptable threshold.
+        // Max threshold was too aggressive. Fall back to binary search to
+        // find a smaller, acceptable threshold.
         double low = 0.0;
         double high = global_range;
         const int max_iter = 20;
@@ -500,7 +540,7 @@ bool is_greyscale(const vips::VImage &img, double threshold) {
     return chroma.max() <= threshold;
 }
 
-bool should_image_rotate(
+bool is_two_page_spread(
     double image_width,
     double image_height,
     double display_width,
@@ -540,6 +580,17 @@ rotate_image(const vips::VImage &img, RotationDirection rotation_direction) {
         break;
     }
     return img.rotate(angle);
+}
+
+SplitImage split_image(const vips::VImage &img) {
+    auto width = img.width();
+    auto height = img.height();
+    auto middle = width / 2;
+
+    auto left = img.extract_area(0, 0, middle, height);
+    auto right = img.extract_area(middle, 0, width - middle, height);
+
+    return {.left = left, .right = right};
 }
 
 vips::VImage scale_image(

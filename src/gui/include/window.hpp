@@ -122,6 +122,8 @@ struct Options {
     QComboBox *image_quality_label_jpeg_xl;
     QLabel *workers_label;
     QSpinBox *workers_spin_box;
+    QWidget *output_format_container;
+    QComboBox *reading_direction_combo_box;
     QWidget *rotation_options_container;
     QComboBox *rotation_direction_combo_box;
 };

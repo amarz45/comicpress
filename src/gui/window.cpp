@@ -437,6 +437,8 @@ void Window::start_next_task() {
         << (task.convert_pages_to_greyscale ? "1" : "0")
         << "-double_page_spread_actions"
         << QString::number(static_cast<int>(task.double_page_spread_action))
+        << "-reading_direction"
+        << QString::number(static_cast<int>(task.reading_direction))
         << "-rotation_direction"
         << QString::number(static_cast<int>(task.rotation_direction))
         << "-linear_light_resampling"
@@ -500,6 +502,8 @@ PageTask Window::create_task(
     task.double_page_spread_action
         = options_.double_page_spread_combo_box->currentData()
               .value<DoublePageSpreadActions>();
+    task.reading_direction = options_.reading_direction_combo_box->currentData()
+                                 .value<ReadingDirection>();
     task.rotation_direction
         = options_.rotation_direction_combo_box->currentData()
               .value<RotationDirection>();

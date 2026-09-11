@@ -93,6 +93,10 @@ int worker_main(int argc, char *argv[]) {
                 "Invalid double page spread options"
             ));
 
+        task.reading_direction = static_cast<ReadingDirection>(parse_arg<int>(
+            args.at("-reading_direction"), "Invalid reading direction"
+        ));
+
         task.rotation_direction = static_cast<RotationDirection>(parse_arg<int>(
             args.at("-rotation_direction"), "Invalid rotation direction"
         ));

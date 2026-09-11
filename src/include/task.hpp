@@ -8,6 +8,7 @@
 namespace fs = std::filesystem;
 
 enum class DoublePageSpreadActions : std::uint8_t { ROTATE, SPLIT, BOTH, NONE };
+enum class ReadingDirection : std::uint8_t { LTR, RTL };
 enum class RotationDirection : std::uint8_t { CLOCKWISE, COUNTERCLOCKWISE };
 enum class ImageFormat : std::uint8_t { AVIF, JPEG, JPEG_XL, PNG, WEBP };
 enum class CompressionType : std::uint8_t { LOSSLESS, LOSSY };
@@ -38,6 +39,7 @@ struct PageTask {
     BitDepth bit_depth;
     int compression_effort;
     DoublePageSpreadActions double_page_spread_action;
+    ReadingDirection reading_direction;
     RotationDirection rotation_direction;
     VipsKernel page_resampler;
     bool convert_pages_to_greyscale;

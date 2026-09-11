@@ -245,8 +245,14 @@ void process_vimage(
                 img = rotate_image(img, task.rotation_direction);
                 output_images.push_back(img);
             }
-            output_images.push_back(left);
-            output_images.push_back(right);
+            if (task.reading_direction == ReadingDirection::LTR) {
+                output_images.push_back(left);
+                output_images.push_back(right);
+            }
+            else {
+                output_images.push_back(right);
+                output_images.push_back(left);
+            }
         }
 
         auto save = [&](const vips::VImage &image, const std::string &path) {

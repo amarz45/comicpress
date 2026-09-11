@@ -38,6 +38,23 @@ void add_output_format_widget(QStyle *style, Options *options) {
     options->settings_layout->addRow(
         output_format_label, output_format_container
     );
+
+    options->output_format_container = new QWidget();
+    auto output_format_layout
+        = create_form_layout(options->output_format_container);
+    auto reading_direction_label = new QLabel("Reading direction");
+    static constexpr auto READING_DIRECTIONS
+        = std::to_array<std::pair<const char *, ReadingDirection>>({
+            {"Left-to-right", ReadingDirection::LTR},
+            {"Right-to-left", ReadingDirection::RTL},
+        });
+    options->reading_direction_combo_box
+        = create_combo_box(READING_DIRECTIONS, ReadingDirection::LTR);
+    output_format_layout->addRow(
+        reading_direction_label, options->reading_direction_combo_box
+    );
+
+    options->settings_layout->addWidget(options->output_format_container);
 }
 
 #if defined(PDF_ENABLED)

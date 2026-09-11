@@ -52,6 +52,7 @@ class DensitySpinBox : public QSpinBox {
     }
 };
 
+void add_output_format_widget(QStyle *style, Options *options);
 #if defined(PDF_ENABLED)
 void add_pdf_pixel_density_widget(QStyle *style, Options *options);
 #endif

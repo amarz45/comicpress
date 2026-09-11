@@ -22,6 +22,24 @@
 
 static QFormLayout *create_form_layout(QWidget *container);
 
+void add_output_format_widget(QStyle *style, Options *options) {
+    auto output_format_label = new QLabel("Output format");
+    static constexpr auto OUTPUT_FORMATS
+        = std::to_array<std::pair<const char *, OutputFormat>>({
+            {"EPUB", OutputFormat::EPUB},
+            {"CBZ", OutputFormat::CBZ},
+        });
+    options->output_format_combo_box
+        = create_combo_box(OUTPUT_FORMATS, OutputFormat::EPUB);
+    auto output_format_container = create_control_with_info(
+        style, options->output_format_combo_box, OUTPUT_FORMAT_TOOLTIP
+    );
+
+    options->settings_layout->addRow(
+        output_format_label, output_format_container
+    );
+}
+
 #if defined(PDF_ENABLED)
 void add_pdf_pixel_density_widget(QStyle *style, Options *options) {
     options->pdf_pixel_density_spin_box = create_spin_box<DensitySpinBox>();

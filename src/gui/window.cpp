@@ -208,6 +208,7 @@ QGroupBox *Window::create_settings_group() {
 
     // Preprocessing
     add_display_presets_widget();
+    add_output_format_widget(style, &options_);
 #if defined(PDF_ENABLED)
     add_pdf_pixel_density_widget(style, &options_);
 #endif
@@ -320,23 +321,7 @@ void Window::add_display_presets_widget() {
     auto label
         = create_widget_with_info(style(), new QLabel("Device preset"), "");
     options_.display_preset_button->setMenu(display_menu);
-
-    auto output_format_label = new QLabel("Output format");
-    static constexpr auto OUTPUT_FORMATS
-        = std::to_array<std::pair<const char *, OutputFormat>>({
-            {"EPUB", OutputFormat::EPUB},
-            {"CBZ", OutputFormat::CBZ},
-        });
-    options_.output_format_combo_box
-        = create_combo_box(OUTPUT_FORMATS, OutputFormat::EPUB);
-    auto output_format_container = create_control_with_info(
-        style(), options_.output_format_combo_box, OUTPUT_FORMAT_TOOLTIP
-    );
-
     options_.settings_layout->addRow(label, options_.display_preset_button);
-    options_.settings_layout->addRow(
-        output_format_label, output_format_container
-    );
 }
 
 void Window::start_next_task() {

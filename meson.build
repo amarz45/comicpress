@@ -87,6 +87,7 @@ executable(
     'src/worker/worker.cpp',
     'src/worker/processing.cpp',
     'src/archive.cpp',
+    'src/task.cpp',
     qt_processed_files,
     windows_resources,
     dependencies: [qt6_dep, vips_dep, pdfium_dep, libarchive_dep, winsparkle_dep],

@@ -22,15 +22,11 @@ enum class BitDepth : std::uint8_t {
     SIXTEEN = 16,
 };
 
-struct PageTask {
-    fs::path source_file;
-    fs::path output_dir;
-    std::string output_base_name;
-    std::string path_in_archive;
+struct ProcessingSettings {
+    ProcessingSettings() = default;
     ImageFormat image_format;
     double dither;
     double quality;
-    int page_number = -1;
 #if defined(PDF_ENABLED)
     int pdf_pixel_density;
 #endif
@@ -51,3 +47,28 @@ struct PageTask {
     CompressionType compression_type;
     QualityType quality_type;
 };
+static_assert(std::is_trivially_copyable_v<ProcessingSettings>);
+
+using ProcessingSettingsBytes
+    = std::array<std::uint8_t, sizeof(ProcessingSettings)>;
+
+struct PageTask {
+    fs::path source_file;
+    fs::path output_dir;
+    std::string output_base_name;
+    std::string path_in_archive;
+    int page_number = -1;
+    ProcessingSettings processing_settings{};
+};
+
+inline void for_each_task_field(auto &task, auto &&f) {
+    f(task.source_file);
+    f(task.output_dir);
+    f(task.output_base_name);
+    f(task.path_in_archive);
+    f(task.page_number);
+    f(task.processing_settings);
+}
+
+std::vector<std::string> encode_task(const PageTask &task);
+PageTask decode_task(std::span<const char *const> encoded_fields);

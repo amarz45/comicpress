@@ -101,7 +101,7 @@ LoadPageReturn load_pdf_page(const PageTask &task) {
         auto render_flags = PDF_DEFAULT_RENDER_FLAGS;
 
         auto render_page_greyscale = false;
-        if (task.convert_pages_to_greyscale) {
+        if (task.processing_settings.convert_pages_to_greyscale) {
             render_page_greyscale
                 = is_preview_greyscale(page, task.page_number);
         }
@@ -122,12 +122,13 @@ LoadPageReturn load_pdf_page(const PageTask &task) {
             task.page_number,
             colour_mode,
             bands,
-            task.pdf_pixel_density,
+            task.processing_settings.pdf_pixel_density,
             render_flags
         );
 
         auto stretch_page_contrast = should_image_stretch_contrast(img, task);
-        if (task.convert_pages_to_greyscale && !render_page_greyscale) {
+        if (task.processing_settings.convert_pages_to_greyscale
+            && !render_page_greyscale) {
             img = img.colourspace(VIPS_INTERPRETATION_B_W);
         }
 
@@ -197,7 +198,7 @@ LoadPageReturn load_archive_image(const PageTask &task) {
     img = img.copy_memory();
 
     auto stretch_page_contrast = should_image_stretch_contrast(img, task);
-    if (task.convert_pages_to_greyscale) {
+    if (task.processing_settings.convert_pages_to_greyscale) {
         img = img.colourspace(VIPS_INTERPRETATION_B_W);
     }
 
@@ -215,17 +216,20 @@ void process_vimage(
         fs::create_directories(base_path.parent_path());
 
         using enum DoublePageSpreadActions;
-        auto action = task.double_page_spread_action;
+        auto action = task.processing_settings.double_page_spread_action;
         auto rotate_option = action == ROTATE || action == BOTH;
         auto split_option = action == SPLIT || action == BOTH;
 
         auto img = page_info.image;
 
         auto two_page_spread = is_two_page_spread(
-            img.width(), img.height(), task.page_width, task.page_height
+            img.width(),
+            img.height(),
+            task.processing_settings.page_width,
+            task.processing_settings.page_height
         );
 
-        if (two_page_spread && task.remove_spine) {
+        if (two_page_spread && task.processing_settings.remove_spine) {
             img = remove_uniform_middle_columns(img);
         }
 
@@ -235,17 +239,22 @@ void process_vimage(
         }
         else if (!split_option) {
             if (rotate_option) {
-                img = rotate_image(img, task.rotation_direction);
+                img = rotate_image(
+                    img, task.processing_settings.rotation_direction
+                );
             }
             output_images.push_back(img);
         }
         else if (split_option) {
             auto [left, right] = split_image(img);
             if (rotate_option) {
-                img = rotate_image(img, task.rotation_direction);
+                img = rotate_image(
+                    img, task.processing_settings.rotation_direction
+                );
                 output_images.push_back(img);
             }
-            if (task.reading_direction == ReadingDirection::LTR) {
+            if (task.processing_settings.reading_direction
+                == ReadingDirection::LTR) {
                 output_images.push_back(left);
                 output_images.push_back(right);
             }
@@ -289,15 +298,15 @@ void save_image(
 
     auto png_path = base_path + ".png";
 
-    if (task.scale_pages) {
+    if (task.processing_settings.scale_pages) {
         img = scale_image(
             img,
             img.width(),
             img.height(),
-            task.page_width,
-            task.page_height,
-            task.page_resampler,
-            task.linear_light_resampling
+            task.processing_settings.page_width,
+            task.processing_settings.page_height,
+            task.processing_settings.page_resampler,
+            task.processing_settings.linear_light_resampling
         );
     }
 
@@ -307,15 +316,17 @@ void save_image(
     auto make_palette_options = [&] {
         return vips::VImage::option()
             ->set("palette", true)
-            ->set("bitdepth", static_cast<int>(task.bit_depth))
-            ->set("dither", task.dither)
+            ->set(
+                "bitdepth", static_cast<int>(task.processing_settings.bit_depth)
+            )
+            ->set("dither", task.processing_settings.dither)
             ->set("effort", 10);
     };
 
     // Quantize FIRST so the palette is built from the original tones.
     // Doing this before the contrast stretch matters: it ensures that
     // each page stretches the full colour range.
-    if (task.quantize_pages) {
+    if (task.processing_settings.quantize_pages) {
         auto png_blob = Blob{
             img.pngsave_buffer(make_palette_options()->set("compression", 0))
         };
@@ -326,27 +337,32 @@ void save_image(
         img = stretch_image_contrast(img);
     }
 
-    if (task.image_format == ImageFormat::PNG) {
-        // When `task.quantize_pages` is true, the image has already
-        // been quantized, so re-quantizing here is a no-op.
-        auto base_options = task.quantize_pages ? make_palette_options()
-                                                : vips::VImage::option();
+    if (task.processing_settings.image_format == ImageFormat::PNG) {
+        // When `task.processing_settings.quantize_pages` is true, the image has
+        // already been quantized, so re-quantizing here is a no-op.
+        auto base_options = task.processing_settings.quantize_pages
+                              ? make_palette_options()
+                              : vips::VImage::option();
         img.pngsave(
             png_path.c_str(),
-            base_options->set("compression", task.compression_effort)
+            base_options->set(
+                "compression", task.processing_settings.compression_effort
+            )
         );
         return;
     }
 
     auto options = vips::VImage::option();
-    switch (task.image_format) {
+    switch (task.processing_settings.image_format) {
     case ImageFormat::AVIF: {
         auto output_path = base_path + ".avif";
-        options = options->set("compression", VIPS_FOREIGN_HEIF_COMPRESSION_AV1)
-                      ->set("effort", task.compression_effort)
-                      ->set("subsample_mode", VIPS_FOREIGN_SUBSAMPLE_ON);
-        if (task.compression_type == CompressionType::LOSSY) {
-            options = options->set("Q", task.quality);
+        options
+            = options->set("compression", VIPS_FOREIGN_HEIF_COMPRESSION_AV1)
+                  ->set("effort", task.processing_settings.compression_effort)
+                  ->set("subsample_mode", VIPS_FOREIGN_SUBSAMPLE_ON);
+        if (task.processing_settings.compression_type
+            == CompressionType::LOSSY) {
+            options = options->set("Q", task.processing_settings.quality);
         }
         else {
             options = options->set("lossless", true);
@@ -356,29 +372,41 @@ void save_image(
     }
     case ImageFormat::JPEG: {
         auto output_path = base_path + ".jpg";
-        img.jpegsave(output_path.c_str(), options->set("Q", task.quality));
+        img.jpegsave(
+            output_path.c_str(),
+            options->set("Q", task.processing_settings.quality)
+        );
         break;
     }
     case ImageFormat::JPEG_XL: {
         auto output_path = base_path + ".jxl";
-        options = options->set("effort", task.compression_effort);
-        if (task.compression_type == CompressionType::LOSSLESS) {
+        options = options->set(
+            "effort", task.processing_settings.compression_effort
+        );
+        if (task.processing_settings.compression_type
+            == CompressionType::LOSSLESS) {
             options = options->set("distance", 0.0);
         }
-        else if (task.quality_type == QualityType::DISTANCE) {
-            options = options->set("distance", task.quality);
+        else if (
+            task.processing_settings.quality_type == QualityType::DISTANCE
+        ) {
+            options
+                = options->set("distance", task.processing_settings.quality);
         }
         else {
-            options = options->set("Q", task.quality);
+            options = options->set("Q", task.processing_settings.quality);
         }
         img.jxlsave(output_path.c_str(), options);
         break;
     }
     case ImageFormat::WEBP: {
         auto output_path = base_path + ".webp";
-        options = options->set("effort", task.compression_effort);
-        if (task.compression_type == CompressionType::LOSSY) {
-            options = options->set("Q", task.quality);
+        options = options->set(
+            "effort", task.processing_settings.compression_effort
+        );
+        if (task.processing_settings.compression_type
+            == CompressionType::LOSSY) {
+            options = options->set("Q", task.processing_settings.quality);
         }
         else {
             options = options->set("lossless", true);
@@ -565,8 +593,9 @@ bool is_two_page_spread(
 bool should_image_stretch_contrast(
     const vips::VImage &img, const PageTask &task
 ) {
-    return task.stretch_page_contrast
-        && (!task.convert_pages_to_greyscale || is_greyscale(img, 10.0));
+    return task.processing_settings.stretch_page_contrast
+        && (!task.processing_settings.convert_pages_to_greyscale
+            || is_greyscale(img, 10.0));
 }
 
 bool is_uniform_column(const vips::VImage &img, int col, double threshold) {

@@ -421,45 +421,9 @@ void Window::start_next_task() {
 
     QString program = QCoreApplication::applicationFilePath();
     QStringList arguments;
-    arguments
-        << "-source_file" << QString::fromStdString(task.source_file.string())
-        << "-output_dir" << QString::fromStdString(task.output_dir.string())
-        << "-output_base_name" << QString::fromStdString(task.output_base_name)
-        << "-page_number" << QString::number(task.page_number)
-        << "-path_in_archive"
-        << QString::fromStdString(
-               task.path_in_archive
-           ) // Empty string if not set
-#if defined(PDF_ENABLED)
-        << "-pdf_pixel_density" << QString::number(task.pdf_pixel_density)
-#endif
-        << "-convert_pages_to_greyscale"
-        << (task.convert_pages_to_greyscale ? "1" : "0")
-        << "-double_page_spread_actions"
-        << QString::number(static_cast<int>(task.double_page_spread_action))
-        << "-reading_direction"
-        << QString::number(static_cast<int>(task.reading_direction))
-        << "-rotation_direction"
-        << QString::number(static_cast<int>(task.rotation_direction))
-        << "-linear_light_resampling"
-        << QString::number(task.linear_light_resampling) << "-remove_spine"
-        << QString::number(task.remove_spine) << "-stretch_page_contrast"
-        << (task.stretch_page_contrast ? "1" : "0") << "-scale_pages"
-        << (task.scale_pages ? "1" : "0") << "-page_width"
-        << QString::number(task.page_width) << "-page_height"
-        << QString::number(task.page_height) << "-page_resampler"
-        << QString::number(static_cast<int>(task.page_resampler))
-        << "-quantize_pages" << (task.quantize_pages ? "1" : "0")
-        << "-bit_depth" << QString::number(static_cast<int>(task.bit_depth))
-        << "-dither" << QString::number(task.dither) << "-image_format"
-        << QString::number(static_cast<int>(task.image_format))
-        << "-compression_type"
-        << QString::number(static_cast<int>(task.compression_type))
-        << "-quality_type"
-        << QString::number(static_cast<int>(task.quality_type)) << "-quality"
-        << QString::number(task.quality) << "-compression_effort"
-        << QString::number(task.compression_effort);
-
+    for (const auto &argument : encode_task(task)) {
+        arguments << QString::fromStdString(argument);
+    }
     process->start(program, arguments);
 }
 
@@ -477,7 +441,8 @@ void Window::handle_task_finished() {
 PageTask Window::create_task(
     const fs::path &source_file, fs::path output_dir, int page_num
 ) {
-    PageTask task;
+    // PageTask task;
+    auto task = PageTask{};
     auto source_qstr = QString::fromStdString(source_file.string());
 
     task.source_file = source_file;
@@ -495,40 +460,47 @@ PageTask Window::create_task(
               .toStdString();
 
 #if defined(PDF_ENABLED)
-    task.pdf_pixel_density = options_.pdf_pixel_density_spin_box->value();
+    task.processing_settings.pdf_pixel_density
+        = options_.pdf_pixel_density_spin_box->value();
 #endif
-    task.convert_pages_to_greyscale
+    task.processing_settings.convert_pages_to_greyscale
         = options_.convert_to_greyscale->isChecked();
-    task.double_page_spread_action
+    task.processing_settings.double_page_spread_action
         = options_.double_page_spread_combo_box->currentData()
               .value<DoublePageSpreadActions>();
-    task.reading_direction = options_.reading_direction_combo_box->currentData()
-                                 .value<ReadingDirection>();
-    task.rotation_direction
+    task.processing_settings.reading_direction
+        = options_.reading_direction_combo_box->currentData()
+              .value<ReadingDirection>();
+    task.processing_settings.rotation_direction
         = options_.rotation_direction_combo_box->currentData()
               .value<RotationDirection>();
-    task.remove_spine = options_.remove_spine_check_box->isChecked();
-    task.linear_light_resampling
+    task.processing_settings.remove_spine
+        = options_.remove_spine_check_box->isChecked();
+    task.processing_settings.linear_light_resampling
         = options_.linear_light_resampling_check_box->isChecked();
-    task.stretch_page_contrast = options_.contrast_check_box->isChecked();
-    task.scale_pages = options_.enable_image_scaling_check_box->isChecked();
-    task.page_width = options_.width_spin_box->value();
-    task.page_height = options_.height_spin_box->value();
-    task.page_resampler
+    task.processing_settings.stretch_page_contrast
+        = options_.contrast_check_box->isChecked();
+    task.processing_settings.scale_pages
+        = options_.enable_image_scaling_check_box->isChecked();
+    task.processing_settings.page_width = options_.width_spin_box->value();
+    task.processing_settings.page_height = options_.height_spin_box->value();
+    task.processing_settings.page_resampler
         = options_.resampler_combo_box->currentData().value<VipsKernel>();
-    task.quantize_pages
+    task.processing_settings.quantize_pages
         = options_.enable_image_quantization_check_box->isChecked();
-    task.bit_depth
+    task.processing_settings.bit_depth
         = options_.bit_depth_combo_box->currentData().value<BitDepth>();
-    task.dither = options_.dithering_spin_box->value();
-    task.image_format = current_image_format();
-    task.compression_type
+    task.processing_settings.dither = options_.dithering_spin_box->value();
+    task.processing_settings.image_format = current_image_format();
+    task.processing_settings.compression_type
         = options_.image_compression_type_combo_box->currentData()
               .value<CompressionType>();
-    task.quality_type = options_.image_quality_label_jpeg_xl->currentData()
-                            .value<QualityType>();
-    task.quality = options_.image_quality_spin_box->value();
-    task.compression_effort = options_.image_compression_spin_box->value();
+    task.processing_settings.quality_type
+        = options_.image_quality_label_jpeg_xl->currentData()
+              .value<QualityType>();
+    task.processing_settings.quality = options_.image_quality_spin_box->value();
+    task.processing_settings.compression_effort
+        = options_.image_compression_spin_box->value();
     return task;
 }
 

@@ -3,53 +3,16 @@
 #include "include/processing.hpp"
 
 #include <iostream>
-#include <map>
-#include <stdexcept>
 #include <string>
 
 #if defined(PDF_ENABLED)
 #include <fpdfview.h>
 #endif
 
-// Helper function to parse arguments with error handling and cleanup
-template <typename T>
-T parse_arg(const std::string &arg_str, const std::string &error_msg) {
-    try {
-        if constexpr (std::is_same_v<T, int>) {
-            return std::stoi(arg_str);
-        }
-        else if constexpr (std::is_same_v<T, float>) {
-            return std::stof(arg_str);
-        }
-        else if constexpr (std::is_same_v<T, double>) {
-            return std::stod(arg_str);
-        }
-        else {
-            throw std::invalid_argument("Unsupported type");
-        }
-    }
-    catch (const std::exception &e) {
-        std::cerr << "Worker error: " << error_msg << " - " << e.what() << "\n";
-#if defined(PDF_ENABLED)
-        FPDF_DestroyLibrary();
-#endif
-        vips_shutdown();
-        exit(1);
-    }
-}
-
 // This is the main entry point for the worker executable. It takes task details
 // as command-line arguments, performs the processing, and prints logs to
 // standard output for the main application to capture.
-int worker_main(int argc, char *argv[]) {
-    // Parse arguments into a map
-    std::map<std::string, std::string> args;
-    for (int i = 1; i + 1 < argc; i += 2) {
-        std::string flag = argv[i];
-        std::string value = argv[i + 1];
-        args[flag] = value;
-    }
-
+int worker_main(int argc, char **argv) {
     // Initialize libraries required for processing.
     if (VIPS_INIT(argv[0])) {
         vips_error_exit(nullptr);
@@ -60,106 +23,13 @@ int worker_main(int argc, char *argv[]) {
     FPDF_InitLibrary();
 #endif
 
-    // Reconstruct the PageTask from command-line arguments.
-    PageTask task;
+    auto task = PageTask{};
     try {
-        task.source_file = args.at("-source_file");
-        task.output_dir = args.at("-output_dir");
-        task.output_base_name = args.at("-output_base_name");
-
-        task.page_number = parse_arg<int>(
-            args.at("-page_number"), "Invalid page number format"
-        );
-
-        task.path_in_archive
-            = args.at("-path_in_archive"); // Can be empty string
-
-#if defined(PDF_ENABLED)
-        task.pdf_pixel_density = parse_arg<int>(
-            args.at("-pdf_pixel_density"), "Invalid PDF pixel density"
-        );
-#endif
-
-        task.convert_pages_to_greyscale
-            = parse_arg<int>(
-                  args.at("-convert_pages_to_greyscale"),
-                  "Invalid convert pages to greyscale"
-              )
-           != 0;
-
-        task.double_page_spread_action
-            = static_cast<DoublePageSpreadActions>(parse_arg<int>(
-                args.at("-double_page_spread_actions"),
-                "Invalid double page spread options"
-            ));
-
-        task.reading_direction = static_cast<ReadingDirection>(parse_arg<int>(
-            args.at("-reading_direction"), "Invalid reading direction"
-        ));
-
-        task.rotation_direction = static_cast<RotationDirection>(parse_arg<int>(
-            args.at("-rotation_direction"), "Invalid rotation direction"
-        ));
-
-        task.linear_light_resampling = parse_arg<int>(
-                                           args.at("-linear_light_resampling"),
-                                           "Invalid linear light resampling"
-                                       )
-                                    != 0;
-
-        task.remove_spine
-            = parse_arg<int>(args.at("-remove_spine"), "Invalid remove spine")
-           != 0;
-
-        task.stretch_page_contrast = parse_arg<int>(
-                                         args.at("-stretch_page_contrast"),
-                                         "Invalid stretch page contrast"
-                                     )
-                                  != 0;
-        task.scale_pages
-            = parse_arg<int>(args.at("-scale_pages"), "Invalid scale pages")
-           != 0;
-
-        task.page_width
-            = parse_arg<int>(args.at("-page_width"), "Invalid page width");
-        task.page_height
-            = parse_arg<int>(args.at("-page_height"), "Invalid page height");
-        task.page_resampler = static_cast<VipsKernel>(
-            parse_arg<int>(args.at("-page_resampler"), "Invalid page resampler")
-        );
-
-        task.quantize_pages
-            = parse_arg<int>(
-                  args.at("-quantize_pages"), "Invalid quantize pages"
-              )
-           != 0;
-
-        task.bit_depth = static_cast<BitDepth>(
-            parse_arg<int>(args.at("-bit_depth"), "Invalid bit depth")
-        );
-        task.dither
-            = parse_arg<double>(args.at("-dither"), "Invalid dither value");
-
-        task.image_format = static_cast<ImageFormat>(
-            parse_arg<int>(args.at("-image_format"), "Invalid image format")
-        );
-        task.compression_type = static_cast<CompressionType>(parse_arg<int>(
-            args.at("-compression_type"), "Invalid compression type"
-        ));
-        task.quality_type = static_cast<QualityType>(
-            parse_arg<int>(args.at("-quality_type"), "Invalid quality type")
-        );
-
-        task.quality
-            = parse_arg<double>(args.at("-quality"), "Invalid quality value");
-
-        task.compression_effort = parse_arg<int>(
-            args.at("-compression_effort"), "Invalid compression effort"
-        );
+        auto worker_arguments = std::span(argv + 1, argv + argc);
+        task = decode_task(worker_arguments);
     }
-    catch (const std::out_of_range &e) {
-        std::cerr << "Worker error: Missing required argument - " << e.what()
-                  << "\n";
+    catch (const std::exception &e) {
+        std::cerr << "Worker error: invalid arguments: " << e.what() << "\n";
 #if defined(PDF_ENABLED)
         FPDF_DestroyLibrary();
 #endif

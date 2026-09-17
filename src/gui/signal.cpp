@@ -1,5 +1,6 @@
 #include "../include/archive.hpp"
 #include "include/display_presets.hpp"
+#include "include/settings.hpp"
 #include "include/window.hpp"
 
 #include <QCheckBox>
@@ -854,6 +855,49 @@ void Window::on_start_button_clicked() {
     for (int i = 0; i < max_concurrent_workers_; i += 1) {
         start_next_task();
     }
+}
+
+void Window::set_widgets_from_settings() {
+    is_programmatically_changing_values_ = true;
+    auto set_widget = [&](const auto &entry) {
+        set_widget_value_from_settings(entry.field, entry.widget);
+    };
+    std::apply(
+        [&](const auto &...entry) { (set_widget(entry), ...); },
+        fields_to_widgets(options_)
+    );
+
+    QSettings settings;
+    if (settings.contains(DISPLAY_PRESET_BRAND_SETTINGS_KEY)
+        && settings.contains(DISPLAY_PRESET_MODEL_SETTINGS_KEY)) {
+        auto brand = settings.value(DISPLAY_PRESET_BRAND_SETTINGS_KEY);
+        auto model = settings.value(DISPLAY_PRESET_MODEL_SETTINGS_KEY);
+        set_display_preset(
+            brand.toString().toStdString(), model.toString().toStdString()
+        );
+    }
+    is_programmatically_changing_values_ = false;
+}
+
+void Window::save_settings_from_widgets() {
+    QSettings settings;
+    auto save_setting = [&](const auto &entry) {
+        auto settings_value = settings_value_from_widget(entry.widget);
+        settings.setValue(entry.field, settings_value);
+    };
+    std::apply(
+        [&](const auto &...entry) { (save_setting(entry), ...); },
+        fields_to_widgets(options_)
+    );
+
+    settings.setValue(
+        DISPLAY_PRESET_BRAND_SETTINGS_KEY,
+        QString::fromStdString(display_preset.brand)
+    );
+    settings.setValue(
+        DISPLAY_PRESET_MODEL_SETTINGS_KEY,
+        QString::fromStdString(display_preset.model)
+    );
 }
 
 void Window::on_cancel_button_clicked() {

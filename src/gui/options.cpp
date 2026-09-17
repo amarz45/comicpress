@@ -16,19 +16,90 @@
 
 #include <vips/vips8>
 
-#include <array>
 #include <thread>
 #include <utility>
 
 static QFormLayout *create_form_layout(QWidget *container);
 
+static constexpr auto OUTPUT_FORMATS
+    = std::to_array<ComboBoxVariant<OutputFormat>>({
+        {"epub", "EPUB", OutputFormat::EPUB},
+        {"cbz", "CBZ", OutputFormat::CBZ},
+    });
+
+static constexpr auto READING_DIRECTIONS
+    = std::to_array<ComboBoxVariant<ReadingDirection>>({
+        {"ltr", "Left-to-right", ReadingDirection::LTR},
+        {"rtl", "Right-to-left", ReadingDirection::RTL},
+    });
+
+static constexpr auto PDF_QUALITY_OPTIONS
+    = std::to_array<ComboBoxVariant<PdfQuality>>({
+        {"standard", "Standard (300\u202fPPI, fast)", PdfQuality::STANDARD},
+        {"high", "High (600\u202fPPI)", PdfQuality::HIGH},
+        {"ultra", "Ultra (1200\u202fPPI, recommended)", PdfQuality::ULTRA},
+        {"custom", "Custom", PdfQuality::CUSTOM},
+    });
+
+static constexpr auto DOUBLE_PAGE_SPREAD_ACTIONS
+    = std::to_array<ComboBoxVariant<DoublePageSpreadActions>>({
+        {"none", "Do nothing", DoublePageSpreadActions::NONE},
+        {"rotate", "Rotate page", DoublePageSpreadActions::ROTATE},
+        {"split", "Split into two pages", DoublePageSpreadActions::SPLIT},
+        {"rotate_and_split", "Rotate and split", DoublePageSpreadActions::BOTH},
+    });
+
+static constexpr auto ROTATION_DIRECTIONS
+    = std::to_array<ComboBoxVariant<RotationDirection>>({
+        {"clockwise", "Clockwise", RotationDirection::CLOCKWISE},
+        {"counterclockwise",
+         "Counterclockwise",
+         RotationDirection::COUNTERCLOCKWISE},
+    });
+
+static constexpr auto RESAMPLERS = std::to_array<ComboBoxVariant<VipsKernel>>({
+    {"bicubic", "Bicubic interpolation", VIPS_KERNEL_CUBIC},
+    {"bilinear", "Bilinear interpolation", VIPS_KERNEL_LINEAR},
+    {"lanczos_2", "Lanczos 2", VIPS_KERNEL_LANCZOS2},
+    {"lanczos_3", "Lanczos 3", VIPS_KERNEL_LANCZOS3},
+    {"mks2013", "Magic Kernel Sharp 2013", VIPS_KERNEL_MKS2013},
+    {"mks2021", "Magic Kernel Sharp 2021", VIPS_KERNEL_MKS2021},
+    {"mitchell", "Mitchell", VIPS_KERNEL_MITCHELL},
+    {"nearest_neighbour", "Nearest neighbour", VIPS_KERNEL_NEAREST},
+});
+
+static constexpr auto BIT_DEPTH_OPTIONS
+    = std::to_array<ComboBoxVariant<BitDepth>>({
+        {"one", "1 (2 colours)", BitDepth::ONE},
+        {"two", "2 (4 colours)", BitDepth::TWO},
+        {"four", "4 (16 colours)", BitDepth::FOUR},
+        {"eight", "8 (256 colours)", BitDepth::EIGHT},
+        {"sixteen", "16 (65\u202f536 colours)", BitDepth::SIXTEEN},
+    });
+
+static constexpr auto IMAGE_FORMATS
+    = std::to_array<ComboBoxVariant<ImageFormat>>({
+        {"avif", "AVIF", ImageFormat::AVIF},
+        {"jpeg", "JPEG", ImageFormat::JPEG},
+        {"jpeg_xl", "JPEG XL", ImageFormat::JPEG_XL},
+        {"png", "PNG", ImageFormat::PNG},
+        {"webp", "WebP", ImageFormat::WEBP},
+    });
+
+static constexpr auto COMPRESSION_TYPES
+    = std::to_array<ComboBoxVariant<CompressionType>>({
+        {"lossless", "Lossless", CompressionType::LOSSLESS},
+        {"lossy", "Lossy", CompressionType::LOSSY},
+    });
+
+static constexpr auto QUALITY_TYPES
+    = std::to_array<ComboBoxVariant<QualityType>>({
+        {"distance", "Distance", QualityType::DISTANCE},
+        {"quality", "Quality", QualityType::QUALITY},
+    });
+
 void add_output_format_widget(QStyle *style, Options *options) {
     auto output_format_label = new QLabel("Output format");
-    static constexpr auto OUTPUT_FORMATS
-        = std::to_array<std::pair<const char *, OutputFormat>>({
-            {"EPUB", OutputFormat::EPUB},
-            {"CBZ", OutputFormat::CBZ},
-        });
     options->output_format_combo_box
         = create_combo_box(OUTPUT_FORMATS, OutputFormat::EPUB);
     auto output_format_container = create_control_with_info(
@@ -43,11 +114,6 @@ void add_output_format_widget(QStyle *style, Options *options) {
     auto output_format_layout
         = create_form_layout(options->output_format_container);
     auto reading_direction_label = new QLabel("Reading direction");
-    static constexpr auto READING_DIRECTIONS
-        = std::to_array<std::pair<const char *, ReadingDirection>>({
-            {"Left-to-right", ReadingDirection::LTR},
-            {"Right-to-left", ReadingDirection::RTL},
-        });
     options->reading_direction_combo_box
         = create_combo_box(READING_DIRECTIONS, ReadingDirection::LTR);
     output_format_layout->addRow(
@@ -65,13 +131,6 @@ void add_pdf_pixel_density_widget(QStyle *style, Options *options) {
     auto label = new QLabel("PDF pixel density");
     options->pdf_pixel_density_label = label;
 
-    static constexpr auto PDF_QUALITY_OPTIONS
-        = std::to_array<std::pair<const char *, PdfQuality>>({
-            {"Standard (300\u202fPPI, fast)", PdfQuality::STANDARD},
-            {"High (600\u202fPPI)", PdfQuality::HIGH},
-            {"Ultra (1200\u202fPPI, recommended)", PdfQuality::ULTRA},
-            {"Custom", PdfQuality::CUSTOM},
-        });
     options->pdf_pixel_density_combo_box
         = create_combo_box(PDF_QUALITY_OPTIONS, PdfQuality::STANDARD);
 
@@ -107,13 +166,6 @@ void add_convert_to_greyscale_widget(QStyle *style, Options *options) {
 
 void add_double_page_spread_widget(QStyle *style, Options *options) {
     auto label = new QLabel("Two-page spreads");
-    static constexpr auto DOUBLE_PAGE_SPREAD_ACTIONS
-        = std::to_array<std::pair<const char *, DoublePageSpreadActions>>({
-            {"Do nothing", DoublePageSpreadActions::NONE},
-            {"Rotate page", DoublePageSpreadActions::ROTATE},
-            {"Split into two pages", DoublePageSpreadActions::SPLIT},
-            {"Rotate and split", DoublePageSpreadActions::BOTH},
-        });
     options->double_page_spread_combo_box = create_combo_box(
         DOUBLE_PAGE_SPREAD_ACTIONS, DoublePageSpreadActions::NONE
     );
@@ -130,11 +182,6 @@ void add_double_page_spread_widget(QStyle *style, Options *options) {
 
     auto rotation_label = new QLabel("Rotation direction");
 
-    static constexpr auto ROTATION_DIRECTIONS
-        = std::to_array<std::pair<const char *, RotationDirection>>({
-            {"Clockwise", RotationDirection::CLOCKWISE},
-            {"Counterclockwise", RotationDirection::COUNTERCLOCKWISE},
-        });
     options->rotation_direction_combo_box
         = create_combo_box(ROTATION_DIRECTIONS, RotationDirection::CLOCKWISE);
 
@@ -220,17 +267,6 @@ void add_scaling_widgets(QStyle *style, Options *options) {
 
     auto resampler_label = new QLabel("Resampler");
 
-    static constexpr auto RESAMPLERS
-        = std::to_array<std::pair<const char *, VipsKernel>>({
-            {"Bicubic interpolation", VIPS_KERNEL_CUBIC},
-            {"Bilinear interpolation", VIPS_KERNEL_LINEAR},
-            {"Lanczos 2", VIPS_KERNEL_LANCZOS2},
-            {"Lanczos 3", VIPS_KERNEL_LANCZOS3},
-            {"Magic Kernel Sharp 2013", VIPS_KERNEL_MKS2013},
-            {"Magic Kernel Sharp 2021", VIPS_KERNEL_MKS2021},
-            {"Mitchell", VIPS_KERNEL_MITCHELL},
-            {"Nearest neighbour", VIPS_KERNEL_NEAREST},
-        });
     options->resampler_combo_box
         = create_combo_box(RESAMPLERS, VIPS_KERNEL_MKS2021);
 
@@ -261,14 +297,6 @@ void add_quantization_widgets(QStyle *style, Options *options) {
 
     // Bit depth
     auto bit_depth_label = new QLabel("Bit depth");
-    static constexpr auto BIT_DEPTH_OPTIONS
-        = std::to_array<std::pair<const char *, BitDepth>>({
-            {"1 (2 colours)", BitDepth::ONE},
-            {"2 (4 colours)", BitDepth::TWO},
-            {"4 (16 colours)", BitDepth::FOUR},
-            {"8 (256 colours)", BitDepth::EIGHT},
-            {"16 (65\u202f536 colours)", BitDepth::SIXTEEN},
-        });
     options->bit_depth_combo_box
         = create_combo_box(BIT_DEPTH_OPTIONS, BitDepth::FOUR);
     auto bit_depth_container = create_control_with_info(
@@ -294,14 +322,6 @@ void add_quantization_widgets(QStyle *style, Options *options) {
 void add_image_format_widgets(QStyle *style, Options *options) {
     options->image_format_label = new QLabel("Image format");
 
-    static constexpr auto IMAGE_FORMATS
-        = std::to_array<std::pair<const char *, ImageFormat>>({
-            {"AVIF", ImageFormat::AVIF},
-            {"JPEG", ImageFormat::JPEG},
-            {"JPEG XL", ImageFormat::JPEG_XL},
-            {"PNG", ImageFormat::PNG},
-            {"WebP", ImageFormat::WEBP},
-        });
     options->image_format_combo_box
         = create_combo_box(IMAGE_FORMATS, ImageFormat::PNG);
 
@@ -319,11 +339,6 @@ void add_image_format_widgets(QStyle *style, Options *options) {
         = create_form_layout(options->image_format_options_container);
 
     // Compression type
-    static constexpr auto COMPRESSION_TYPES
-        = std::to_array<std::pair<const char *, CompressionType>>({
-            {"Lossless", CompressionType::LOSSLESS},
-            {"Lossy", CompressionType::LOSSY},
-        });
     options->image_compression_type_combo_box
         = create_combo_box(COMPRESSION_TYPES, CompressionType::LOSSLESS);
 
@@ -358,11 +373,6 @@ void add_image_format_widgets(QStyle *style, Options *options) {
     quality_label_hbox->setSpacing(0);
 
     // Quality/distance combo box
-    static constexpr auto QUALITY_TYPES
-        = std::to_array<std::pair<const char *, QualityType>>({
-            {"Distance", QualityType::DISTANCE},
-            {"Quality", QualityType::QUALITY},
-        });
     options->image_quality_label_jpeg_xl
         = create_combo_box(QUALITY_TYPES, QualityType::DISTANCE);
     options->image_quality_label_jpeg_xl->setVisible(false);

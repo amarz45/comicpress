@@ -1,10 +1,13 @@
 #pragma once
 
+#include <QCheckBox>
+#include <QComboBox>
 #include <QList>
 #include <QMainWindow>
 #include <QMap>
 #include <QProcess>
 #include <QQueue>
+#include <QSettings>
 #include <QString>
 #include <cstdint>
 #include <deque>
@@ -15,6 +18,7 @@
 #include <utility>
 
 #include "../../include/task.hpp"
+#include "../include/options.hpp"
 
 QT_BEGIN_NAMESPACE
 class QCheckBox;
@@ -41,14 +45,6 @@ QT_END_NAMESPACE
 
 inline std::atomic<bool> is_converting{false};
 
-enum class OutputFormat : std::uint8_t { EPUB, CBZ };
-enum class PdfQuality : std::uint16_t {
-    STANDARD = 300,
-    HIGH = 600,
-    ULTRA = 1200,
-    CUSTOM = 0,
-};
-
 template <typename T>
 class BoundedDeque {
     size_t max_size_;
@@ -71,61 +67,6 @@ class BoundedDeque {
         }
         dq.push_front(val);
     }
-};
-
-struct Options {
-    QGroupBox *settings_group;
-    QFormLayout *settings_layout;
-    QCheckBox *advanced_options_check_box;
-#if defined(PDF_ENABLED)
-    QLabel *pdf_pixel_density_label;
-    QLabel *pdf_pixel_density_tooltip;
-    QComboBox *pdf_pixel_density_combo_box;
-    QWidget *pdf_options_container;
-    QSpinBox *pdf_pixel_density_spin_box;
-#endif
-    QCheckBox *convert_to_greyscale;
-    QComboBox *double_page_spread_combo_box;
-    QLabel *linear_light_resampling_label;
-    QCheckBox *linear_light_resampling_check_box;
-    QWidget *linear_light_resampling_container;
-    QCheckBox *remove_spine_check_box;
-    QCheckBox *contrast_check_box;
-    QPushButton *display_preset_button;
-    QComboBox *output_format_combo_box;
-    QLabel *scale_pages_label;
-    QWidget *scale_pages_container;
-    QCheckBox *enable_image_scaling_check_box;
-    QWidget *scaling_options_container;
-    QSpinBox *width_spin_box;
-    QSpinBox *height_spin_box;
-    QComboBox *resampler_combo_box;
-    QCheckBox *enable_image_quantization_check_box;
-    QLabel *quantize_pages_label;
-    QWidget *quantize_pages_container;
-    QWidget *quantization_options_container;
-    QComboBox *bit_depth_combo_box;
-    QDoubleSpinBox *dithering_spin_box;
-    QLabel *image_format_label;
-    QWidget *image_format_container;
-    QWidget *image_format_options_container;
-    QComboBox *image_format_combo_box;
-    QLabel *image_compression_label;
-    QSpinBox *image_compression_spin_box;
-    QComboBox *image_compression_type_combo_box;
-    QLabel *image_compression_type_label;
-    QLabel *image_compression_type_tooltip;
-    QLabel *image_quality_jpeg_xl_tooltip;
-    QDoubleSpinBox *image_quality_spin_box;
-    QWidget *image_quality_label;
-    QLabel *image_quality_label_original;
-    QComboBox *image_quality_label_jpeg_xl;
-    QLabel *workers_label;
-    QSpinBox *workers_spin_box;
-    QWidget *output_format_container;
-    QComboBox *reading_direction_combo_box;
-    QWidget *rotation_options_container;
-    QComboBox *rotation_direction_combo_box;
 };
 
 struct ProgressTimer {
@@ -231,6 +172,8 @@ class Window : public QMainWindow {
     QPushButton *browse_output_button_;
 
     void set_output_dir(const QString &io_path);
+    void set_widgets_from_settings();
+    void save_settings_from_widgets();
     void persist_output_dir();
     void restore_output_dir();
     bool ensure_output_dir();

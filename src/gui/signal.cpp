@@ -20,6 +20,7 @@
 #include <QProcess>
 #include <QProgressBar>
 #include <QPushButton>
+#include <QScopedValueRollback>
 #include <QSettings>
 #include <QSpinBox>
 #include <QStandardPaths>
@@ -458,7 +459,8 @@ void Window::on_display_preset_changed() {
         return;
     }
 
-    is_programmatically_changing_values_ = true;
+    auto guard
+        = QScopedValueRollback(is_programmatically_changing_values_, true);
 
     const auto &models = DISPLAY_PRESETS.at(brand).value();
     auto it = std::find_if(
@@ -479,8 +481,6 @@ void Window::on_display_preset_changed() {
         );
         options_.convert_to_greyscale->setChecked(!display.colour);
     }
-
-    is_programmatically_changing_values_ = false;
 }
 
 void Window::on_advanced_options_changed(int state) {
@@ -546,13 +546,17 @@ void Window::on_image_format_changed() {
     const auto &settings = format_settings_.at(img_format);
     auto is_jpeg_xl = img_format == ImageFormat::JPEG_XL;
 
-    is_programmatically_changing_values_ = true;
-    update_image_quality_spin_box();
-    options_.image_compression_spin_box->setRange(
-        settings.compression_effort_min, settings.compression_effort_max
-    );
-    options_.image_compression_spin_box->setValue(settings.compression_effort);
-    is_programmatically_changing_values_ = false;
+    {
+        auto guard
+            = QScopedValueRollback(is_programmatically_changing_values_, true);
+        update_image_quality_spin_box();
+        options_.image_compression_spin_box->setRange(
+            settings.compression_effort_min, settings.compression_effort_max
+        );
+        options_.image_compression_spin_box->setValue(
+            settings.compression_effort
+        );
+    }
 
     options_.image_quality_label
         = is_jpeg_xl
@@ -629,12 +633,12 @@ bool Window::image_quality_is_distance() const {
 }
 
 void Window::on_jpeg_xl_quality_type_changed() {
-    is_programmatically_changing_values_ = true;
+    auto guard
+        = QScopedValueRollback(is_programmatically_changing_values_, true);
     update_image_quality_spin_box();
-    is_programmatically_changing_values_ = false;
 }
 
-// Changing the range and decimals can change the value, so callers must set
+// Changing the range and decimals can change the value, so callers must guard
 // `is_programmatically_changing_values_` to keep it out of the current format’s
 // settings.
 void Window::update_image_quality_spin_box() {
@@ -878,7 +882,8 @@ static void for_each_settings_field(
 }
 
 void Window::set_widgets_from_settings() {
-    is_programmatically_changing_values_ = true;
+    auto guard
+        = QScopedValueRollback(is_programmatically_changing_values_, true);
     for_each_settings_field(
         options_, is_display_preset_active(), [](const auto &entry) {
             set_widget_value_from_settings(entry.field, entry.widget);
@@ -912,7 +917,6 @@ void Window::set_widgets_from_settings() {
             set_display_preset(brand_str, model_str);
         }
     }
-    is_programmatically_changing_values_ = false;
 }
 
 void Window::save_settings_from_widgets() {

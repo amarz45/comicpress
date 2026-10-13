@@ -8,13 +8,25 @@
 #include <cstddef>
 #include <utility>
 
+inline constexpr auto SETTINGS_KEY_ROLE = Qt::UserRole + 1;
+
+template <typename T>
+struct ComboBoxVariant {
+    std::string_view settings_key;
+    std::string_view ui_label;
+    T value;
+};
+
 template <typename T, std::size_t N>
 QComboBox *create_combo_box(
-    const std::array<std::pair<const char *, T>, N> &entries, T default_value
+    const std::array<ComboBoxVariant<T>, N> &entries, T default_value
 ) {
     auto combo = new QComboBox();
-    for (const auto &[label, value] : entries) {
-        combo->addItem(label, QVariant::fromValue(value));
+    for (const auto &[key, label, value] : entries) {
+        auto key_qstr = QString::fromUtf8(key.data(), key.size());
+        auto label_qstr = QString::fromUtf8(label.data(), label.size());
+        combo->addItem(label_qstr, QVariant::fromValue(value));
+        combo->setItemData(combo->count() - 1, key_qstr, SETTINGS_KEY_ROLE);
     }
     combo->setCurrentIndex(combo->findData(QVariant::fromValue(default_value)));
     // Fix: Prevent combo box from expanding to fill width

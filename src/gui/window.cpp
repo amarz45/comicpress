@@ -63,14 +63,32 @@ Window::Window(QWidget *parent) : QMainWindow(parent) {
 
     setup_ui();
     set_display_preset("None", "");
+
+    set_widgets_from_settings();
+
+    // Load the restored per-format settings into the widgets. This shows the
+    // image format options, so re-apply the advanced options visibility.
+    on_image_format_changed();
+    on_advanced_options_changed(
+        options_.advanced_options_check_box->checkState()
+    );
     on_enable_image_scaling_changed(
         options_.enable_image_scaling_check_box->checkState()
     );
     on_double_page_spread_changed();
     on_output_format_combo_box_changed();
+#if defined(PDF_ENABLED)
+    on_pdf_pixel_density_combo_box_changed();
+#endif
     connect_signals();
 
     restore_output_dir();
+    connect(
+        qApp,
+        &QCoreApplication::aboutToQuit,
+        this,
+        &Window::save_settings_from_widgets
+    );
 }
 
 void Window::setup_ui() {

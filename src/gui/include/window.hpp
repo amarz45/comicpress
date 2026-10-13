@@ -90,6 +90,7 @@ struct FormatSettings {
     int compression_effort_max = 9;
     int compression_effort = 0;
     int quality = 0;
+    bool has_quality = true;
     bool has_compression_effort = true;
     bool has_compression_type = true;
 };
@@ -145,10 +146,10 @@ class Window : public QMainWindow {
     void on_enable_image_quantization_changed(int state);
     void on_image_format_changed();
     void on_image_compression_changed(int state);
-    void on_image_compression_type_changed(bool is_explicit);
-    void on_image_compression_type_changed_explicit();
+    void on_image_compression_type_changed();
     void on_image_quality_changed(double value);
     void on_jpeg_xl_quality_type_changed();
+    void update_image_quality_spin_box();
 
   private:
     QWidget *central_widget_;
@@ -176,6 +177,9 @@ class Window : public QMainWindow {
     void save_settings_from_widgets();
     void persist_output_dir();
     void restore_output_dir();
+    void persist_format_settings();
+    void restore_format_settings();
+    bool is_display_preset_active() const;
     bool ensure_output_dir();
     QGroupBox *progress_bars_group_;
     QVBoxLayout *progress_bars_layout_;
@@ -235,7 +239,9 @@ class Window : public QMainWindow {
         {ImageFormat::JPEG_XL,
          {.compression_effort_min = 1, .compression_effort = 7, .quality = 75}},
         {ImageFormat::PNG,
-         {.compression_effort = 6, .has_compression_type = false}},
+         {.compression_effort = 6,
+          .has_quality = false,
+          .has_compression_type = false}},
         {ImageFormat::WEBP,
          {.compression_effort_max = 6, .compression_effort = 4, .quality = 80}},
     };
@@ -244,10 +250,11 @@ class Window : public QMainWindow {
     // fit the shared `quality` field above.
     double jpeg_xl_distance_ = 1.0;
 
-    bool compression_type_changed_ = false;
-
     ImageFormat current_image_format() const;
     bool jpeg_xl_distance_selected() const;
+    // Whether the quality spin box holds a JPEG XL distance rather than a
+    // quality.
+    bool image_quality_is_distance() const;
 
     std::string temp_base_dir_;
 };

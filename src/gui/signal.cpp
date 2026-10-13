@@ -2,6 +2,7 @@
 #include "include/display_presets.hpp"
 #include "include/settings.hpp"
 #include "include/window.hpp"
+#include "include/window_util.hpp"
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -234,7 +235,7 @@ void Window::connect_signals() {
         options_.image_compression_type_combo_box,
         &QComboBox::currentTextChanged,
         this,
-        &Window::on_image_compression_type_changed_explicit
+        &Window::on_image_compression_type_changed
     );
     connect(
         options_.image_quality_spin_box,
@@ -498,8 +499,10 @@ void Window::on_advanced_options_changed(int state) {
     options_.image_format_container->setVisible(is_checked);
 
     if (is_checked) {
-        on_enable_image_quantization_changed(
-            options_.enable_image_quantization_check_box->checkState()
+        // Not `on_enable_image_quantization_changed`, which would also reset
+        // the compression type.
+        options_.quantization_options_container->setVisible(
+            options_.enable_image_quantization_check_box->isChecked()
         );
         on_enable_image_scaling_changed(
             options_.enable_image_scaling_check_box->checkState()
@@ -518,7 +521,8 @@ void Window::on_advanced_options_changed(int state) {
 
 void Window::on_enable_image_scaling_changed(int state) {
     bool is_checked = state == Qt::Checked;
-    bool parent_visible = options_.scale_pages_container->isVisible();
+    // Not `isVisible`, which is false for everything until the window is shown.
+    bool parent_visible = !options_.scale_pages_container->isHidden();
     options_.scaling_options_container->setVisible(
         is_checked && parent_visible
     );
@@ -528,16 +532,11 @@ void Window::on_enable_image_quantization_changed(int state) {
     bool is_checked = state == Qt::Checked;
     options_.quantization_options_container->setVisible(is_checked);
     auto combo = options_.image_compression_type_combo_box;
-    if (is_checked) {
-        combo->setCurrentIndex(
-            combo->findData(QVariant::fromValue(CompressionType::LOSSLESS))
-        );
-    }
-    else if (!compression_type_changed_) {
-        combo->setCurrentIndex(
-            combo->findData(QVariant::fromValue(CompressionType::LOSSY))
-        );
-    }
+    auto compression_type
+        = is_checked ? CompressionType::LOSSLESS : CompressionType::LOSSY;
+    combo->setCurrentIndex(
+        combo->findData(QVariant::fromValue(compression_type))
+    );
 }
 
 void Window::on_image_format_changed() {
@@ -547,23 +546,20 @@ void Window::on_image_format_changed() {
     const auto &settings = format_settings_.at(img_format);
     auto is_jpeg_xl = img_format == ImageFormat::JPEG_XL;
 
-    // Important: This should be before the others.
-    on_jpeg_xl_quality_type_changed();
-
+    is_programmatically_changing_values_ = true;
+    update_image_quality_spin_box();
     options_.image_compression_spin_box->setRange(
         settings.compression_effort_min, settings.compression_effort_max
     );
     options_.image_compression_spin_box->setValue(settings.compression_effort);
+    is_programmatically_changing_values_ = false;
+
     options_.image_quality_label
         = is_jpeg_xl
             ? static_cast<QWidget *>(options_.image_quality_label_jpeg_xl)
             : options_.image_quality_label_original;
     options_.image_quality_label_original->setVisible(!is_jpeg_xl);
     options_.image_quality_label_jpeg_xl->setVisible(is_jpeg_xl);
-
-    options_.image_quality_spin_box->setValue(
-        jpeg_xl_distance_selected() ? jpeg_xl_distance_ : settings.quality
-    );
 
     options_.image_compression_type_label->setVisible(
         settings.has_compression_type
@@ -581,25 +577,24 @@ void Window::on_image_format_changed() {
         settings.has_compression_effort
     );
 
-    on_image_compression_type_changed(false);
+    on_image_compression_type_changed();
 }
 
 void Window::on_image_compression_changed(int state) {
+    if (is_programmatically_changing_values_) {
+        return;
+    }
     format_settings_[current_image_format()].compression_effort = state;
 }
 
-void Window::on_image_compression_type_changed_explicit() {
-    on_image_compression_type_changed(true);
-}
-
-void Window::on_image_compression_type_changed(bool is_explicit) {
+void Window::on_image_compression_type_changed() {
     auto img_format = current_image_format();
     auto compression_type
         = options_.image_compression_type_combo_box->currentData()
               .value<CompressionType>();
     auto is_lossy = compression_type == CompressionType::LOSSY;
 
-    auto image_quality_visible = img_format != ImageFormat::PNG
+    auto image_quality_visible = format_settings_.at(img_format).has_quality
                               && (img_format == ImageFormat::JPEG || is_lossy);
     auto jpeg_xl_quality_tooltip_visible
         = img_format == ImageFormat::JPEG_XL && is_lossy;
@@ -609,15 +604,13 @@ void Window::on_image_compression_type_changed(bool is_explicit) {
     options_.image_quality_jpeg_xl_tooltip->setVisible(
         jpeg_xl_quality_tooltip_visible
     );
-
-    if (is_explicit) {
-        compression_type_changed_ = true;
-    }
 }
 
 void Window::on_image_quality_changed(double value) {
-    if (current_image_format() == ImageFormat::JPEG_XL
-        && jpeg_xl_distance_selected()) {
+    if (is_programmatically_changing_values_) {
+        return;
+    }
+    if (image_quality_is_distance()) {
         jpeg_xl_distance_ = value;
         return;
     }
@@ -630,9 +623,23 @@ bool Window::jpeg_xl_distance_selected() const {
         == QualityType::DISTANCE;
 }
 
+bool Window::image_quality_is_distance() const {
+    return current_image_format() == ImageFormat::JPEG_XL
+        && jpeg_xl_distance_selected();
+}
+
 void Window::on_jpeg_xl_quality_type_changed() {
+    is_programmatically_changing_values_ = true;
+    update_image_quality_spin_box();
+    is_programmatically_changing_values_ = false;
+}
+
+// Changing the range and decimals can change the value, so callers must set
+// `is_programmatically_changing_values_` to keep it out of the current format’s
+// settings.
+void Window::update_image_quality_spin_box() {
     auto *spin_box = options_.image_quality_spin_box;
-    if (jpeg_xl_distance_selected()) {
+    if (image_quality_is_distance()) {
         spin_box->setRange(0.0, 15.0);
         spin_box->setSingleStep(0.1);
         spin_box->setDecimals(2);
@@ -642,7 +649,7 @@ void Window::on_jpeg_xl_quality_type_changed() {
         spin_box->setRange(0.0, 100.0);
         spin_box->setSingleStep(1.0);
         spin_box->setDecimals(0);
-        spin_box->setValue(format_settings_.at(ImageFormat::JPEG_XL).quality);
+        spin_box->setValue(format_settings_.at(current_image_format()).quality);
     }
 }
 
@@ -857,46 +864,156 @@ void Window::on_start_button_clicked() {
     }
 }
 
+bool Window::is_display_preset_active() const {
+    return display_preset.brand != "None";
+}
+
+static void for_each_settings_field(
+    const Options &options, bool is_display_preset_active, auto &&apply
+) {
+    std::apply(
+        [&](const auto &...entry) { (apply(entry), ...); },
+        fields_to_widgets(options, is_display_preset_active)
+    );
+}
+
 void Window::set_widgets_from_settings() {
     is_programmatically_changing_values_ = true;
-    auto set_widget = [&](const auto &entry) {
-        set_widget_value_from_settings(entry.field, entry.widget);
-    };
-    std::apply(
-        [&](const auto &...entry) { (set_widget(entry), ...); },
-        fields_to_widgets(options_)
+    for_each_settings_field(
+        options_, is_display_preset_active(), [](const auto &entry) {
+            set_widget_value_from_settings(entry.field, entry.widget);
+        }
     );
+    restore_format_settings();
 
     QSettings settings;
     if (settings.contains(DISPLAY_PRESET_BRAND_SETTINGS_KEY)
         && settings.contains(DISPLAY_PRESET_MODEL_SETTINGS_KEY)) {
         auto brand = settings.value(DISPLAY_PRESET_BRAND_SETTINGS_KEY);
         auto model = settings.value(DISPLAY_PRESET_MODEL_SETTINGS_KEY);
-        set_display_preset(
-            brand.toString().toStdString(), model.toString().toStdString()
-        );
+
+        const auto brand_str = brand.toString().toStdString();
+        const auto model_str = model.toString().toStdString();
+
+        const auto brand_exists
+            = [&] { return DISPLAY_PRESETS.contains(brand_str); };
+        const auto model_exists = [&] {
+            const auto &model_map = DISPLAY_PRESETS.at(brand_str);
+            if (!model_map) {
+                return false;
+            }
+            const auto it
+                = std::ranges::find_if(*model_map, [&](const auto &pair) {
+                      return pair.first == model_str;
+                  });
+            return it != model_map->end();
+        };
+        if (brand_exists() && model_exists()) {
+            set_display_preset(brand_str, model_str);
+        }
     }
     is_programmatically_changing_values_ = false;
 }
 
 void Window::save_settings_from_widgets() {
     QSettings settings;
-    auto save_setting = [&](const auto &entry) {
-        auto settings_value = settings_value_from_widget(entry.widget);
-        settings.setValue(entry.field, settings_value);
-    };
-    std::apply(
-        [&](const auto &...entry) { (save_setting(entry), ...); },
-        fields_to_widgets(options_)
+    for_each_settings_field(
+        options_, is_display_preset_active(), [&](const auto &entry) {
+            auto settings_value = settings_value_from_widget(entry.widget);
+            if (settings_value.isValid()) {
+                settings.setValue(entry.field, settings_value);
+            }
+            else {
+                // Don’t leave a stale value from when it wasn’t derived.
+                settings.remove(entry.field);
+            }
+        }
     );
 
-    settings.setValue(
-        DISPLAY_PRESET_BRAND_SETTINGS_KEY,
-        QString::fromStdString(display_preset.brand)
+    if (is_display_preset_active()) {
+        settings.setValue(
+            DISPLAY_PRESET_BRAND_SETTINGS_KEY,
+            QString::fromStdString(display_preset.brand)
+        );
+        settings.setValue(
+            DISPLAY_PRESET_MODEL_SETTINGS_KEY,
+            QString::fromStdString(display_preset.model)
+        );
+    }
+    else {
+        settings.remove(DISPLAY_PRESET_BRAND_SETTINGS_KEY);
+        settings.remove(DISPLAY_PRESET_MODEL_SETTINGS_KEY);
+    }
+    persist_format_settings();
+}
+
+// Calls `apply` with each image format’s settings key prefix, the format, and
+// its entry in `format_settings`.
+static void for_each_format_settings(
+    const QComboBox *image_format_combo_box, auto &format_settings, auto &&apply
+) {
+    for (auto i = 0; i < image_format_combo_box->count(); i += 1) {
+        auto format = image_format_combo_box->itemData(i).value<ImageFormat>();
+        auto key
+            = image_format_combo_box->itemData(i, SETTINGS_KEY_ROLE).toString();
+        auto prefix = QString(IMAGE_FORMATS_SETTINGS_GROUP) + '/' + key + '/';
+        apply(prefix, format, format_settings.at(format));
+    }
+}
+
+void Window::persist_format_settings() {
+    QSettings settings;
+    for_each_format_settings(
+        options_.image_format_combo_box,
+        format_settings_,
+        [&](const QString &prefix,
+            ImageFormat format,
+            const FormatSettings &format_settings) {
+            if (format_settings.has_quality) {
+                settings.setValue(
+                    prefix + FORMAT_QUALITY_SETTINGS_KEY,
+                    format_settings.quality
+                );
+            }
+            if (format_settings.has_compression_effort) {
+                settings.setValue(
+                    prefix + FORMAT_COMPRESSION_EFFORT_SETTINGS_KEY,
+                    format_settings.compression_effort
+                );
+            }
+            if (format == ImageFormat::JPEG_XL) {
+                settings.setValue(
+                    prefix + FORMAT_DISTANCE_SETTINGS_KEY, jpeg_xl_distance_
+                );
+            }
+        }
     );
-    settings.setValue(
-        DISPLAY_PRESET_MODEL_SETTINGS_KEY,
-        QString::fromStdString(display_preset.model)
+}
+
+// Out-of-range values aren’t clamped here, since the spin boxes clamp
+// everything they’re given.
+void Window::restore_format_settings() {
+    for_each_format_settings(
+        options_.image_format_combo_box,
+        format_settings_,
+        [&](const QString &prefix,
+            ImageFormat format,
+            FormatSettings &format_settings) {
+            with_setting<int>(
+                prefix + FORMAT_QUALITY_SETTINGS_KEY,
+                [&](int quality) { format_settings.quality = quality; }
+            );
+            with_setting<int>(
+                prefix + FORMAT_COMPRESSION_EFFORT_SETTINGS_KEY,
+                [&](int effort) { format_settings.compression_effort = effort; }
+            );
+            if (format == ImageFormat::JPEG_XL) {
+                with_setting<double>(
+                    prefix + FORMAT_DISTANCE_SETTINGS_KEY,
+                    [&](double distance) { jpeg_xl_distance_ = distance; }
+                );
+            }
+        }
     );
 }
 

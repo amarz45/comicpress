@@ -310,15 +310,15 @@ void save_image(
         );
     }
 
+    const auto bit_depth = static_cast<int>(task.processing_settings.bit_depth);
+
     // Build fresh palette options per save: a VOption is consumed by
     // the operation it is passed to, so it must not be reused across
     // calls.
     auto make_palette_options = [&] {
         return vips::VImage::option()
             ->set("palette", true)
-            ->set(
-                "bitdepth", static_cast<int>(task.processing_settings.bit_depth)
-            )
+            ->set("bitdepth", bit_depth)
             ->set("dither", task.processing_settings.dither)
             ->set("effort", 10);
     };
@@ -338,14 +338,19 @@ void save_image(
     }
 
     if (task.processing_settings.image_format == ImageFormat::PNG) {
-        // When `task.processing_settings.quantize_pages` is true, the image has
-        // already been quantized, so re-quantizing here is a no-op.
-        auto base_options = task.processing_settings.quantize_pages
-                              ? make_palette_options()
-                              : vips::VImage::option();
+        // The image was already quantized above. The cheapest settings only
+        // rebuild the palette without requantizing: libimagequant reuses the
+        // colours exactly.
+        auto options = vips::VImage::option();
+        if (task.processing_settings.quantize_pages) {
+            options = options->set("palette", true)
+                          ->set("bitdepth", bit_depth)
+                          ->set("dither", 0.0)
+                          ->set("effort", 1);
+        }
         img.pngsave(
             png_path.c_str(),
-            base_options->set(
+            options->set(
                 "compression", task.processing_settings.compression_effort
             )
         );

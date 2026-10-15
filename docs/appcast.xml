@@ -6,13 +6,13 @@
         <description>Updates to Comicpress</description>
         <language>en</language>
         <item>
-            <title>Version 1.2.1</title>
-            <sparkle:version>1.2.1</sparkle:version>
-            <pubDate>Sat, 05 Sep 2026 23:33:39 +0000</pubDate>
-            <enclosure url="https://github.com/amarz45/comicpress/releases/download/v1.2.1/comicpress-1.2.1-windows-x64.exe"
-                       length="62560480"
+            <title>Version 1.3.0</title>
+            <sparkle:version>1.3.0</sparkle:version>
+            <pubDate>Thu, 15 Oct 2026 16:37:54 +0000</pubDate>
+            <enclosure url="https://github.com/amarz45/comicpress/releases/download/v1.3.0/comicpress-1.3.0-windows-x64.exe"
+                       length="62755256"
                        type="application/octet-stream"
-                       sparkle:edSignature="h7MbRHsLF84eUO9pjOnrHY77C1ebJJrZYPpgpWqSTAjHfMe4ZPBPS2x+bM8d09A58nos47h/1uIj302gFeARDQ==" />
+                       sparkle:edSignature="/jqwg9JjqZr7LVLJN9LZJrQNfg/xHVnAZc+VnCIGb3JyDS2thunBPJkd8Xy/gxiBb9/+5lkaeBk9mBJEW/0PAQ==" />
         </item>
     </channel>
 </rss>

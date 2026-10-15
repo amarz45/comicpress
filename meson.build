@@ -41,10 +41,10 @@ elif pdfium_opt.enabled()
 endif
 
 qt6 = import('qt6')
-qt_processed_files = qt6.preprocess(
-    moc_headers: ['src/gui/include/window.hpp', 'src/gui/include/options.hpp'],
-    qresources: 'data/comicpress.qrc',
-)
+# Compiled into the executable rather than the GUI library: the linker would
+# drop the resource registration from a static library, since nothing
+# references it.
+qt_resource_files = qt6.preprocess(qresources: 'data/comicpress.qrc')
 
 winsparkle_dep = dependency('', required: false)
 
@@ -75,27 +75,22 @@ else
     windows_resources = []
 endif
 
+subdir('src')
+
 executable(
     'comicpress',
     'src/gui/main.cpp',
-    'src/gui/window.cpp',
-    'src/gui/signal.cpp',
-    'src/gui/time.cpp',
-    'src/gui/options.cpp',
-    'src/gui/window_util.cpp',
-    'src/gui/output_formats.cpp',
-    'src/gui/settings.cpp',
-    'src/worker/worker.cpp',
-    'src/worker/processing.cpp',
-    'src/archive.cpp',
-    'src/task.cpp',
-    qt_processed_files,
+    qt_resource_files,
     windows_resources,
-    dependencies: [qt6_dep, vips_dep, pdfium_dep, libarchive_dep, winsparkle_dep],
-    cpp_pch: 'pch/pch.hpp',
+    dependencies: [gui_dep, worker_dep, winsparkle_dep],
     win_subsystem: 'windows', # prevents the console from opening on Windows
     install: true,
 )
+
+gtest_dep = dependency('gtest', main: true, required: get_option('tests'))
+if gtest_dep.found()
+    subdir('tests')
+endif
 
 install_data(
     'data/io.github.amarz45.Comicpress.metainfo.xml',

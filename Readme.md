@@ -71,13 +71,13 @@ Now, we need to install the other dependencies.
 ##### Debian-based systems (Debian, Ubuntu, etc.)
 
 ```console
-# apt install build-essential meson ninja-build pkgconf libvips-dev qt6-base-dev libarchive-dev
+# apt install build-essential meson ninja-build pkgconf libvips-dev qt6-base-dev libarchive-dev libgtest-dev
 ```
 
 ##### DNF-based systems (Fedora, RHEL, etc.)
 
 ```console
-# dnf install gcc-c++ meson ninja-build pkgconf-pkg-config vips-devel qt6-qtbase-devel libarchive-devel
+# dnf install gcc-c++ meson ninja-build pkgconf-pkg-config vips-devel qt6-qtbase-devel libarchive-devel gtest-devel
 ```
 
 ##### Compiling
@@ -121,7 +121,8 @@ $ pacman -S --needed git curl tar unzip \
     mingw-w64-ucrt-x86_64-libjxl \
     mingw-w64-ucrt-x86_64-qt6-base \
     mingw-w64-ucrt-x86_64-qt6-svg \
-    mingw-w64-ucrt-x86_64-libarchive
+    mingw-w64-ucrt-x86_64-libarchive \
+    mingw-w64-ucrt-x86_64-gtest
 ```
 
 ##### Prerequisites
@@ -177,6 +178,18 @@ destination:
 ```console
 $ bash packaging/windows/bundle.sh build ~/somewhere-else
 ```
+
+### Running tests
+
+The unit tests use [GoogleTest](https://github.com/google/googletest), which is
+included in the dependencies above. The tests are built along with Comicpress
+whenever GoogleTest is installed. To run them:
+
+```console
+$ meson test -C build
+```
+
+To see the output of failing tests, add `--print-errorlogs`.
 
 ## Copyright
 

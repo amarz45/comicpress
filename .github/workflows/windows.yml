@@ -1,25 +1,31 @@
-name: Windows release
+name: Windows
 
 on:
   push:
+    branches:
+      - master
     tags:
       - "v*"
+  pull_request:
+    branches:
+      - master
 
 permissions:
-  contents: write
-  id-token: write
+  contents: read
+
+env:
+  WINSPARKLE_VERSION: "0.9.4"
 
 jobs:
+  # Builds and tests every push, pull request and release tag. On tags, the
+  # bundled application is also passed on to the release job.
   build:
     runs-on: windows-latest
-    environment: release
     defaults:
       run:
         shell: msys2 {0}
     outputs:
       version: ${{ steps.version.outputs.version }}
-      length: ${{ steps.sign.outputs.length }}
-      signature: ${{ steps.sign.outputs.signature }}
 
     steps:
       - uses: actions/checkout@v4
@@ -40,9 +46,11 @@ jobs:
             mingw-w64-ucrt-x86_64-qt6-base
             mingw-w64-ucrt-x86_64-qt6-svg
             mingw-w64-ucrt-x86_64-libarchive
+            mingw-w64-ucrt-x86_64-gtest
 
       - name: Check tag matches project version
         id: version
+        if: github.ref_type == 'tag'
         run: |
           tag="${GITHUB_REF_NAME#v}"
           version=$(sed -n "s/^    version: '\(.*\)',$/\1/p" meson.build)
@@ -64,21 +72,68 @@ jobs:
       - name: Install WinSparkle
         run: |
           curl -L -o winsparkle.zip \
-            https://github.com/vslavik/winsparkle/releases/download/v0.9.4/WinSparkle-0.9.4.zip
+            "https://github.com/vslavik/winsparkle/releases/download/v${WINSPARKLE_VERSION}/WinSparkle-${WINSPARKLE_VERSION}.zip"
           unzip -q winsparkle.zip
-          cp WinSparkle-0.9.4/include/winsparkle.h \
-             WinSparkle-0.9.4/include/winsparkle-version.h /ucrt64/include/
-          cp WinSparkle-0.9.4/x64/Release/WinSparkle.dll /ucrt64/bin/
-          cp WinSparkle-0.9.4/x64/Release/WinSparkle.lib \
+          winsparkle="WinSparkle-${WINSPARKLE_VERSION}"
+          cp "$winsparkle/include/winsparkle.h" \
+             "$winsparkle/include/winsparkle-version.h" /ucrt64/include/
+          cp "$winsparkle/x64/Release/WinSparkle.dll" /ucrt64/bin/
+          cp "$winsparkle/x64/Release/WinSparkle.lib" \
              /ucrt64/lib/libWinSparkle.dll.a
 
       - name: Build
         run: |
-          meson setup build --buildtype=release
+          meson setup build --buildtype=release -Dtests=enabled
           meson compile -C build
 
+      - name: Test
+        run: meson test -C build --print-errorlogs
+
       - name: Bundle
+        if: github.ref_type == 'tag'
         run: bash packaging/windows/bundle.sh build "$PWD/dist"
+
+      - uses: actions/upload-artifact@v4
+        if: github.ref_type == 'tag'
+        with:
+          name: dist
+          path: dist
+
+  # Signs and publishes the release. A separate job so that only release tags
+  # enter the `release` environment and get its signing secrets.
+  release:
+    needs: build
+    if: github.ref_type == 'tag'
+    runs-on: windows-latest
+    environment: release
+    permissions:
+      contents: write
+      id-token: write
+    defaults:
+      run:
+        shell: msys2 {0}
+    outputs:
+      length: ${{ steps.sign.outputs.length }}
+      signature: ${{ steps.sign.outputs.signature }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          install: curl unzip
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Download WinSparkle
+        run: |
+          curl -L -o winsparkle.zip \
+            "https://github.com/vslavik/winsparkle/releases/download/v${WINSPARKLE_VERSION}/WinSparkle-${WINSPARKLE_VERSION}.zip"
+          unzip -q winsparkle.zip
 
       - name: Azure login
         uses: azure/login@v3
@@ -117,7 +172,7 @@ jobs:
           endpoint: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
           signing-account-name: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
           certificate-profile-name: ${{ secrets.AZURE_SIGNING_PROFILE }}
-          files: ${{ github.workspace }}\comicpress-${{ steps.version.outputs.version }}-windows-x64.exe
+          files: ${{ github.workspace }}\comicpress-${{ needs.build.outputs.version }}-windows-x64.exe
           file-digest: SHA256
           timestamp-rfc3161: http://timestamp.acs.microsoft.com
           timestamp-digest: SHA256
@@ -126,12 +181,13 @@ jobs:
         id: sign
         env:
           WINSPARKLE_PRIVATE_KEY: ${{ secrets.WINSPARKLE_PRIVATE_KEY }}
-          VERSION: ${{ steps.version.outputs.version }}
+          VERSION: ${{ needs.build.outputs.version }}
         run: |
           printf '%s' "$WINSPARKLE_PRIVATE_KEY" > private.key
           installer="comicpress-${VERSION}-windows-x64.exe"
           test -f "$installer"
-          sig=$(WinSparkle-0.9.4/bin/winsparkle-tool.exe sign -f private.key "$installer")
+          sig=$("WinSparkle-${WINSPARKLE_VERSION}/bin/winsparkle-tool.exe" \
+              sign -f private.key "$installer")
           rm -f private.key
           test -n "$sig"
           echo "signature=$sig" >> "$GITHUB_OUTPUT"
@@ -141,15 +197,17 @@ jobs:
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.version.outputs.version }}
+          VERSION: ${{ needs.build.outputs.version }}
         run: |
           gh release create $env:GITHUB_REF_NAME `
             "comicpress-$env:VERSION-windows-x64.exe" `
             --title $env:VERSION --generate-notes
 
   appcast:
-    needs: build
+    needs: [build, release]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -158,8 +216,8 @@ jobs:
       - name: Write appcast
         env:
           VERSION: ${{ needs.build.outputs.version }}
-          LENGTH: ${{ needs.build.outputs.length }}
-          SIGNATURE: ${{ needs.build.outputs.signature }}
+          LENGTH: ${{ needs.release.outputs.length }}
+          SIGNATURE: ${{ needs.release.outputs.signature }}
         run: |
           mkdir -p docs
           cat > docs/appcast.xml <<EOF

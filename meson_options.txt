@@ -4,3 +4,9 @@ option(
     value: 'enabled',
     description: 'Enable PDFium support (default: enabled).',
 )
+option(
+    'tests',
+    type: 'feature',
+    value: 'auto',
+    description: 'Build the unit tests (requires GoogleTest).',
+)

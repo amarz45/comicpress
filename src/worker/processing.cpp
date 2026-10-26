@@ -585,14 +585,13 @@ bool is_two_page_spread(
     double display_width,
     double display_height
 ) {
-    auto image_aspect = image_width / image_height;
-    auto rotated_image_aspect = image_height / image_width;
-    auto display_aspect = display_width / display_height;
+    if (display_width > display_height) {
+        return false;
+    }
 
-    auto original_diff = std::abs(display_aspect - image_aspect);
-    auto rotated_diff = std::abs(display_aspect - rotated_image_aspect);
-
-    return rotated_diff < original_diff;
+    const auto image_aspect = image_width / image_height;
+    const auto threshold = 1.2;
+    return image_aspect > threshold;
 }
 
 bool should_image_stretch_contrast(

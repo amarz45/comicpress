@@ -702,13 +702,18 @@ vips::VImage scale_image(
 }
 
 vips::VImage stretch_image_contrast(vips::VImage img) {
-    auto min = img.min();
-    auto max = img.max();
-    if (max - min != 0) {
-        auto scale = 255.0 / (max - min);
-        auto offset = -min * scale + 0.5;
-        img = img.linear(scale, offset);
-        img = img.cast(VIPS_FORMAT_UCHAR);
+    const auto min = img.min();
+    const auto max = img.max();
+
+    const auto range = max - min;
+    const auto max_contrast_stretch = 2.0;
+    if (range * max_contrast_stretch < 255.0) {
+        return img;
     }
+
+    const auto scale = 255.0 / (max - min);
+    const auto offset = -min * scale + 0.5;
+    img = img.linear(scale, offset);
+    img = img.cast(VIPS_FORMAT_UCHAR);
     return img;
 }

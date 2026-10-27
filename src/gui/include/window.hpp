@@ -17,8 +17,8 @@
 #include <string>
 #include <utility>
 
-#include "../../include/task.hpp"
-#include "../include/options.hpp"
+#include "options.hpp"
+#include "task.hpp"
 
 QT_BEGIN_NAMESPACE
 class QCheckBox;

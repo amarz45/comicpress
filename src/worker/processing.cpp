@@ -13,9 +13,9 @@
 #include <fpdfview.h>
 #endif
 
-#include "../include/archive.hpp"
-#include "../include/task.hpp"
+#include "archive.hpp"
 #include "include/processing.hpp"
+#include "task.hpp"
 
 using Logger = const std::function<void(const std::string &)> &;
 using std::views::enumerate;

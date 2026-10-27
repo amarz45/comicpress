@@ -75,11 +75,13 @@ else
     windows_resources = []
 endif
 
-subdir('src')
+subdir('src/io')
+subdir('src/worker')
+subdir('src/gui')
 
 executable(
     'comicpress',
-    'src/gui/main.cpp',
+    'src/main.cpp',
     qt_resource_files,
     windows_resources,
     dependencies: [gui_dep, worker_dep, winsparkle_dep],

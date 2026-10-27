@@ -1,5 +1,5 @@
 #include "include/output_formats.hpp"
-#include "../include/archive.hpp"
+#include "archive.hpp"
 
 #include <QAnyStringView>
 #include <QBuffer>

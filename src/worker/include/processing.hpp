@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../include/task.hpp"
+#include "task.hpp"
 #include <functional>
 #include <string>
 #include <vips/vips8>

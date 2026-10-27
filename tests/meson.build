@@ -1,5 +1,5 @@
 tests = {
-    'task': [common_dep],
+    'task': [io_dep],
 }
 
 foreach name, deps : tests

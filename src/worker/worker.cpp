@@ -1,6 +1,6 @@
 #include "include/worker.hpp"
-#include "../include/task.hpp"
 #include "include/processing.hpp"
+#include "task.hpp"
 
 #include <iostream>
 #include <string>

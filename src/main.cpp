@@ -1,5 +1,5 @@
-#include "../worker/include/worker.hpp"
-#include "include/window.hpp"
+#include "window.hpp"
+#include "worker.hpp"
 
 #include <QApplication>
 #include <QCoreApplication>

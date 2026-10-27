@@ -1,11 +1,11 @@
 #include "include/window.hpp"
-#include "../include/archive.hpp"
-#include "../include/task.hpp"
+#include "archive.hpp"
 #include "include/display_presets.hpp"
 #include "include/options.hpp"
 #include "include/output_formats.hpp"
 #include "include/ui_constants.hpp"
 #include "include/window_util.hpp"
+#include "task.hpp"
 
 #include <QAbstractItemView>
 #include <QAction>

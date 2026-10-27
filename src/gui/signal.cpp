@@ -1,4 +1,4 @@
-#include "../include/archive.hpp"
+#include "archive.hpp"
 #include "include/display_presets.hpp"
 #include "include/settings.hpp"
 #include "include/window.hpp"

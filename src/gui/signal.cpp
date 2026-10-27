@@ -628,7 +628,7 @@ void Window::update_image_quality_spin_box() {
 void Window::on_start_button_clicked() {
     auto input_files = std::vector<fs::path>{};
     for (int i = 0; i < file_list_->count(); i += 1) {
-        input_files.push_back(
+        input_files.emplace_back(
             file_list_->item(i)->data(Qt::UserRole).toString().toStdString()
         );
     }

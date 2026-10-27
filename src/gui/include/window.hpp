@@ -2,21 +2,20 @@
 
 #include <QCheckBox>
 #include <QComboBox>
-#include <QList>
 #include <QMainWindow>
 #include <QMap>
-#include <QProcess>
-#include <QQueue>
 #include <QSettings>
 #include <QString>
 #include <cstdint>
 #include <deque>
 #include <map>
+#include <memory>
 #include <optional>
 #include <qtconfigmacros.h>
 #include <string>
 #include <utility>
 
+#include "conversion.hpp"
 #include "options.hpp"
 #include "task.hpp"
 
@@ -30,7 +29,6 @@ class QLabel;
 class QLineEdit;
 class QListWidget;
 class QMainWindow;
-class QProcess;
 class QProgressBar;
 class QPushButton;
 class QRadioButton;
@@ -105,7 +103,7 @@ struct ArchiveJob {
     ProgressTimer timer;
 };
 
-class Window : public QMainWindow {
+class Window : public QMainWindow, public ConversionListener {
     Q_OBJECT
 
   public:
@@ -120,13 +118,6 @@ class Window : public QMainWindow {
     void finish_run();
     void on_start_button_clicked();
     void on_cancel_button_clicked();
-    void handle_log_message(const QString &message);
-    void handle_task_finished();
-    void handle_worker_exit(QProcess *process);
-    void start_next_task();
-    void on_worker_finished(int exit_code, QProcess::ExitStatus exit_status);
-    void on_worker_output();
-    void on_worker_error(QProcess::ProcessError error);
     void on_add_files_clicked();
     void on_remove_selected_clicked();
     void on_clear_all_clicked();
@@ -169,7 +160,6 @@ class Window : public QMainWindow {
     // Flatpak); empty until the user picks one, while output_dir_field shows
     // its host path.
     QString output_dir_io_path_;
-    fs::path output_path_;
     QPushButton *browse_output_button_;
 
     void set_output_dir(const QString &io_path);
@@ -194,13 +184,17 @@ class Window : public QMainWindow {
     QPushButton *start_button_;
     QPushButton *cancel_button_;
 
-    // Process Management
-    QQueue<PageTask> task_queue_;
-    QList<QProcess *> running_processes_;
-    QMap<QProcess *, PageTask> running_tasks_;
+    // Conversion
+    std::unique_ptr<Conversion> conversion_;
     QMap<QString, ArchiveJob> jobs_;
-    int max_concurrent_workers_;
-    bool is_processing_cancelled_;
+
+    void started(int pages_total) override;
+    void file_started(const fs::path &source, int pages_total) override;
+    void page_finished(const fs::path &source, int pages_done) override;
+    void file_finished(const fs::path &source) override;
+    void log(const std::string &message) override;
+    void finished(bool ok) override;
+
     bool is_programmatically_changing_values_;
 
     // Timer
@@ -218,12 +212,10 @@ class Window : public QMainWindow {
     void add_display_presets_widget();
 
     // Helper methods
-    PageTask
-    create_task(const fs::path &source_file, fs::path output_dir, int page_num);
+    ProcessingSettings processing_settings_from_widgets() const;
     void update_file_list_buttons();
     void connect_signals();
     void set_display_preset(const std::string &brand, const std::string &model);
-    void create_archive(const QString &source_archive_path);
 
     int total_pages_;
     int pages_processed_;
@@ -255,6 +247,4 @@ class Window : public QMainWindow {
     // Whether the quality spin box holds a JPEG XL distance rather than a
     // quality.
     bool image_quality_is_distance() const;
-
-    std::string temp_base_dir_;
 };

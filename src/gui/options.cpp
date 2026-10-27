@@ -1,6 +1,7 @@
 #include "include/options.hpp"
 #include "include/ui_constants.hpp"
 #include "include/window_util.hpp"
+#include "output_formats.hpp"
 #include "task.hpp"
 
 #include <QCheckBox>

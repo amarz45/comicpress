@@ -1,10 +1,9 @@
 #include "include/window.hpp"
-#include "archive.hpp"
 #include "include/display_presets.hpp"
 #include "include/options.hpp"
-#include "include/output_formats.hpp"
 #include "include/ui_constants.hpp"
 #include "include/window_util.hpp"
+#include "output_formats.hpp"
 #include "task.hpp"
 
 #include <QAbstractItemView>
@@ -23,7 +22,6 @@
 #include <QLineEdit>
 #include <QListWidget>
 #include <QMenu>
-#include <QProcess>
 #include <QProgressBar>
 #include <QPushButton>
 #include <QScrollArea>
@@ -38,11 +36,9 @@
 #include <QWidget>
 #include <Qt>
 
-#include <utility>
 #include <vips/vips8>
 
 #include <chrono>
-#include <cmath>
 
 namespace fs = std::filesystem;
 
@@ -53,9 +49,7 @@ Window::Window(QWidget *parent) : QMainWindow(parent) {
     overall_timer_.start_time = std::nullopt;
     overall_timer_.last_eta_time = std::nullopt;
     overall_timer_.images_since_last_eta = 0;
-    is_processing_cancelled_ = false;
     is_programmatically_changing_values_ = false;
-    temp_base_dir_ = "";
 
     setWindowTitle("Comicpress");
     central_widget_ = new QWidget(this);
@@ -342,184 +336,132 @@ void Window::add_display_presets_widget() {
     options_.settings_layout->addRow(label, options_.display_preset_button);
 }
 
-void Window::start_next_task() {
-    if (task_queue_.isEmpty()
-        || running_processes_.size() >= max_concurrent_workers_
-        || is_processing_cancelled_) {
-        return;
-    }
-
-    PageTask task = task_queue_.dequeue();
-    QString source_qstr = QString::fromStdString(task.source_file.string());
+void Window::file_started(const fs::path &source, int pages_total) {
+    auto source_qstr = QString::fromStdString(source.string());
 
     auto output_format
         = options_.output_format_combo_box->currentData().value<OutputFormat>();
 
+    progress_bars_group_->setVisible(true);
+
+    auto widget = new QWidget();
+    auto vbox = new QVBoxLayout(widget);
+    vbox->setContentsMargins(5, 2, 5, 2);
+
+    auto filename = QFileInfo(source_qstr).completeBaseName();
+    if (output_format == OutputFormat::EPUB) {
+        filename += ".epub";
+    }
+    else if (output_format == OutputFormat::CBZ) {
+        filename += ".cbz";
+    }
+
+    auto progress_layout = new QHBoxLayout();
+    auto label = new QLabel("<code>" + filename + "</code>");
+    auto progress_bar = new QProgressBar();
+    progress_bar->setMaximum(pages_total);
+    progress_bar->setValue(0);
+    progress_bar->setTextVisible(true);
+    progress_bar->setFormat("%p % (%v / %m pages)");
+
+    progress_layout->addWidget(label);
+    progress_layout->addWidget(progress_bar);
+
+    auto time_layout = new QHBoxLayout();
+    auto elapsed_label = new QLabel("Elapsed: –");
+    auto eta_label = new QLabel("ETA: –");
+    time_layout->addWidget(elapsed_label);
+    time_layout->addWidget(eta_label);
+    time_layout->addStretch();
+    time_layout->setSpacing(50);
+
+    vbox->addLayout(progress_layout);
+    vbox->addLayout(time_layout);
+
+    progress_bars_layout_->addWidget(widget);
+
     auto &job = jobs_[source_qstr];
-    if (job.progress_bar == nullptr) {
-        progress_bars_group_->setVisible(true);
+    job.pages_total = pages_total;
+    job.pages_processed = 0;
+    job.widget = widget;
+    job.progress_bar = progress_bar;
+    job.elapsed_label = elapsed_label;
+    job.eta_label = eta_label;
 
-        auto widget = new QWidget();
-        auto vbox = new QVBoxLayout(widget);
-        vbox->setContentsMargins(5, 2, 5, 2);
-
-        auto filename = QFileInfo(source_qstr).completeBaseName();
-        if (output_format == OutputFormat::EPUB) {
-            filename += ".epub";
-        }
-        else if (output_format == OutputFormat::CBZ) {
-            filename += ".cbz";
-        }
-
-        auto progress_layout = new QHBoxLayout();
-        auto label = new QLabel("<code>" + filename + "</code>");
-        auto progress_bar = new QProgressBar();
-        progress_bar->setMaximum(job.pages_total);
-        progress_bar->setValue(0);
-        progress_bar->setTextVisible(true);
-        progress_bar->setFormat("%p % (%v / %m pages)");
-
-        progress_layout->addWidget(label);
-        progress_layout->addWidget(progress_bar);
-
-        auto time_layout = new QHBoxLayout();
-        auto elapsed_label = new QLabel("Elapsed: –");
-        auto eta_label = new QLabel("ETA: –");
-        time_layout->addWidget(elapsed_label);
-        time_layout->addWidget(eta_label);
-        time_layout->addStretch();
-        time_layout->setSpacing(50);
-
-        vbox->addLayout(progress_layout);
-        vbox->addLayout(time_layout);
-
-        progress_bars_layout_->addWidget(widget);
-        job.widget = widget;
-        job.progress_bar = progress_bar;
-        job.elapsed_label = elapsed_label;
-        job.eta_label = eta_label;
-
-        auto now = std::chrono::system_clock::now();
-        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                      now.time_since_epoch()
-        )
-                      .count();
-        ProgressTimer file_timer;
-        file_timer.start_time = ms;
-        file_timer.last_eta_time = ms;
-        file_timer.images_since_last_eta = 0;
-        job.timer = file_timer;
-    }
-
-    auto process = new QProcess(this);
-    running_processes_.append(process);
-    running_tasks_.insert(process, task);
-
-    connect(
-        process,
-        &QProcess::readyReadStandardOutput,
-        this,
-        &Window::on_worker_output
-    );
-    connect(
-        process,
-        QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-        this,
-        &Window::on_worker_finished
-    );
-    // Queued: on Windows, `start()` reports a failed launch synchronously, and
-    // handling it inline would re-enter `start_next_task` once per queued page.
-    connect(
-        process,
-        &QProcess::errorOccurred,
-        this,
-        &Window::on_worker_error,
-        Qt::QueuedConnection
-    );
-
-    QString program = QCoreApplication::applicationFilePath();
-    QStringList arguments;
-    for (const auto &argument : encode_task(task)) {
-        arguments << QString::fromStdString(argument);
-    }
-    process->start(program, arguments);
+    auto now = std::chrono::system_clock::now();
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                  now.time_since_epoch()
+    )
+                  .count();
+    ProgressTimer file_timer;
+    file_timer.start_time = ms;
+    file_timer.last_eta_time = ms;
+    file_timer.images_since_last_eta = 0;
+    job.timer = file_timer;
 }
 
-void Window::handle_log_message(const QString &message) {
+void Window::log(const std::string &message) {
     log_output_->setVisible(true);
-    log_output_->append(message);
+    log_output_->append(QString::fromStdString(message));
 }
 
-void Window::handle_task_finished() {
+void Window::page_finished(const fs::path &source, int pages_done) {
     pages_processed_ += 1;
     overall_timer_.images_since_last_eta += 1;
     progress_bar_->setValue(pages_processed_);
+
+    auto &job = jobs_[QString::fromStdString(source.string())];
+    job.pages_processed = pages_done;
+    job.timer.images_since_last_eta += 1;
+    job.progress_bar->setValue(pages_done);
+
+    // Creating the file's archive blocks the event loop next, so paint the
+    // final progress now.
+    if (pages_done == job.pages_total) {
+        progress_bar_->repaint();
+        job.progress_bar->repaint();
+    }
 }
 
-PageTask Window::create_task(
-    const fs::path &source_file, fs::path output_dir, int page_num
-) {
-    // PageTask task;
-    auto task = PageTask{};
-    auto source_qstr = QString::fromStdString(source_file.string());
-
-    task.source_file = source_file;
-    task.output_dir = std::move(output_dir);
-    task.page_number = page_num;
-
-    auto total_pages = jobs_.value(source_qstr).pages_total;
-    auto padding_width
-        = total_pages > 0
-            ? static_cast<int>(std::floor(std::log10(total_pages))) + 1
-            : 1;
-    task.output_base_name
-        = QString("%1")
-              .arg(page_num + 1, padding_width, 10, QChar('0'))
-              .toStdString();
-
+ProcessingSettings Window::processing_settings_from_widgets() const {
+    auto settings = ProcessingSettings{};
 #if defined(PDF_ENABLED)
-    task.processing_settings.pdf_pixel_density
-        = options_.pdf_pixel_density_spin_box->value();
+    settings.pdf_pixel_density = options_.pdf_pixel_density_spin_box->value();
 #endif
-    task.processing_settings.convert_pages_to_greyscale
+    settings.convert_pages_to_greyscale
         = options_.convert_to_greyscale->isChecked();
-    task.processing_settings.double_page_spread_action
+    settings.double_page_spread_action
         = options_.double_page_spread_combo_box->currentData()
               .value<DoublePageSpreadActions>();
-    task.processing_settings.reading_direction
+    settings.reading_direction
         = options_.reading_direction_combo_box->currentData()
               .value<ReadingDirection>();
-    task.processing_settings.rotation_direction
+    settings.rotation_direction
         = options_.rotation_direction_combo_box->currentData()
               .value<RotationDirection>();
-    task.processing_settings.remove_spine
-        = options_.remove_spine_check_box->isChecked();
-    task.processing_settings.linear_light_resampling
+    settings.remove_spine = options_.remove_spine_check_box->isChecked();
+    settings.linear_light_resampling
         = options_.linear_light_resampling_check_box->isChecked();
-    task.processing_settings.stretch_page_contrast
-        = options_.contrast_check_box->isChecked();
-    task.processing_settings.scale_pages
-        = options_.enable_image_scaling_check_box->isChecked();
-    task.processing_settings.page_width = options_.width_spin_box->value();
-    task.processing_settings.page_height = options_.height_spin_box->value();
-    task.processing_settings.page_resampler
+    settings.stretch_page_contrast = options_.contrast_check_box->isChecked();
+    settings.scale_pages = options_.enable_image_scaling_check_box->isChecked();
+    settings.page_width = options_.width_spin_box->value();
+    settings.page_height = options_.height_spin_box->value();
+    settings.page_resampler
         = options_.resampler_combo_box->currentData().value<VipsKernel>();
-    task.processing_settings.quantize_pages
+    settings.quantize_pages
         = options_.enable_image_quantization_check_box->isChecked();
-    task.processing_settings.bit_depth
+    settings.bit_depth
         = options_.bit_depth_combo_box->currentData().value<BitDepth>();
-    task.processing_settings.dither = options_.dithering_spin_box->value();
-    task.processing_settings.image_format = current_image_format();
-    task.processing_settings.compression_type
+    settings.dither = options_.dithering_spin_box->value();
+    settings.image_format = current_image_format();
+    settings.compression_type
         = options_.image_compression_type_combo_box->currentData()
               .value<CompressionType>();
-    task.processing_settings.quality_type
-        = options_.image_quality_label_jpeg_xl->currentData()
-              .value<QualityType>();
-    task.processing_settings.quality = options_.image_quality_spin_box->value();
-    task.processing_settings.compression_effort
-        = options_.image_compression_spin_box->value();
-    return task;
+    settings.quality_type = options_.image_quality_label_jpeg_xl->currentData()
+                                .value<QualityType>();
+    settings.quality = options_.image_quality_spin_box->value();
+    settings.compression_effort = options_.image_compression_spin_box->value();
+    return settings;
 }
 
 void Window::update_file_list_buttons() {
@@ -569,62 +511,6 @@ void Window::set_display_preset(
                                  : QString::fromStdString(brand + " " + model);
     options_.display_preset_button->setText(text);
     on_display_preset_changed();
-}
-
-void Window::create_archive(const QString &source_archive_path) {
-    auto source_path = fs::path(source_archive_path.toStdString());
-    auto title = source_path.stem();
-
-    auto temp_dir = fs::path(temp_base_dir_) / title;
-    auto output_filename = source_path.filename();
-
-    QCoreApplication::processEvents();
-
-    try {
-        auto output_format = options_.output_format_combo_box->currentData()
-                                 .value<OutputFormat>();
-        if (output_format == OutputFormat::EPUB) {
-            output_filename = output_filename.replace_extension(".epub");
-            auto final_output_path = output_path_ / output_filename;
-            create_epub(temp_dir, final_output_path, title.generic_string());
-        }
-        else {
-            output_filename = output_filename.replace_extension(".cbz");
-            auto final_output_path = output_path_ / output_filename;
-            create_cbz(temp_dir, final_output_path);
-        }
-    }
-    catch (const NoImagesError &) {
-        log_output_->append(
-            QString("Error: source '%1' does not contain any images.")
-                .arg(source_archive_path)
-        );
-        log_output_->setVisible(true);
-        return;
-    }
-    catch (const ArchiveError &) {
-        log_output_->append("Error: failed to create archive.");
-        log_output_->setVisible(true);
-        return;
-    }
-    catch (const std::exception &e) {
-        log_output_->append(
-            QString("Error: %1").arg(QString::fromUtf8(e.what()))
-        );
-        log_output_->setVisible(true);
-        return;
-    }
-
-    try {
-        fs::remove_all(temp_dir);
-    }
-    catch (const std::exception &e) {
-        log_output_->append(
-            QString("Error cleaning up temp directory %1: %2")
-                .arg(QString::fromStdString(temp_dir.string()), e.what())
-        );
-        log_output_->setVisible(true);
-    }
 }
 
 Window::~Window() {

@@ -1,4 +1,4 @@
-#include "archive.hpp"
+#include "conversion.hpp"
 #include "include/display_presets.hpp"
 #include "include/settings.hpp"
 #include "include/window.hpp"
@@ -17,7 +17,6 @@
 #include <QListView>
 #include <QListWidget>
 #include <QListWidgetItem>
-#include <QProcess>
 #include <QProgressBar>
 #include <QPushButton>
 #include <QScopedValueRollback>
@@ -29,21 +28,14 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
-#include <archive.h>
-#include <archive_entry.h>
-
-#if defined(PDF_ENABLED)
-#include <fpdfview.h>
-#endif
-
 #include <algorithm>
 #include <chrono>
-#include <iomanip>
-#include <sstream>
+#include <memory>
+#include <utility>
+#include <vector>
 
 #ifdef __linux__
 #include <sys/xattr.h>
-#include <vector>
 #endif
 
 // Turns a Flatpak file-portal path (`/run/user/...`) into the real path the
@@ -101,30 +93,6 @@ static QString choose_directory(
 
     auto selected = dialog.selectedUrls();
     return selected.isEmpty() ? QString() : selected.constFirst().toLocalFile();
-}
-
-static bool create_output_dir(fs::path &output_dir) {
-    auto output_parent = output_dir.parent_path();
-    auto err_code = std::error_code{};
-    if (!output_parent.empty()) {
-        fs::create_directories(output_parent, err_code);
-        if (err_code) {
-            return false;
-        }
-    }
-
-    auto output_base_dir = output_dir;
-    auto i = 1;
-    while (!fs::create_directory(output_dir, err_code)) {
-        if (i > 1000 || (err_code && err_code != std::errc::file_exists)) {
-            return false;
-        }
-        output_dir = output_base_dir;
-        output_dir += "_" + std::to_string(i);
-        i += 1;
-    }
-
-    return true;
 }
 
 void Window::connect_signals() {
@@ -658,14 +626,14 @@ void Window::update_image_quality_spin_box() {
 }
 
 void Window::on_start_button_clicked() {
-    QStringList input_file_paths;
+    auto input_files = std::vector<fs::path>{};
     for (int i = 0; i < file_list_->count(); i += 1) {
-        input_file_paths.append(
-            file_list_->item(i)->data(Qt::UserRole).toString()
+        input_files.push_back(
+            file_list_->item(i)->data(Qt::UserRole).toString().toStdString()
         );
     }
 
-    if (input_file_paths.isEmpty()) {
+    if (input_files.empty()) {
         log_output_->setVisible(true);
         log_output_->append("No input files selected.");
         return;
@@ -680,178 +648,44 @@ void Window::on_start_button_clicked() {
         return;
     }
 
-    // Create unique base temp directory for this run
-    auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                      std::chrono::system_clock::now().time_since_epoch()
-    )
-                      .count();
-    fs::path temp_base_path
-        = fs::temp_directory_path() / ("comicpress_" + std::to_string(now_ms));
-
-    try {
-        fs::create_directories(temp_base_path);
-        temp_base_dir_ = temp_base_path.string();
-    }
-    catch (const std::exception &e) {
-        log_output_->setVisible(true);
-        log_output_->append(
-            QString("Failed to create temporary directory: %1").arg(e.what())
-        );
-        return;
-    }
+    // Before Cancel is enabled, so it can't reach the previous run.
+    conversion_.reset();
 
     options_.settings_group->setEnabled(false);
     start_button_->setEnabled(false);
     is_converting.store(true);
     cancel_button_->setEnabled(true);
     log_output_->clear();
-    task_queue_.clear();
-    running_processes_.clear();
-    running_tasks_.clear();
     jobs_.clear();
-    is_processing_cancelled_ = false;
     pages_processed_ = 0;
     total_pages_ = 0;
-    max_concurrent_workers_ = options_.workers_spin_box->value();
 
     progress_bar_->setValue(0);
     log_group_->setVisible(true);
     progress_bar_->setVisible(true);
 
-    auto now = std::chrono::system_clock::now();
-    auto now_time = std::chrono::system_clock::to_time_t(now);
-    auto local_time = std::localtime(&now_time);
-    std::ostringstream oss;
-    oss << std::put_time(local_time, "%Y-%m-%d %H-%M-%S");
-
-    auto output_dir
-        = fs::path(effective_output_dir().toStdString()) / oss.str();
-    if (!create_output_dir(output_dir)) {
-        log_output_->setVisible(true);
-        log_output_->append("Failed to create output directory.");
-        progress_bar_->setVisible(false);
-        finish_run();
-        return;
-    }
-    output_path_ = output_dir;
-
     QCoreApplication::processEvents();
 
-    QVector<PageTask> tasks;
-    for (const QString &file_qstr : input_file_paths) {
-        fs::path source_file(file_qstr.toStdString());
-        std::string extension = source_file.extension().string();
-        std::transform(
-            extension.begin(), extension.end(), extension.begin(), ::tolower
-        );
+    conversion_ = std::make_unique<Conversion>(
+        ConversionRequest{
+            .input_files = std::move(input_files),
+            .output_dir = effective_output_dir().toStdString(),
+            .output_format = options_.output_format_combo_box->currentData()
+                                 .value<OutputFormat>(),
+            .processing_settings = processing_settings_from_widgets(),
+            .max_workers = options_.workers_spin_box->value(),
+        },
+        *this
+    );
+    conversion_->start();
+}
 
-        try {
-            if (extension == ".cbz" || extension == ".cbr") {
-                auto temp_archive_dir
-                    = fs::path(temp_base_dir_) / source_file.stem();
-                fs::create_directories(temp_archive_dir);
-
-                auto archive
-                    = ArchiveReader::open(source_file.string().c_str());
-                if (!archive) {
-                    log_output_->append(
-                        QString("Error: failed to read archive '%1'.")
-                            .arg(source_file.string())
-                    );
-                    log_output_->setVisible(true);
-                    continue;
-                }
-
-                int page_num = 0;
-                while (auto entry = archive->next()) {
-                    if (!entry->is_regular_file()) {
-                        continue;
-                    }
-
-                    auto task
-                        = create_task(source_file, temp_archive_dir, page_num);
-                    task.path_in_archive = entry->pathname();
-
-                    fs::path entry_path(task.path_in_archive);
-                    task.output_base_name
-                        = entry_path.replace_extension("").string();
-
-                    task_queue_.enqueue(task);
-
-                    page_num += 1;
-                }
-
-                auto page_count = page_num;
-                jobs_[file_qstr].pages_total = page_count;
-                total_pages_ += page_count;
-                jobs_[file_qstr].pages_processed = 0;
-                if (page_count == 0) {
-                    log_output_->setVisible(true);
-                    log_output_->append(
-                        "Archive " + file_qstr + " contains no files."
-                    );
-                    continue;
-                }
-            }
-#if defined(PDF_ENABLED)
-            else if (extension == ".pdf") {
-                FPDF_DOCUMENT doc
-                    = FPDF_LoadDocument(source_file.string().c_str(), nullptr);
-                if (!doc) {
-                    log_output_->setVisible(true);
-                    log_output_->append(QString(
-                                            "Error: Cannot open PDF "
-                                            "document %1. Error code: %2"
-                    )
-                                            .arg(file_qstr)
-                                            .arg(FPDF_GetLastError()));
-                    continue;
-                }
-
-                auto page_count = FPDF_GetPageCount(doc);
-                if (page_count == 0) {
-                    log_output_->setVisible(true);
-                    log_output_->append(
-                        "PDF " + file_qstr + " contains no pages."
-                    );
-                    FPDF_CloseDocument(doc);
-                    continue;
-                }
-
-                auto temp_archive_dir
-                    = fs::path(temp_base_dir_) / source_file.stem();
-                fs::create_directories(temp_archive_dir);
-                jobs_[file_qstr].pages_total = page_count;
-                total_pages_ += page_count;
-                jobs_[file_qstr].pages_processed = 0;
-
-                for (int i = 0; i < page_count; i += 1) {
-                    auto task = create_task(source_file, temp_archive_dir, i);
-                    task_queue_.enqueue(task);
-                }
-                FPDF_CloseDocument(doc);
-            }
-#endif
-        }
-        catch (const std::exception &e) {
-            log_output_->setVisible(true);
-            log_output_->append(QString("Error discovering tasks in %1: %2")
-                                    .arg(file_qstr, e.what()));
-        }
-    }
-
-    if (task_queue_.isEmpty()) {
-        log_output_->setVisible(true);
-        log_output_->append("No pages found to process.");
-        progress_bar_->setVisible(false);
-        finish_run();
-        return;
-    }
-
+void Window::started(int pages_total) {
+    total_pages_ = pages_total;
     progress_bar_->setMaximum(total_pages_);
 
     // Timer
-    now = std::chrono::system_clock::now();
+    auto now = std::chrono::system_clock::now();
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                   now.time_since_epoch()
     )
@@ -862,10 +696,6 @@ void Window::on_start_button_clicked() {
     elapsed_label_->setText("Elapsed: –");
     eta_label_->setText("ETA: –");
     timer_->start(1000);
-
-    for (int i = 0; i < max_concurrent_workers_; i += 1) {
-        start_next_task();
-    }
 }
 
 bool Window::is_display_preset_active() const {
@@ -1022,19 +852,12 @@ void Window::restore_format_settings() {
 }
 
 void Window::on_cancel_button_clicked() {
-    if (is_processing_cancelled_) {
+    if (!conversion_) {
         return;
     }
 
-    is_processing_cancelled_ = true;
-
-    task_queue_.clear();
-
-    for (QProcess *p : running_processes_) {
-        p->kill();
-    }
-    running_processes_.clear();
-    running_tasks_.clear();
+    conversion_->cancel();
+    conversion_.reset();
 
     for (auto &archive_job : jobs_) {
         auto *widget = archive_job.widget;
@@ -1047,136 +870,36 @@ void Window::on_cancel_button_clicked() {
     progress_bar_->setVisible(false);
     progress_bar_->setValue(0);
 
-    finish_run();
-
-    // Clean up empty output dir
-    auto err_code = std::error_code{};
-    if (fs::is_directory(output_path_, err_code)
-        && fs::is_empty(output_path_, err_code)) {
-        fs::remove(output_path_, err_code);
-    }
-}
-
-void Window::on_worker_finished(
-    int exit_code, QProcess::ExitStatus exit_status
-) {
-    auto process = qobject_cast<QProcess *>(sender());
-    if (!process) {
-        return;
-    }
-
-    if (exit_status == QProcess::CrashExit || exit_code != 0) {
-        log_output_->setVisible(true);
-        log_output_->append(
-            QString("Worker process failed or crashed. Exit code: %1")
-                .arg(exit_code)
-        );
-    }
-
-    handle_worker_exit(process);
-}
-
-void Window::on_worker_error(QProcess::ProcessError error) {
-    // `finished` handles the cases where the process actually exists.
-    if (error != QProcess::FailedToStart) {
-        return;
-    }
-
-    auto process = qobject_cast<QProcess *>(sender());
-    if (!process) {
-        return;
-    }
-
     log_output_->setVisible(true);
-    log_output_->append("Worker process failed to start.");
-    handle_worker_exit(process);
+    log_output_->append("All running tasks have been cancelled.");
+
+    finish_run();
 }
 
-void Window::handle_worker_exit(QProcess *process) {
-    running_processes_.removeAll(process);
-    if (!running_tasks_.contains(process)) {
-        process->deleteLater();
-        return;
+void Window::file_finished(const fs::path &source) {
+    auto widget = jobs_.take(QString::fromStdString(source.string())).widget;
+    progress_bars_layout_->removeWidget(widget);
+    delete widget;
+
+    if (jobs_.isEmpty()) {
+        progress_bars_group_->setVisible(false);
     }
-    PageTask finished_task = running_tasks_.take(process);
-
-    handle_task_finished();
-
-    QString source_qstr
-        = QString::fromStdString(finished_task.source_file.string());
-
-    if (jobs_.contains(source_qstr)) {
-        auto &job = jobs_[source_qstr];
-        job.pages_processed += 1;
-        job.timer.images_since_last_eta += 1;
-        auto progress_bar = job.progress_bar;
-        progress_bar->setValue(job.pages_processed);
-
-        if (job.pages_processed == job.pages_total) {
-            create_archive(source_qstr);
-
-            auto widget = job.widget;
-            progress_bars_layout_->removeWidget(widget);
-            delete widget;
-
-            jobs_.remove(source_qstr);
-
-            if (jobs_.isEmpty()) {
-                progress_bars_group_->setVisible(false);
-            }
-        }
-    }
-
-    if (is_processing_cancelled_) {
-        if (running_processes_.isEmpty()) {
-            log_output_->setVisible(true);
-            log_output_->append("All running tasks have been cancelled.");
-        }
-    }
-    else {
-        if (pages_processed_ == total_pages_) {
-            finish_run();
-        }
-        else {
-            start_next_task();
-        }
-    }
-
-    process->deleteLater();
 }
 
-void Window::on_worker_output() {
-    auto process = qobject_cast<QProcess *>(sender());
-    if (process) {
-        // Read line by line to prevent partial messages
-        while (process->canReadLine()) {
-            log_output_->setVisible(true);
-            log_output_->append(process->readLine().trimmed());
-        }
+void Window::finished(bool) {
+    // Nothing was found to process, so there is no progress to show.
+    if (total_pages_ == 0) {
+        progress_bar_->setVisible(false);
     }
+    finish_run();
 }
 
 // Every exit from a run goes through here, so a failure can’t leave the
-// button disabled or the temp directory behind.
+// button disabled.
 void Window::finish_run() {
     is_converting.store(false);
     timer_->stop();
     options_.settings_group->setEnabled(true);
     start_button_->setEnabled(true);
     cancel_button_->setEnabled(false);
-
-    if (temp_base_dir_.empty()) {
-        return;
-    }
-
-    auto err_code = std::error_code{};
-    fs::remove_all(temp_base_dir_, err_code);
-    if (err_code) {
-        log_output_->setVisible(true);
-        log_output_->append(
-            QString("Warning: failed to delete temp directory '%1': %2")
-                .arg(temp_base_dir_, err_code.message())
-        );
-    }
-    temp_base_dir_.clear();
 }

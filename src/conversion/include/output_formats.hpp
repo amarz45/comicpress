@@ -6,6 +6,8 @@
 
 namespace fs = std::filesystem;
 
+enum class OutputFormat : std::uint8_t { EPUB, CBZ };
+
 struct NoImagesError : std::runtime_error {
     NoImagesError() : std::runtime_error("no images") {
     }

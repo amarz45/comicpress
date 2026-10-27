@@ -20,6 +20,7 @@ endif
 
 vips_dep = dependency('vips-cpp')
 qt6_dep = dependency('qt6', modules: ['Widgets'])
+qt6_core_dep = dependency('qt6', modules: ['Core'])
 libarchive_dep = dependency('libarchive')
 
 pdfium_opt = get_option('pdfium')
@@ -76,6 +77,7 @@ else
 endif
 
 subdir('src/io')
+subdir('src/conversion')
 subdir('src/worker')
 subdir('src/gui')
 

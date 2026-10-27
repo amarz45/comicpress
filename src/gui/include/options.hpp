@@ -9,7 +9,6 @@
 #include <QSpinBox>
 #include <QStyle>
 
-enum class OutputFormat : std::uint8_t { EPUB, CBZ };
 enum class PdfQuality : std::uint16_t {
     STANDARD = 300,
     HIGH = 600,

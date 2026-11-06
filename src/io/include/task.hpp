@@ -24,7 +24,7 @@ enum class BitDepth : std::uint8_t {
 
 struct ProcessingSettings {
     ProcessingSettings() = default;
-    bool operator==(const ProcessingSettings&) const = default;
+    bool operator==(const ProcessingSettings &) const = default;
 
     ImageFormat image_format;
     double dither;
@@ -55,7 +55,7 @@ using ProcessingSettingsBytes
     = std::array<std::uint8_t, sizeof(ProcessingSettings)>;
 
 struct PageTask {
-    bool operator==(const PageTask&) const = default;
+    bool operator==(const PageTask &) const = default;
 
     fs::path source_file;
     fs::path output_dir;

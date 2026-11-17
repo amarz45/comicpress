@@ -1,22 +1,22 @@
 #include "include/conversion.hpp"
-#include "include/output_formats.hpp"
 #include "archive.hpp"
+#include "include/output_formats.hpp"
 #include "task.hpp"
 
-#include <QProcess>
-#include <QOverload>
 #include <QCoreApplication>
 #include <QObject>
+#include <QOverload>
+#include <QProcess>
 #include <QString>
 #include <QStringList>
 #include <Qt>
 #include <cctype>
+#include <exception>
 #include <filesystem>
 #include <string>
-#include <vector>
 #include <system_error>
 #include <utility>
-#include <exception>
+#include <vector>
 
 #if defined(PDF_ENABLED)
 #include <fpdfview.h>
@@ -131,9 +131,7 @@ void Conversion::cancel() {
 void Conversion::discover_tasks() {
     for (const auto &source_file : request_.input_files) {
         auto extension = source_file.extension().string();
-        std::transform(
-            extension.begin(), extension.end(), extension.begin(), ::tolower
-        );
+        std::ranges::transform(extension, extension.begin(), ::tolower);
 
         // Collected first, so a file that fails partway queues nothing.
         auto tasks = std::vector<PageTask>{};

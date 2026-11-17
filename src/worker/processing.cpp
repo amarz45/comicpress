@@ -1,6 +1,4 @@
 #include <algorithm>
-#include <archive.h>
-#include <archive_entry.h>
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
@@ -27,10 +25,12 @@ using std::views::enumerate;
 
 namespace fs = std::filesystem;
 
+namespace {
 struct SplitImage {
     vips::VImage left;
     vips::VImage right;
 };
+} // namespace
 
 static void save_image(
     vips::VImage img,

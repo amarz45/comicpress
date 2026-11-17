@@ -13,7 +13,7 @@
 #include <utility>
 
 QWidget *create_widget_with_info(
-    QStyle *style, QWidget *main_widget, const char *tooltip_text
+    const QStyle *style, QWidget *main_widget, const char *tooltip_text
 ) {
     auto container = new QWidget();
     auto layout = new QHBoxLayout(container);
@@ -44,7 +44,7 @@ QWidget *create_widget_with_info(
 }
 
 std::pair<QWidget *, QLabel *> create_control_with_info_pair(
-    QStyle *style, QWidget *main_widget, const char *tooltip_text
+    const QStyle *style, QWidget *main_widget, const char *tooltip_text
 ) {
     auto container = new QWidget();
     auto layout = new QHBoxLayout(container);

@@ -12,31 +12,31 @@
 #include <vector>
 
 // fs::path <-> std::string
-std::string encode_field(const fs::path &path) {
+static std::string encode_field(const fs::path &path) {
     return path.string();
 }
-void decode_field(std::string_view path, fs::path &out) {
+static void decode_field(std::string_view path, fs::path &out) {
     out = fs::path(path);
 }
 
 // std::string <-> std::string
-std::string encode_field(std::string str) {
+static std::string encode_field(std::string str) {
     return str;
 }
-void decode_field(std::string_view str, std::string &out) {
+static void decode_field(std::string_view str, std::string &out) {
     out = str;
 }
 
 // int <-> std::string
-std::string encode_field(int number) {
+static std::string encode_field(int number) {
     return std::to_string(number);
 }
-void decode_field(std::string_view number, int &out) {
+static void decode_field(std::string_view number, int &out) {
     std::from_chars(number.data(), number.data() + number.size(), out);
 }
 
 // ProcessingSettings <-> std::string
-std::string encode_field(const ProcessingSettings &settings) {
+static std::string encode_field(const ProcessingSettings &settings) {
     auto bytes = std::bit_cast<ProcessingSettingsBytes>(settings);
     auto hex = std::string{};
     hex.reserve(bytes.size() * 2);
@@ -45,9 +45,8 @@ std::string encode_field(const ProcessingSettings &settings) {
     }
     return hex;
 }
-void decode_field(
-    std::string_view processing_settings, ProcessingSettings &out
-) {
+static void
+decode_field(std::string_view processing_settings, ProcessingSettings &out) {
     auto hex = processing_settings;
     auto bytes = ProcessingSettingsBytes{};
     if (hex.size() != bytes.size() * 2) {

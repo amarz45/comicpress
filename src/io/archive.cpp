@@ -1,17 +1,17 @@
 #include <archive.h>
 #include <archive_entry.h>
-#include <cstddef>
 #include <array>
+#include <cstddef>
 #include <expected>
 #include <filesystem>
 #include <fstream>
-#include <memory>
 #include <ios>
+#include <memory>
 #include <new>
-#include <utility>
-#include <string>
 #include <optional>
 #include <stdexcept>
+#include <string>
+#include <utility>
 
 #include "include/archive.hpp"
 
@@ -80,11 +80,13 @@ void ArchiveReader::close() {
     }
 }
 
+namespace {
 struct EntryDeleter {
     void operator()(struct archive_entry *entry) const noexcept {
         archive_entry_free(entry);
     }
 };
+} // namespace
 using Entry = std::unique_ptr<struct archive_entry, EntryDeleter>;
 
 void ArchiveWriter::write_header(const char *filename, la_int64_t size) {

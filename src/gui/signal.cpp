@@ -445,11 +445,9 @@ void Window::on_display_preset_changed() {
         = QScopedValueRollback(is_programmatically_changing_values_, true);
 
     const auto &models = DISPLAY_PRESETS.at(brand).value();
-    auto it = std::find_if(
-        models.begin(), models.end(), [&model](const auto &pair) {
-            return pair.first == model;
-        }
-    );
+    auto it = std::ranges::find_if(models, [&model](const auto &pair) {
+        return pair.first == model;
+    });
 
     if (it != models.end()) {
         const DisplaySpec &display = it->second;

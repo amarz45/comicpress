@@ -1,7 +1,6 @@
 #include "include/window.hpp"
 #include "include/display_presets.hpp"
 #include "include/options.hpp"
-#include "include/ui_constants.hpp"
 #include "include/window_util.hpp"
 #include "output_formats.hpp"
 #include "task.hpp"
@@ -483,9 +482,7 @@ void Window::update_file_list_buttons() {
         auto path_variant = file_list_->item(i)->data(Qt::UserRole);
         auto path = fs::path(path_variant.toString().toStdString());
         auto extension = path.extension().string();
-        std::transform(
-            extension.begin(), extension.end(), extension.begin(), ::tolower
-        );
+        std::ranges::transform(extension, extension.begin(), ::tolower);
         if (extension == ".pdf") {
             pdf_inputs_exist = true;
             break;

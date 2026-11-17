@@ -73,7 +73,7 @@ static char to_lower_ascii(char c) {
 
 static std::string image_media_type(const fs::path &path) {
     auto ext = path.extension().string();
-    std::transform(ext.begin(), ext.end(), ext.begin(), to_lower_ascii);
+    std::ranges::transform(ext, ext.begin(), to_lower_ascii);
 
     if (ext == ".png") {
         return "image/png";
@@ -312,10 +312,12 @@ div.page img {
 )css";
 }
 
+namespace {
 struct EpubImage {
     fs::path path;
     std::string media_type;
 };
+} // namespace
 
 // Returns paths relative to `dir`, in page order. Recursive because
 // `output_base_name` carries the source archive’s directory structure, so pages
@@ -333,25 +335,21 @@ static std::vector<EpubImage> collect_epub_images(const fs::path &dir) {
         );
     }
 
-    std::sort(
-        image_paths.begin(),
-        image_paths.end(),
-        [](const EpubImage &a, const EpubImage &b) {
-            auto a_path = a.path.generic_string();
-            auto b_path = b.path.generic_string();
-            auto cmp = filename_collator().compare(
-                QString::fromStdString(a_path), QString::fromStdString(b_path)
-            );
+    std::ranges::sort(image_paths, [](const EpubImage &a, const EpubImage &b) {
+        auto a_path = a.path.generic_string();
+        auto b_path = b.path.generic_string();
+        auto cmp = filename_collator().compare(
+            QString::fromStdString(a_path), QString::fromStdString(b_path)
+        );
 
-            if (cmp != 0) {
-                return cmp < 0;
-            }
-            // If case-insensitive comparison ties (e.g., `page1.png` and
-            // `Page1.png` tie), fall back to standard string comparison as a
-            // tie-breaker.
-            return a_path < b_path;
+        if (cmp != 0) {
+            return cmp < 0;
         }
-    );
+        // If case-insensitive comparison ties (e.g., `page1.png` and
+        // `Page1.png` tie), fall back to standard string comparison as a
+        // tie-breaker.
+        return a_path < b_path;
+    });
 
     return image_paths;
 }
@@ -377,7 +375,6 @@ void create_epub(
     auto epub_images = collect_epub_images(image_dir);
     if (epub_images.empty()) {
         throw NoImagesError();
-        return;
     }
 
     archive.set_compression_store();
@@ -480,7 +477,6 @@ void create_cbz(const fs::path &image_dir, const fs::path &output_path) {
     auto cbz_images = collect_cbz_images(image_dir);
     if (cbz_images.empty()) {
         throw NoImagesError();
-        return;
     }
 
     for (const auto &image_path_rel : cbz_images) {

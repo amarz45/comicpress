@@ -1,3 +1,5 @@
+#pragma once
+
 #if defined(PDF_ENABLED)
 inline constexpr const char *PDF_TOOLTIP = R"(
     Sets the rendering resolution for PDF input files. Higher values produce

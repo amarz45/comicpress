@@ -58,18 +58,19 @@
 // Flatpak, and on non-Linux platforms that have no portal.
 static QString resolve_host_path(const QString &path) {
 #ifdef __linux__
-    auto attr = "user.document-portal.host-path";
-    auto local = QFile::encodeName(path);
+    const auto attr = "user.document-portal.host-path";
+    const auto local = QFile::encodeName(path);
 
     // A null buffer makes getxattr return the value's length; use it to size an
     // exact buffer (the stored value has no null terminator).
-    auto size = getxattr(local.constData(), attr, nullptr, 0);
+    const auto size = getxattr(local.constData(), attr, nullptr, 0);
     if (size <= 0) {
         return path;
     }
 
     std::vector<char> buffer(static_cast<size_t>(size));
-    auto read = getxattr(local.constData(), attr, buffer.data(), buffer.size());
+    const auto read
+        = getxattr(local.constData(), attr, buffer.data(), buffer.size());
     if (read <= 0) {
         return path;
     }
@@ -84,7 +85,7 @@ static bool is_dir_writable(const QString &path) {
     if (path.isEmpty()) {
         return false;
     }
-    QFileInfo info(path);
+    const QFileInfo info(path);
     return info.isDir() && info.isWritable();
 }
 
@@ -105,7 +106,7 @@ static QString choose_directory(
         return QString();
     }
 
-    auto selected = dialog.selectedUrls();
+    const auto selected = dialog.selectedUrls();
     return selected.isEmpty() ? QString() : selected.constFirst().toLocalFile();
 }
 
@@ -253,7 +254,7 @@ void Window::connect_signals() {
 }
 
 void Window::on_add_files_clicked() {
-    auto files = QFileDialog::getOpenFileNames(
+    const auto files = QFileDialog::getOpenFileNames(
         this,
         "Select input files",
         "",
@@ -270,8 +271,8 @@ void Window::on_add_files_clicked() {
 
     QStringList existing_paths;
     for (int i = 0; i < file_list_->count(); i += 1) {
-        if (auto item = file_list_->item(i)) {
-            if (auto data = item->data(Qt::UserRole); data.isValid()) {
+        if (const auto item = file_list_->item(i)) {
+            if (const auto data = item->data(Qt::UserRole); data.isValid()) {
                 existing_paths.append(data.toString());
             }
         }
@@ -300,13 +301,14 @@ void Window::on_clear_all_clicked() {
 
 void Window::on_browse_output_clicked() {
     // Start where the user already is, or in Documents the first time.
-    QString start_dir = output_dir_field_->text().isEmpty()
-                          ? QStandardPaths::writableLocation(
-                                QStandardPaths::DocumentsLocation
-                            )
-                          : output_dir_field_->text();
+    const QString start_dir = output_dir_field_->text().isEmpty()
+                                ? QStandardPaths::writableLocation(
+                                      QStandardPaths::DocumentsLocation
+                                  )
+                                : output_dir_field_->text();
 
-    QString dir = choose_directory(this, tr("Select output folder"), start_dir);
+    const QString dir
+        = choose_directory(this, tr("Select output folder"), start_dir);
 
     if (!dir.isEmpty()) {
         set_output_dir(dir);
@@ -326,9 +328,9 @@ void Window::persist_output_dir() {
 }
 
 void Window::restore_output_dir() {
-    QSettings settings;
-    auto io_path = settings.value("output/io_path").toString();
-    auto host_path = settings.value("output/host_path").toString();
+    const QSettings settings;
+    const auto io_path = settings.value("output/io_path").toString();
+    const auto host_path = settings.value("output/host_path").toString();
 
     if (is_dir_writable(io_path)) {
         output_dir_io_path_ = io_path;
@@ -353,7 +355,7 @@ bool Window::ensure_output_dir() {
         return true;
     }
 
-    QString dir = choose_directory(
+    const QString dir = choose_directory(
         this,
         tr("Choose an output folder"),
         QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)
@@ -373,7 +375,7 @@ QString Window::effective_output_dir() const {
 
 void Window::on_output_format_combo_box_changed() {
     auto image_format_combo = options_.image_format_combo_box;
-    auto *view = qobject_cast<QListView *>(image_format_combo->view());
+    auto *const view = qobject_cast<QListView *>(image_format_combo->view());
     if (!view) {
         return;
     }
@@ -381,10 +383,10 @@ void Window::on_output_format_combo_box_changed() {
     static constexpr auto EPUB_UNSUPPORTED
         = {ImageFormat::AVIF, ImageFormat::JPEG_XL};
 
-    auto output_format
+    const auto output_format
         = options_.output_format_combo_box->currentData().value<OutputFormat>();
-    auto is_epub = output_format == OutputFormat::EPUB;
-    auto image_format = current_image_format();
+    const auto is_epub = output_format == OutputFormat::EPUB;
+    const auto image_format = current_image_format();
     if (is_epub && std::ranges::contains(EPUB_UNSUPPORTED, image_format)) {
         image_format_combo->setCurrentIndex(
             image_format_combo->findData(QVariant::fromValue(ImageFormat::PNG))
@@ -404,9 +406,9 @@ ImageFormat Window::current_image_format() const {
 #if defined(PDF_ENABLED)
 void Window::on_pdf_pixel_density_combo_box_changed() {
     auto spin = options_.pdf_pixel_density_spin_box;
-    auto quality = options_.pdf_pixel_density_combo_box->currentData()
-                       .value<PdfQuality>();
-    auto is_custom = quality == PdfQuality::CUSTOM;
+    const auto quality = options_.pdf_pixel_density_combo_box->currentData()
+                             .value<PdfQuality>();
+    const auto is_custom = quality == PdfQuality::CUSTOM;
     spin->setVisible(is_custom);
     if (!is_custom) {
         spin->setValue(static_cast<int>(quality));
@@ -415,10 +417,10 @@ void Window::on_pdf_pixel_density_combo_box_changed() {
 #endif
 
 void Window::on_double_page_spread_changed() {
-    auto action = options_.double_page_spread_combo_box->currentData()
-                      .value<DoublePageSpreadActions>();
-    auto should_show = action == DoublePageSpreadActions::ROTATE
-                    || action == DoublePageSpreadActions::BOTH;
+    const auto action = options_.double_page_spread_combo_box->currentData()
+                            .value<DoublePageSpreadActions>();
+    const auto should_show = action == DoublePageSpreadActions::ROTATE
+                          || action == DoublePageSpreadActions::BOTH;
     options_.rotation_options_container->setVisible(should_show);
 }
 
@@ -433,19 +435,19 @@ void Window::on_preset_option_modified() {
 }
 
 void Window::on_display_preset_changed() {
-    auto brand = display_preset.brand;
+    const auto brand = display_preset.brand;
     auto model = display_preset.model;
-    auto is_custom = brand == "None";
+    const auto is_custom = brand == "None";
 
     if (is_custom) {
         return;
     }
 
-    auto guard
+    const auto guard
         = QScopedValueRollback(is_programmatically_changing_values_, true);
 
     const auto &models = DISPLAY_PRESETS.at(brand).value();
-    auto it = std::ranges::find_if(models, [&model](const auto &pair) {
+    const auto it = std::ranges::find_if(models, [&model](const auto &pair) {
         return pair.first == model;
     });
 
@@ -464,7 +466,7 @@ void Window::on_display_preset_changed() {
 }
 
 void Window::on_advanced_options_changed(int state) {
-    bool is_checked = state == Qt::Checked;
+    const bool is_checked = state == Qt::Checked;
 
     options_.linear_light_resampling_label->setVisible(is_checked);
     options_.linear_light_resampling_container->setVisible(is_checked);
@@ -500,19 +502,19 @@ void Window::on_advanced_options_changed(int state) {
 }
 
 void Window::on_enable_image_scaling_changed(int state) {
-    bool is_checked = state == Qt::Checked;
+    const bool is_checked = state == Qt::Checked;
     // Not `isVisible`, which is false for everything until the window is shown.
-    bool parent_visible = !options_.scale_pages_container->isHidden();
+    const bool parent_visible = !options_.scale_pages_container->isHidden();
     options_.scaling_options_container->setVisible(
         is_checked && parent_visible
     );
 }
 
 void Window::on_enable_image_quantization_changed(int state) {
-    bool is_checked = state == Qt::Checked;
+    const bool is_checked = state == Qt::Checked;
     options_.quantization_options_container->setVisible(is_checked);
     auto combo = options_.image_compression_type_combo_box;
-    auto compression_type
+    const auto compression_type
         = is_checked ? CompressionType::LOSSLESS : CompressionType::LOSSY;
     combo->setCurrentIndex(
         combo->findData(QVariant::fromValue(compression_type))
@@ -522,12 +524,12 @@ void Window::on_enable_image_quantization_changed(int state) {
 void Window::on_image_format_changed() {
     options_.image_format_options_container->setVisible(true);
 
-    auto img_format = current_image_format();
+    const auto img_format = current_image_format();
     const auto &settings = format_settings_.at(img_format);
-    auto is_jpeg_xl = img_format == ImageFormat::JPEG_XL;
+    const auto is_jpeg_xl = img_format == ImageFormat::JPEG_XL;
 
     {
-        auto guard
+        const auto guard
             = QScopedValueRollback(is_programmatically_changing_values_, true);
         update_image_quality_spin_box();
         options_.image_compression_spin_box->setRange(
@@ -572,15 +574,16 @@ void Window::on_image_compression_changed(int state) {
 }
 
 void Window::on_image_compression_type_changed() {
-    auto img_format = current_image_format();
-    auto compression_type
+    const auto img_format = current_image_format();
+    const auto compression_type
         = options_.image_compression_type_combo_box->currentData()
               .value<CompressionType>();
-    auto is_lossy = compression_type == CompressionType::LOSSY;
+    const auto is_lossy = compression_type == CompressionType::LOSSY;
 
-    auto image_quality_visible = format_settings_.at(img_format).has_quality
-                              && (img_format == ImageFormat::JPEG || is_lossy);
-    auto jpeg_xl_quality_tooltip_visible
+    const auto image_quality_visible
+        = format_settings_.at(img_format).has_quality
+       && (img_format == ImageFormat::JPEG || is_lossy);
+    const auto jpeg_xl_quality_tooltip_visible
         = img_format == ImageFormat::JPEG_XL && is_lossy;
 
     options_.image_quality_label->setVisible(image_quality_visible);
@@ -613,7 +616,7 @@ bool Window::image_quality_is_distance() const {
 }
 
 void Window::on_jpeg_xl_quality_type_changed() {
-    auto guard
+    const auto guard
         = QScopedValueRollback(is_programmatically_changing_values_, true);
     update_image_quality_spin_box();
 }
@@ -622,7 +625,7 @@ void Window::on_jpeg_xl_quality_type_changed() {
 // `is_programmatically_changing_values_` to keep it out of the current format’s
 // settings.
 void Window::update_image_quality_spin_box() {
-    auto *spin_box = options_.image_quality_spin_box;
+    auto *const spin_box = options_.image_quality_spin_box;
     if (image_quality_is_distance()) {
         spin_box->setRange(0.0, 15.0);
         spin_box->setSingleStep(0.1);
@@ -697,7 +700,7 @@ void Window::started(int pages_total) {
     progress_bar_->setMaximum(total_pages_);
 
     // Timer
-    auto now = std::chrono::system_clock::now();
+    const auto now = std::chrono::system_clock::now();
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                   now.time_since_epoch()
     )
@@ -724,7 +727,7 @@ static void for_each_settings_field(
 }
 
 void Window::set_widgets_from_settings() {
-    auto guard
+    const auto guard
         = QScopedValueRollback(is_programmatically_changing_values_, true);
     for_each_settings_field(
         options_, is_display_preset_active(), [](const auto &entry) {
@@ -733,11 +736,11 @@ void Window::set_widgets_from_settings() {
     );
     restore_format_settings();
 
-    QSettings settings;
+    const QSettings settings;
     if (settings.contains(DISPLAY_PRESET_BRAND_SETTINGS_KEY)
         && settings.contains(DISPLAY_PRESET_MODEL_SETTINGS_KEY)) {
-        auto brand = settings.value(DISPLAY_PRESET_BRAND_SETTINGS_KEY);
-        auto model = settings.value(DISPLAY_PRESET_MODEL_SETTINGS_KEY);
+        const auto brand = settings.value(DISPLAY_PRESET_BRAND_SETTINGS_KEY);
+        const auto model = settings.value(DISPLAY_PRESET_MODEL_SETTINGS_KEY);
 
         const auto brand_str = brand.toString().toStdString();
         const auto model_str = model.toString().toStdString();
@@ -765,7 +768,8 @@ void Window::save_settings_from_widgets() {
     QSettings settings;
     for_each_settings_field(
         options_, is_display_preset_active(), [&](const auto &entry) {
-            auto settings_value = settings_value_from_widget(entry.widget);
+            const auto settings_value
+                = settings_value_from_widget(entry.widget);
             if (settings_value.isValid()) {
                 settings.setValue(entry.field, settings_value);
             }
@@ -799,10 +803,12 @@ static void for_each_format_settings(
     const QComboBox *image_format_combo_box, auto &format_settings, auto &&apply
 ) {
     for (auto i = 0; i < image_format_combo_box->count(); i += 1) {
-        auto format = image_format_combo_box->itemData(i).value<ImageFormat>();
-        auto key
+        const auto format
+            = image_format_combo_box->itemData(i).value<ImageFormat>();
+        const auto key
             = image_format_combo_box->itemData(i, SETTINGS_KEY_ROLE).toString();
-        auto prefix = QString(IMAGE_FORMATS_SETTINGS_GROUP) + '/' + key + '/';
+        const auto prefix
+            = QString(IMAGE_FORMATS_SETTINGS_GROUP) + '/' + key + '/';
         apply(prefix, format, format_settings.at(format));
     }
 }
@@ -871,8 +877,8 @@ void Window::on_cancel_button_clicked() {
     conversion_->cancel();
     conversion_.reset();
 
-    for (auto &archive_job : jobs_) {
-        auto *widget = archive_job.widget;
+    for (const auto &archive_job : jobs_) {
+        auto *const widget = archive_job.widget;
         progress_bars_layout_->removeWidget(widget);
         delete widget;
     }
@@ -889,7 +895,8 @@ void Window::on_cancel_button_clicked() {
 }
 
 void Window::file_finished(const fs::path &source) {
-    auto widget = jobs_.take(QString::fromStdString(source.string())).widget;
+    const auto widget
+        = jobs_.take(QString::fromStdString(source.string())).widget;
     progress_bars_layout_->removeWidget(widget);
     delete widget;
 

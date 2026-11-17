@@ -37,7 +37,7 @@ static void decode_field(std::string_view number, int &out) {
 
 // ProcessingSettings <-> std::string
 static std::string encode_field(const ProcessingSettings &settings) {
-    auto bytes = std::bit_cast<ProcessingSettingsBytes>(settings);
+    const auto bytes = std::bit_cast<ProcessingSettingsBytes>(settings);
     auto hex = std::string{};
     hex.reserve(bytes.size() * 2);
     for (const auto byte : bytes) {
@@ -47,15 +47,15 @@ static std::string encode_field(const ProcessingSettings &settings) {
 }
 static void
 decode_field(std::string_view processing_settings, ProcessingSettings &out) {
-    auto hex = processing_settings;
+    const auto hex = processing_settings;
     auto bytes = ProcessingSettingsBytes{};
     if (hex.size() != bytes.size() * 2) {
         throw std::invalid_argument("settings size mismatch");
     }
     for (std::size_t i = 0; i < bytes.size(); i += 1) {
-        auto hex_first = i * 2;
-        auto *hex_start = hex.data() + hex_first;
-        auto *hex_end = hex.data() + hex_first + 2;
+        const auto hex_first = i * 2;
+        auto *const hex_start = hex.data() + hex_first;
+        auto *const hex_end = hex.data() + hex_first + 2;
         std::from_chars(hex_start, hex_end, bytes[i], 16);
     }
     out = std::bit_cast<ProcessingSettings>(bytes);

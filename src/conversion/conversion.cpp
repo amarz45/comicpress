@@ -32,7 +32,7 @@
 #include <sstream>
 
 static bool create_output_dir(fs::path &output_dir) {
-    auto output_parent = output_dir.parent_path();
+    const auto output_parent = output_dir.parent_path();
     auto err_code = std::error_code{};
     if (!output_parent.empty()) {
         fs::create_directories(output_parent, err_code);
@@ -41,7 +41,7 @@ static bool create_output_dir(fs::path &output_dir) {
         }
     }
 
-    auto output_base_dir = output_dir;
+    const auto output_base_dir = output_dir;
     auto i = 1;
     while (!fs::create_directory(output_dir, err_code)) {
         if (i > 1000 || (err_code && err_code != std::errc::file_exists)) {
@@ -70,11 +70,11 @@ Conversion::~Conversion() {
 
 void Conversion::start() {
     // Create unique base temp directory for this run
-    auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                      std::chrono::system_clock::now().time_since_epoch()
+    const auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                            std::chrono::system_clock::now().time_since_epoch()
     )
-                      .count();
-    auto temp_dir
+                            .count();
+    const auto temp_dir
         = fs::temp_directory_path() / ("comicpress_" + std::to_string(now_ms));
 
     try {
@@ -89,9 +89,9 @@ void Conversion::start() {
         return;
     }
 
-    auto now = std::chrono::system_clock::now();
+    const auto now = std::chrono::system_clock::now();
     auto now_time = std::chrono::system_clock::to_time_t(now);
-    auto local_time = std::localtime(&now_time);
+    const auto local_time = std::localtime(&now_time);
     auto oss = std::ostringstream{};
     oss << std::put_time(local_time, "%Y-%m-%d %H-%M-%S");
 
@@ -179,7 +179,7 @@ void Conversion::discover_tasks() {
             }
 #if defined(PDF_ENABLED)
             else if (extension == ".pdf") {
-                auto doc
+                const auto doc
                     = FPDF_LoadDocument(source_file.string().c_str(), nullptr);
                 if (!doc) {
                     log_error(
@@ -193,7 +193,7 @@ void Conversion::discover_tasks() {
                     continue;
                 }
 
-                auto page_count = FPDF_GetPageCount(doc);
+                const auto page_count = FPDF_GetPageCount(doc);
                 FPDF_CloseDocument(doc);
                 if (page_count == 0) {
                     log_error(
@@ -206,7 +206,7 @@ void Conversion::discover_tasks() {
 
                 fs::create_directories(temp_dir_ / source_file.stem());
 
-                auto padding_width
+                const auto padding_width
                     = static_cast<int>(std::floor(std::log10(page_count))) + 1;
                 for (auto i = 0; i < page_count; i += 1) {
                     auto task = create_task(source_file, i);
@@ -230,7 +230,7 @@ void Conversion::discover_tasks() {
             continue;
         }
 
-        auto page_count = static_cast<int>(tasks.size());
+        const auto page_count = static_cast<int>(tasks.size());
         files_[source_file].pages_total = page_count;
         pages_total_ += page_count;
         for (auto &task : tasks) {
@@ -318,12 +318,12 @@ void Conversion::start_next_task() {
 
 void Conversion::handle_worker_exit(QProcess *process) {
     process->deleteLater();
-    auto node = running_tasks_.extract(process);
+    const auto node = running_tasks_.extract(process);
     if (node.empty()) {
         return;
     }
 
-    auto &source = node.mapped().source_file;
+    const auto &source = node.mapped().source_file;
     auto &file = files_[source];
     file.pages_done += 1;
     pages_done_ += 1;
@@ -343,8 +343,8 @@ void Conversion::handle_worker_exit(QProcess *process) {
 }
 
 void Conversion::create_archive(const fs::path &source) {
-    auto title = source.stem();
-    auto temp_dir = temp_dir_ / title;
+    const auto title = source.stem();
+    const auto temp_dir = temp_dir_ / title;
     auto output_filename = source.filename();
 
     try {
@@ -399,7 +399,7 @@ void Conversion::finish() {
 }
 
 void Conversion::stop_workers() {
-    for (auto *process : running_tasks_ | std::views::keys) {
+    for (auto *const process : running_tasks_ | std::views::keys) {
         // A killed process lives on until it exits, which can be after `this`
         // is gone, so it must not call back into it.
         process->disconnect();

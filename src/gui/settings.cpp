@@ -17,7 +17,7 @@ std::optional<bool> from_settings_value(const QVariant &variant) {
     if (variant.typeId() == QMetaType::Bool) {
         return variant.toBool();
     }
-    auto text = variant.toString();
+    const auto text = variant.toString();
     if (text == "true") {
         return true;
     }
@@ -48,7 +48,7 @@ void set_widget_value_from_settings(
     QAnyStringView field, QComboBox *combo_box
 ) {
     with_setting(field, [&](const QVariant &variant) {
-        auto index = combo_box->findData(variant, SETTINGS_KEY_ROLE);
+        const auto index = combo_box->findData(variant, SETTINGS_KEY_ROLE);
         if (index >= 0) {
             combo_box->setCurrentIndex(index);
         }

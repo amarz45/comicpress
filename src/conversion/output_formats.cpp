@@ -336,9 +336,9 @@ static std::vector<EpubImage> collect_epub_images(const fs::path &dir) {
     }
 
     std::ranges::sort(image_paths, [](const EpubImage &a, const EpubImage &b) {
-        auto a_path = a.path.generic_string();
-        auto b_path = b.path.generic_string();
-        auto cmp = filename_collator().compare(
+        const auto a_path = a.path.generic_string();
+        const auto b_path = b.path.generic_string();
+        const auto cmp = filename_collator().compare(
             QString::fromStdString(a_path), QString::fromStdString(b_path)
         );
 
@@ -357,7 +357,7 @@ static std::vector<EpubImage> collect_epub_images(const fs::path &dir) {
 static std::vector<fs::path> collect_cbz_images(const fs::path &dir) {
     auto image_paths = std::vector<fs::path>{};
     for (const auto &entry : fs::recursive_directory_iterator(dir)) {
-        auto media_type = image_media_type(entry.path());
+        const auto media_type = image_media_type(entry.path());
         if (!media_type.empty()) {
             image_paths.push_back(fs::relative(entry.path(), dir));
         }
@@ -382,16 +382,16 @@ void create_epub(
     archive.set_compression_deflate();
 
     auto first_image_path = fs::path(epub_images[0].path);
-    auto first_page_path
+    const auto first_page_path
         = "text/"
         + first_image_path.replace_extension(".xhtml").generic_string();
-    auto nav_xhtml = create_epub_nav_xhtml(first_page_path);
+    const auto nav_xhtml = create_epub_nav_xhtml(first_page_path);
     archive.add_file("OEBPS/nav.xhtml", nav_xhtml);
 
-    auto container_xml = create_epub_container_xml();
+    const auto container_xml = create_epub_container_xml();
     archive.add_file("META-INF/container.xml", container_xml);
 
-    auto style_css = create_epub_style_css();
+    const auto style_css = create_epub_style_css();
     archive.add_file("OEBPS/style.css", style_css);
 
     QByteArray content_opf_out;
@@ -399,9 +399,10 @@ void create_epub(
     content_opf_buf.open(QIODevice::WriteOnly);
     auto content_opf_writer = QXmlStreamWriter(&content_opf_buf);
 
-    auto book_uuid
+    const auto book_uuid
         = "urn:uuid:" + QUuid::createUuid().toString(QUuid::WithoutBraces);
-    auto modified_time = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+    const auto modified_time
+        = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
 
     write_epub_content_opf_beginning(
         content_opf_writer, title, book_uuid, modified_time
@@ -410,32 +411,32 @@ void create_epub(
     auto page_ids = std::vector<std::string>{};
     page_ids.reserve(epub_images.size());
     for (auto page_num = 1; const auto &epub_image : epub_images) {
-        auto image_path_rel = epub_image.path;
-        auto image_path_abs = image_dir / image_path_rel;
-        auto image
+        const auto image_path_rel = epub_image.path;
+        const auto image_path_abs = image_dir / image_path_rel;
+        const auto image
             = vips::VImage::new_from_file(image_path_abs.string().c_str());
-        auto page_path = fs::path(image_path_rel)
-                             .replace_extension(".xhtml")
-                             .generic_string();
+        const auto page_path = fs::path(image_path_rel)
+                                   .replace_extension(".xhtml")
+                                   .generic_string();
 
         // Add the image file. Store the bytes directly instead of compressing
         // since images are already compressed.
         archive.set_compression_store();
-        auto image_path_epub
+        const auto image_path_epub
             = "OEBPS/images/" + image_path_rel.generic_string();
         archive.add_file(image_path_epub.c_str(), image_path_abs);
         archive.set_compression_deflate();
 
         // Add the page file.
-        auto page_path_epub = "OEBPS/text/" + page_path;
-        auto page_xhtml = create_epub_page_xhtml(
+        const auto page_path_epub = "OEBPS/text/" + page_path;
+        const auto page_xhtml = create_epub_page_xhtml(
             page_num, image_path_rel, image.width(), image.height()
         );
         archive.add_file(page_path_epub.c_str(), page_xhtml);
 
         // Write an element for the image.
-        auto image_id = "img" + std::to_string(page_num);
-        auto image_href = "images/" + image_path_rel.generic_string();
+        const auto image_id = "img" + std::to_string(page_num);
+        const auto image_href = "images/" + image_path_rel.generic_string();
         write_manifest_item(
             content_opf_writer, image_id, image_href, epub_image.media_type
         );
@@ -445,7 +446,7 @@ void create_epub(
 
         // Write an element for the page.
         auto page_id = "pg" + std::to_string(page_num);
-        auto page_href = "text/" + page_path;
+        const auto page_href = "text/" + page_path;
         write_manifest_item(
             content_opf_writer, page_id, page_href, "application/xhtml+xml"
         );
@@ -474,13 +475,13 @@ void create_cbz(const fs::path &image_dir, const fs::path &output_path) {
     auto archive = ArchiveWriter(output_path.string().c_str());
     archive.set_compression_store();
 
-    auto cbz_images = collect_cbz_images(image_dir);
+    const auto cbz_images = collect_cbz_images(image_dir);
     if (cbz_images.empty()) {
         throw NoImagesError();
     }
 
     for (const auto &image_path_rel : cbz_images) {
-        auto image_path_abs = image_dir / image_path_rel;
+        const auto image_path_abs = image_dir / image_path_rel;
         archive.add_file(
             image_path_rel.generic_string().c_str(), image_path_abs
         );

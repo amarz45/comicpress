@@ -90,7 +90,7 @@ Window::Window(QWidget *parent) : QMainWindow(parent) {
 }
 
 void Window::setup_ui() {
-    auto container_layout = new QHBoxLayout(central_widget_);
+    const auto container_layout = new QHBoxLayout(central_widget_);
     container_layout->setContentsMargins(40, 20, 40, 20);
     auto content_widget = new QWidget();
     container_layout->setAlignment(Qt::AlignTop);
@@ -98,7 +98,7 @@ void Window::setup_ui() {
         QSizePolicy::Preferred, QSizePolicy::Preferred
     );
 
-    auto io_group = create_io_group();
+    const auto io_group = create_io_group();
     options_.settings_group = create_settings_group();
 
     progress_bars_group_ = new QGroupBox("File progress");
@@ -125,8 +125,8 @@ void Window::setup_ui() {
     settings_scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     tabs->addTab(settings_scroll, "Options");
 
-    auto action_group = new QWidget();
-    auto action_layout = new QHBoxLayout(action_group);
+    const auto action_group = new QWidget();
+    const auto action_layout = new QHBoxLayout(action_group);
     start_button_ = new QPushButton("Start");
     cancel_button_ = new QPushButton("Cancel");
     start_button_->setEnabled(false);
@@ -161,9 +161,9 @@ void Window::setup_ui() {
 QGroupBox *Window::create_io_group() {
     auto io_group = new QGroupBox();
     io_group->setFlat(true);
-    auto io_layout = new QVBoxLayout(io_group);
+    const auto io_layout = new QVBoxLayout(io_group);
     io_layout->setContentsMargins(0, 10, 0, 0);
-    auto file_buttons_layout = new QHBoxLayout();
+    const auto file_buttons_layout = new QHBoxLayout();
 
     file_list_ = new QListWidget();
     file_list_->setFont(QFont("monospace"));
@@ -185,7 +185,7 @@ QGroupBox *Window::create_io_group() {
     io_layout->addLayout(file_buttons_layout);
     io_layout->addWidget(file_list_, 1);
 
-    auto output_layout = new QHBoxLayout();
+    const auto output_layout = new QHBoxLayout();
 
     output_dir_field_ = new QLineEdit();
     output_dir_field_->setPlaceholderText(tr("No output folder chosen"));
@@ -196,7 +196,7 @@ QGroupBox *Window::create_io_group() {
     output_dir_field_->setCursor(Qt::PointingHandCursor);
 
     // Folder icon inside the field.
-    auto browse_icon = style()->standardIcon(QStyle::SP_DirIcon);
+    const auto browse_icon = style()->standardIcon(QStyle::SP_DirIcon);
     output_dir_field_->addAction(browse_icon, QLineEdit::LeadingPosition);
 
     browse_output_button_ = new QPushButton("Browse output folder");
@@ -220,7 +220,7 @@ QGroupBox *Window::create_settings_group() {
     options_.settings_layout->setLabelAlignment(
         Qt::AlignRight | Qt::AlignVCenter
     );
-    auto style = this->style();
+    const auto style = this->style();
 
     // Preprocessing
     add_display_presets_widget();
@@ -237,12 +237,12 @@ QGroupBox *Window::create_settings_group() {
 
     options_.settings_layout->addItem(new QSpacerItem(0, 25));
     options_.advanced_options_check_box = new QCheckBox();
-    auto advanced_options_label = new QLabel("Show advanced options");
+    const auto advanced_options_label = new QLabel("Show advanced options");
     QFont font = advanced_options_label->font();
     font.setBold(true);
     advanced_options_label->setFont(font);
-    auto container = new QWidget();
-    auto container_layout = new QHBoxLayout(container);
+    const auto container = new QWidget();
+    const auto container_layout = new QHBoxLayout(container);
     container_layout->setContentsMargins(0, 0, 0, 0);
     container_layout->addWidget(options_.advanced_options_check_box);
     container_layout->addWidget(advanced_options_label);
@@ -269,9 +269,9 @@ void Window::create_log_group() {
     log_group_ = new QGroupBox("Total progress");
     log_group_->setVisible(false);
     log_group_->setFlat(true);
-    auto log_layout = new QVBoxLayout(log_group_);
+    const auto log_layout = new QVBoxLayout(log_group_);
 
-    auto time_layout = new QHBoxLayout();
+    const auto time_layout = new QHBoxLayout();
     elapsed_label_ = new QLabel("Elapsed: –");
     eta_label_ = new QLabel("ETA: –");
     time_layout->addWidget(elapsed_label_);
@@ -294,11 +294,12 @@ void Window::create_log_group() {
 }
 
 void Window::add_display_presets_widget() {
-    auto display_preset_brand = QString::fromStdString(display_preset.brand);
+    const auto display_preset_brand
+        = QString::fromStdString(display_preset.brand);
     options_.display_preset_button = new QPushButton(display_preset_brand);
     auto display_menu = new QMenu(this);
 
-    if (auto custom_action = display_menu->addAction("None")) {
+    if (const auto custom_action = display_menu->addAction("None")) {
         connect(custom_action, &QAction::triggered, this, [this]() {
             set_display_preset("None", "");
         });
@@ -310,15 +311,15 @@ void Window::add_display_presets_widget() {
             continue;
         }
 
-        auto brand_qstr = QString::fromStdString(brand);
-        auto brand_menu = display_menu->addMenu(brand_qstr);
+        const auto brand_qstr = QString::fromStdString(brand);
+        const auto brand_menu = display_menu->addMenu(brand_qstr);
         if (!brand_menu) {
             continue;
         }
 
         for (const auto &[model_name, _] : *model) {
-            auto model_name_qstr = QString::fromStdString(model_name);
-            auto model_action = brand_menu->addAction(model_name_qstr);
+            const auto model_name_qstr = QString::fromStdString(model_name);
+            const auto model_action = brand_menu->addAction(model_name_qstr);
             if (!model_action) {
                 continue;
             }
@@ -334,22 +335,22 @@ void Window::add_display_presets_widget() {
         }
     }
 
-    auto label
+    const auto label
         = create_widget_with_info(style(), new QLabel("Device preset"), "");
     options_.display_preset_button->setMenu(display_menu);
     options_.settings_layout->addRow(label, options_.display_preset_button);
 }
 
 void Window::file_started(const fs::path &source, int pages_total) {
-    auto source_qstr = QString::fromStdString(source.string());
+    const auto source_qstr = QString::fromStdString(source.string());
 
-    auto output_format
+    const auto output_format
         = options_.output_format_combo_box->currentData().value<OutputFormat>();
 
     progress_bars_group_->setVisible(true);
 
-    auto widget = new QWidget();
-    auto vbox = new QVBoxLayout(widget);
+    const auto widget = new QWidget();
+    const auto vbox = new QVBoxLayout(widget);
     vbox->setContentsMargins(5, 2, 5, 2);
 
     auto filename = QFileInfo(source_qstr).completeBaseName();
@@ -360,8 +361,8 @@ void Window::file_started(const fs::path &source, int pages_total) {
         filename += ".cbz";
     }
 
-    auto progress_layout = new QHBoxLayout();
-    auto label = new QLabel("<code>" + filename + "</code>");
+    const auto progress_layout = new QHBoxLayout();
+    const auto label = new QLabel("<code>" + filename + "</code>");
     auto progress_bar = new QProgressBar();
     progress_bar->setMaximum(pages_total);
     progress_bar->setValue(0);
@@ -371,9 +372,9 @@ void Window::file_started(const fs::path &source, int pages_total) {
     progress_layout->addWidget(label);
     progress_layout->addWidget(progress_bar);
 
-    auto time_layout = new QHBoxLayout();
-    auto elapsed_label = new QLabel("Elapsed: –");
-    auto eta_label = new QLabel("ETA: –");
+    const auto time_layout = new QHBoxLayout();
+    const auto elapsed_label = new QLabel("Elapsed: –");
+    const auto eta_label = new QLabel("ETA: –");
     time_layout->addWidget(elapsed_label);
     time_layout->addWidget(eta_label);
     time_layout->addStretch();
@@ -392,7 +393,7 @@ void Window::file_started(const fs::path &source, int pages_total) {
     job.elapsed_label = elapsed_label;
     job.eta_label = eta_label;
 
-    auto now = std::chrono::system_clock::now();
+    const auto now = std::chrono::system_clock::now();
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                   now.time_since_epoch()
     )
@@ -469,8 +470,8 @@ ProcessingSettings Window::processing_settings_from_widgets() const {
 }
 
 void Window::update_file_list_buttons() {
-    auto count = file_list_->count();
-    auto has_items = count > 0;
+    const auto count = file_list_->count();
+    const auto has_items = count > 0;
 
     start_button_->setEnabled(has_items);
     remove_selected_button_->setVisible(has_items);
@@ -479,8 +480,8 @@ void Window::update_file_list_buttons() {
 #if defined(PDF_ENABLED)
     auto pdf_inputs_exist = false;
     for (auto i = 0; i < count; i += 1) {
-        auto path_variant = file_list_->item(i)->data(Qt::UserRole);
-        auto path = fs::path(path_variant.toString().toStdString());
+        const auto path_variant = file_list_->item(i)->data(Qt::UserRole);
+        const auto path = fs::path(path_variant.toString().toStdString());
         auto extension = path.extension().string();
         std::ranges::transform(extension, extension.begin(), ::tolower);
         if (extension == ".pdf") {
@@ -500,7 +501,7 @@ void Window::update_file_list_buttons() {
         return;
     }
 
-    auto has_selection = !file_list_->selectedItems().isEmpty();
+    const auto has_selection = !file_list_->selectedItems().isEmpty();
     remove_selected_button_->setEnabled(has_selection);
 }
 
@@ -509,8 +510,9 @@ void Window::set_display_preset(
 ) {
     display_preset.brand = brand;
     display_preset.model = model;
-    QString text = model.empty() ? QString::fromStdString(brand)
-                                 : QString::fromStdString(brand + " " + model);
+    const QString text = model.empty()
+                           ? QString::fromStdString(brand)
+                           : QString::fromStdString(brand + " " + model);
     options_.display_preset_button->setText(text);
     on_display_preset_changed();
 }

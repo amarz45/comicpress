@@ -15,21 +15,22 @@
 QWidget *create_widget_with_info(
     const QStyle *style, QWidget *main_widget, const char *tooltip_text
 ) {
-    auto container = new QWidget();
-    auto layout = new QHBoxLayout(container);
+    const auto container = new QWidget();
+    const auto layout = new QHBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(5);
 
-    auto has_tooltip = tooltip_text && strlen(tooltip_text) > 0;
+    const auto has_tooltip = tooltip_text && strlen(tooltip_text) > 0;
 
     if (has_tooltip && style) {
         auto info_area = new QLabel();
         info_area->setFixedSize(16, 16);
 
-        auto icon = style->standardIcon(
+        const auto icon = style->standardIcon(
             QStyle::StandardPixmap::SP_MessageBoxInformation
         );
-        auto formatted_tooltip = "<p>" + std::string(tooltip_text) + "</p>";
+        const auto formatted_tooltip
+            = "<p>" + std::string(tooltip_text) + "</p>";
         info_area->setPixmap(icon.pixmap(16, 16));
         info_area->setToolTip(QString::fromStdString(formatted_tooltip));
 
@@ -46,12 +47,12 @@ QWidget *create_widget_with_info(
 std::pair<QWidget *, QLabel *> create_control_with_info_pair(
     const QStyle *style, QWidget *main_widget, const char *tooltip_text
 ) {
-    auto container = new QWidget();
-    auto layout = new QHBoxLayout(container);
+    const auto container = new QWidget();
+    const auto layout = new QHBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(10);
 
-    auto has_tooltip = tooltip_text && strlen(tooltip_text) > 0;
+    const auto has_tooltip = tooltip_text && strlen(tooltip_text) > 0;
     layout->addWidget(main_widget);
 
     auto info_area = new QLabel();
@@ -59,10 +60,11 @@ std::pair<QWidget *, QLabel *> create_control_with_info_pair(
     if (has_tooltip && style) {
         info_area->setFixedSize(16, 16);
 
-        auto icon = style->standardIcon(
+        const auto icon = style->standardIcon(
             QStyle::StandardPixmap::SP_MessageBoxInformation
         );
-        auto formatted_tooltip = "<p>" + std::string(tooltip_text) + "</p>";
+        const auto formatted_tooltip
+            = "<p>" + std::string(tooltip_text) + "</p>";
         info_area->setPixmap(icon.pixmap(16, 16));
         info_area->setToolTip(QString::fromStdString(formatted_tooltip));
 
@@ -76,19 +78,19 @@ std::pair<QWidget *, QLabel *> create_control_with_info_pair(
 }
 
 QWidget *create_control_with_info(
-    QStyle *style, QWidget *main_widget, const char *tooltip_text
+    const QStyle *style, QWidget *main_widget, const char *tooltip_text
 ) {
     return create_control_with_info_pair(style, main_widget, tooltip_text)
         .first;
 }
 
 std::string time_to_str(int64_t millis) {
-    auto seconds = static_cast<int>(millis / 1000);
+    const auto seconds = static_cast<int>(millis / 1000);
 
-    int h = seconds / 3600;
-    int rem = seconds % 3600;
-    int m = rem / 60;
-    int s = rem % 60;
+    const int h = seconds / 3600;
+    const int rem = seconds % 3600;
+    const int m = rem / 60;
+    const int s = rem % 60;
 
     std::ostringstream oss;
     if (seconds < 60) {

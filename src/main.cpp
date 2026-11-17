@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
     FPDF_InitLibrary();
 #endif
 
-    QApplication app(argc, argv);
+    const QApplication app(argc, argv);
 
     QApplication::setDesktopFileName("io.github.amarz45.Comicpress");
 
@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
         )
     );
 
-    auto font = app.font();
+    const auto font = app.font();
     // font.setPointSize(14);
     app.setFont(font);
 
@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
     win_sparkle_init();
 #endif
 
-    auto result = app.exec();
+    const auto result = app.exec();
 
 #if defined(_WIN32)
     win_sparkle_cleanup();

@@ -46,10 +46,10 @@ ArchiveReader::open(const char *filename) {
 
     archive_read_support_filter_all(archive.get());
     archive_read_support_format_all(archive.get());
-    auto archive_open
+    const auto archive_open
         = archive_read_open_filename(archive.get(), filename, 10240);
     if (archive_open != ARCHIVE_OK) {
-        const auto *error = archive_error_string(archive.get());
+        const auto *const error = archive_error_string(archive.get());
         return std::unexpected(error ? error : "");
     }
     return ArchiveReader(std::move(archive));
@@ -65,10 +65,10 @@ std::optional<EntryView> ArchiveReader::next() {
 
 std::expected<size_t, std::string>
 ArchiveReader::read_data(void *data, size_t size) {
-    auto bytes_read = archive_read_data(archive_.get(), data, size);
+    const auto bytes_read = archive_read_data(archive_.get(), data, size);
     if (bytes_read < 0) {
-        auto *error = archive_error_string(archive_.get());
-        std::string message = error ? error : "";
+        auto *const error = archive_error_string(archive_.get());
+        const std::string message = error ? error : "";
         return std::unexpected(message);
     }
     return static_cast<size_t>(bytes_read);
@@ -90,7 +90,7 @@ struct EntryDeleter {
 using Entry = std::unique_ptr<struct archive_entry, EntryDeleter>;
 
 void ArchiveWriter::write_header(const char *filename, la_int64_t size) {
-    auto entry = Entry{archive_entry_new()};
+    const auto entry = Entry{archive_entry_new()};
     archive_entry_set_pathname(entry.get(), filename);
     archive_entry_set_size(entry.get(), size);
     archive_entry_set_filetype(entry.get(), AE_IFREG);
@@ -107,8 +107,8 @@ ArchiveWriter::ArchiveWriter(const char *filename)
     }
     archive_write_set_format_zip(archive_.get());
     if (archive_write_open_filename(archive_.get(), filename) != ARCHIVE_OK) {
-        const auto *error = archive_error_string(archive_.get());
-        auto message = std::string(error ? error : "");
+        const auto *const error = archive_error_string(archive_.get());
+        const auto message = std::string(error ? error : "");
         throw std::runtime_error(message);
     }
 }
@@ -125,7 +125,7 @@ void ArchiveWriter::add_file(
     const char *filename, const std::string &file_contents
 ) {
     write_header(filename, static_cast<la_int64_t>(file_contents.size()));
-    auto written = archive_write_data(
+    const auto written = archive_write_data(
         archive_.get(), file_contents.data(), file_contents.size()
     );
     if (written == ARCHIVE_FATAL) {

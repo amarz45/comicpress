@@ -27,7 +27,7 @@ int worker_main(int argc, char **argv) {
 
     auto task = PageTask{};
     try {
-        auto worker_arguments = std::span(argv + 1, argv + argc);
+        const auto worker_arguments = std::span(argv + 1, argv + argc);
         task = decode_task(worker_arguments);
     }
     catch (const std::exception &e) {
@@ -40,7 +40,8 @@ int worker_main(int argc, char **argv) {
     }
 
     // A simple logger that prints to standard output.
-    auto logger = [](const std::string &msg) { std::cout << msg << '\n'; };
+    const auto logger
+        = [](const std::string &msg) { std::cout << msg << '\n'; };
 
     try {
         LoadPageReturn page_info;

@@ -85,7 +85,7 @@ static vips::VImage stretch_image_contrast(vips::VImage img);
 const auto PDF_DEFAULT_RENDER_FLAGS = FPDF_ANNOT | FPDF_NO_NATIVETEXT;
 
 LoadPageReturn load_pdf_page(const PageTask &task) {
-    FPDF_DOCUMENT doc
+    const FPDF_DOCUMENT doc
         = FPDF_LoadDocument(task.source_file.string().c_str(), nullptr);
     if (!doc) {
         throw std::runtime_error(
@@ -94,7 +94,7 @@ LoadPageReturn load_pdf_page(const PageTask &task) {
         );
     }
 
-    FPDF_PAGE page = FPDF_LoadPage(doc, task.page_number);
+    const FPDF_PAGE page = FPDF_LoadPage(doc, task.page_number);
     if (!page) {
         FPDF_CloseDocument(doc);
         throw std::runtime_error(
@@ -131,7 +131,8 @@ LoadPageReturn load_pdf_page(const PageTask &task) {
             render_flags
         );
 
-        auto stretch_page_contrast = should_image_stretch_contrast(img, task);
+        const auto stretch_page_contrast
+            = should_image_stretch_contrast(img, task);
         if (task.processing_settings.convert_pages_to_greyscale
             && !render_page_greyscale) {
             img = img.colourspace(VIPS_INTERPRETATION_B_W);
@@ -164,7 +165,7 @@ LoadPageReturn load_archive_image(const PageTask &task) {
     std::vector<char> buffer;
 
     while (auto entry = archive->next()) {
-        auto path_name = std::string(entry->pathname());
+        const auto path_name = std::string(entry->pathname());
         if (path_name == task.path_in_archive) {
             if (!entry->size_is_set()) {
                 throw std::runtime_error(
@@ -172,7 +173,7 @@ LoadPageReturn load_archive_image(const PageTask &task) {
                     + task.path_in_archive + "'"
                 );
             }
-            auto size = entry->size();
+            const auto size = entry->size();
             if (size <= 0) {
                 throw std::runtime_error(
                     "LibArchive: Invalid entry size for '"
@@ -202,7 +203,7 @@ LoadPageReturn load_archive_image(const PageTask &task) {
         = vips::VImage::new_from_buffer(buffer.data(), buffer.size(), "");
     img = img.copy_memory();
 
-    auto stretch_page_contrast = should_image_stretch_contrast(img, task);
+    const auto stretch_page_contrast = should_image_stretch_contrast(img, task);
     if (task.processing_settings.convert_pages_to_greyscale) {
         img = img.colourspace(VIPS_INTERPRETATION_B_W);
     }
@@ -216,18 +217,18 @@ void process_vimage(
     const LoadPageReturn &page_info, const PageTask &task, Logger log
 ) {
     try {
-        auto base_path = task.output_dir / task.output_base_name;
+        const auto base_path = task.output_dir / task.output_base_name;
         auto base_path_str = base_path.string();
         fs::create_directories(base_path.parent_path());
 
         using enum DoublePageSpreadActions;
-        auto action = task.processing_settings.double_page_spread_action;
-        auto rotate_option = action == ROTATE || action == BOTH;
-        auto split_option = action == SPLIT || action == BOTH;
+        const auto action = task.processing_settings.double_page_spread_action;
+        const auto rotate_option = action == ROTATE || action == BOTH;
+        const auto split_option = action == SPLIT || action == BOTH;
 
         auto img = page_info.image;
 
-        auto two_page_spread = is_two_page_spread(
+        const auto two_page_spread = is_two_page_spread(
             img.width(),
             img.height(),
             task.processing_settings.page_width,
@@ -269,7 +270,8 @@ void process_vimage(
             }
         }
 
-        auto save = [&](const vips::VImage &image, const std::string &path) {
+        const auto save = [&](const vips::VImage &image,
+                              const std::string &path) {
             save_image(image, task, page_info.stretch_page_contrast, path);
         };
 
@@ -301,7 +303,7 @@ void save_image(
     };
     using Blob = std::unique_ptr<VipsBlob, BlobDeleter>;
 
-    auto png_path = base_path + ".png";
+    const auto png_path = base_path + ".png";
 
     if (task.processing_settings.scale_pages) {
         img = scale_image(
@@ -320,7 +322,7 @@ void save_image(
     // Build fresh palette options per save: a VOption is consumed by
     // the operation it is passed to, so it must not be reused across
     // calls.
-    auto make_palette_options = [&] {
+    const auto make_palette_options = [&] {
         return vips::VImage::option()
             ->set("palette", true)
             ->set("bitdepth", bit_depth)
@@ -332,7 +334,7 @@ void save_image(
     // Doing this before the contrast stretch matters: it ensures that
     // each page stretches the full colour range.
     if (task.processing_settings.quantize_pages) {
-        auto png_blob = Blob{
+        const auto png_blob = Blob{
             img.pngsave_buffer(make_palette_options()->set("compression", 0))
         };
         img = img.pngload_buffer(png_blob.get());
@@ -365,7 +367,7 @@ void save_image(
     auto options = vips::VImage::option();
     switch (task.processing_settings.image_format) {
     case ImageFormat::AVIF: {
-        auto output_path = base_path + ".avif";
+        const auto output_path = base_path + ".avif";
         options
             = options->set("compression", VIPS_FOREIGN_HEIF_COMPRESSION_AV1)
                   ->set("effort", task.processing_settings.compression_effort)
@@ -381,7 +383,7 @@ void save_image(
         break;
     }
     case ImageFormat::JPEG: {
-        auto output_path = base_path + ".jpg";
+        const auto output_path = base_path + ".jpg";
         img.jpegsave(
             output_path.c_str(),
             options->set("Q", task.processing_settings.quality)
@@ -389,7 +391,7 @@ void save_image(
         break;
     }
     case ImageFormat::JPEG_XL: {
-        auto output_path = base_path + ".jxl";
+        const auto output_path = base_path + ".jxl";
         options = options->set(
             "effort", task.processing_settings.compression_effort
         );
@@ -410,7 +412,7 @@ void save_image(
         break;
     }
     case ImageFormat::WEBP: {
-        auto output_path = base_path + ".webp";
+        const auto output_path = base_path + ".webp";
         options = options->set(
             "effort", task.processing_settings.compression_effort
         );
@@ -439,16 +441,17 @@ vips::VImage get_vips_img_from_pdf_page(
     double ppi,
     int render_flags
 ) {
-    auto width_pt = FPDF_GetPageWidth(page);
-    auto height_pt = FPDF_GetPageHeight(page);
-    auto scale = ppi / 72.0;
-    auto width = static_cast<int>(std::lround(width_pt * scale));
-    auto height = static_cast<int>(std::lround(height_pt * scale));
-    int stride = width * bands;
+    const auto width_pt = FPDF_GetPageWidth(page);
+    const auto height_pt = FPDF_GetPageHeight(page);
+    const auto scale = ppi / 72.0;
+    const auto width = static_cast<int>(std::lround(width_pt * scale));
+    const auto height = static_cast<int>(std::lround(height_pt * scale));
+    const int stride = width * bands;
 
-    auto buf_size = static_cast<size_t>(width) * static_cast<size_t>(height)
-                  * static_cast<size_t>(bands);
-    auto buf = malloc(buf_size);
+    const auto buf_size = static_cast<size_t>(width)
+                        * static_cast<size_t>(height)
+                        * static_cast<size_t>(bands);
+    const auto buf = malloc(buf_size);
     if (!buf) {
         throw std::runtime_error(
             "PDFium: Failed to allocate bitmap buffer for page "
@@ -456,7 +459,7 @@ vips::VImage get_vips_img_from_pdf_page(
         );
     }
 
-    FPDF_BITMAP bitmap
+    const FPDF_BITMAP bitmap
         = FPDFBitmap_CreateEx(width, height, colour_mode, buf, stride);
     if (!bitmap) {
         free(buf);
@@ -480,18 +483,18 @@ vips::VImage get_vips_img_from_pdf_page(
 #endif
 
 vips::VImage remove_uniform_middle_columns(const vips::VImage &img) {
-    double max_fraction = 0.1;
+    const double max_fraction = 0.1;
     int width = img.width();
-    int height = img.height();
+    const int height = img.height();
     int mid = width / 2;
 
-    double global_range = img.max() - img.min();
+    const double global_range = img.max() - img.min();
     if (global_range == 0) {
         return img.copy();
     }
 
     // Helper lambda to find the bounds of the uniform middle section
-    auto get_uniform_bounds = [&](double threshold) {
+    const auto get_uniform_bounds = [&](double threshold) {
         int left = mid;
         while (left >= 0 && is_uniform_column(img, left, threshold)) {
             left -= 1;
@@ -508,9 +511,10 @@ vips::VImage remove_uniform_middle_columns(const vips::VImage &img) {
     int best_right_bound = mid + 1;
 
     // First, attempt with the highest possible threshold.
-    auto bounds_at_max = get_uniform_bounds(global_range);
-    int remove_width_at_max = bounds_at_max.second - bounds_at_max.first - 1;
-    double frac_at_max = static_cast<double>(remove_width_at_max) / width;
+    const auto bounds_at_max = get_uniform_bounds(global_range);
+    const int remove_width_at_max
+        = bounds_at_max.second - bounds_at_max.first - 1;
+    const double frac_at_max = static_cast<double>(remove_width_at_max) / width;
 
     if (frac_at_max <= max_fraction) {
         // The max threshold is acceptable, so we use its results directly.
@@ -525,10 +529,10 @@ vips::VImage remove_uniform_middle_columns(const vips::VImage &img) {
         const int max_iter = 20;
 
         for (int iter = 0; iter < max_iter; iter += 1) {
-            double mid_th = (low + high) / 2.0;
-            auto bounds = get_uniform_bounds(mid_th);
-            int remove_width = bounds.second - bounds.first - 1;
-            double frac = static_cast<double>(remove_width) / width;
+            const double mid_th = (low + high) / 2.0;
+            const auto bounds = get_uniform_bounds(mid_th);
+            const int remove_width = bounds.second - bounds.first - 1;
+            const double frac = static_cast<double>(remove_width) / width;
 
             if (frac > max_fraction) {
                 high = mid_th;
@@ -541,14 +545,14 @@ vips::VImage remove_uniform_middle_columns(const vips::VImage &img) {
         }
     }
 
-    int remove_width = best_right_bound - best_left_bound - 1;
+    const int remove_width = best_right_bound - best_left_bound - 1;
 
     if (remove_width <= 0) {
         return img.copy();
     }
 
-    int left_width = best_left_bound + 1;
-    int right_width = width - best_right_bound;
+    const int left_width = best_left_bound + 1;
+    const int right_width = width - best_right_bound;
 
     if (left_width <= 0) {
         return img.extract_area(best_right_bound, 0, right_width, height);
@@ -557,8 +561,9 @@ vips::VImage remove_uniform_middle_columns(const vips::VImage &img) {
         return img.extract_area(0, 0, left_width, height);
     }
     else {
-        vips::VImage left_part = img.extract_area(0, 0, left_width, height);
-        vips::VImage right_part
+        const vips::VImage left_part
+            = img.extract_area(0, 0, left_width, height);
+        const vips::VImage right_part
             = img.extract_area(best_right_bound, 0, right_width, height);
         return left_part.join(right_part, VIPS_DIRECTION_HORIZONTAL);
     }
@@ -566,9 +571,10 @@ vips::VImage remove_uniform_middle_columns(const vips::VImage &img) {
 
 #if defined(PDF_ENABLED)
 bool is_preview_greyscale(FPDF_PAGE page, int page_number) {
-    auto render_flags = PDF_DEFAULT_RENDER_FLAGS | FPDF_RENDER_NO_SMOOTHTEXT
-                      | FPDF_RENDER_NO_SMOOTHIMAGE | FPDF_RENDER_NO_SMOOTHPATH;
-    auto preview_img = get_vips_img_from_pdf_page(
+    const auto render_flags
+        = PDF_DEFAULT_RENDER_FLAGS | FPDF_RENDER_NO_SMOOTHTEXT
+        | FPDF_RENDER_NO_SMOOTHIMAGE | FPDF_RENDER_NO_SMOOTHPATH;
+    const auto preview_img = get_vips_img_from_pdf_page(
         page, page_number, FPDFBitmap_BGR, 3, 10.0, render_flags
     );
     return is_greyscale(preview_img, 10);
@@ -580,7 +586,7 @@ bool is_greyscale(const vips::VImage &img, double threshold) {
         return true;
     }
     // Convert to LCh colourspace. The second band is Chroma.
-    auto chroma = img.colourspace(VIPS_INTERPRETATION_LCH)[1];
+    const auto chroma = img.colourspace(VIPS_INTERPRETATION_LCH)[1];
     return chroma.max() <= threshold;
 }
 
@@ -608,7 +614,7 @@ bool should_image_stretch_contrast(
 }
 
 bool is_uniform_column(const vips::VImage &img, int col, double threshold) {
-    vips::VImage column = img.extract_area(col, 0, 1, img.height());
+    const vips::VImage column = img.extract_area(col, 0, 1, img.height());
     return column.max() - column.min() < threshold;
 }
 
@@ -627,12 +633,12 @@ rotate_image(const vips::VImage &img, RotationDirection rotation_direction) {
 }
 
 SplitImage split_image(const vips::VImage &img) {
-    auto width = img.width();
-    auto height = img.height();
-    auto middle = width / 2;
+    const auto width = img.width();
+    const auto height = img.height();
+    const auto middle = width / 2;
 
-    auto left = img.extract_area(0, 0, middle, height);
-    auto right = img.extract_area(middle, 0, width - middle, height);
+    const auto left = img.extract_area(0, 0, middle, height);
+    const auto right = img.extract_area(middle, 0, width - middle, height);
 
     return {.left = left, .right = right};
 }
@@ -646,10 +652,10 @@ vips::VImage scale_image(
     VipsKernel resampler,
     bool linear_resample
 ) {
-    auto gap = 0.0;
-    auto width_ratio = target_width / source_width;
-    auto height_ratio = target_height / source_height;
-    double scale = std::min(width_ratio, height_ratio);
+    const auto gap = 0.0;
+    const auto width_ratio = target_width / source_width;
+    const auto height_ratio = target_height / source_height;
+    const double scale = std::min(width_ratio, height_ratio);
 
     if (!linear_resample) {
         return img.resize(
@@ -672,7 +678,7 @@ vips::VImage scale_image(
         colourspace_gamma = "srgb";
     }
 
-    auto has_icc = img.get_typeof(VIPS_META_ICC_NAME) != 0;
+    const auto has_icc = img.get_typeof(VIPS_META_ICC_NAME) != 0;
     if (has_icc) {
         img = img.icc_import(vips::VImage::option()->set("pcs", VIPS_PCS_XYZ));
     }

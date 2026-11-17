@@ -56,23 +56,23 @@ static void update_progress_labels(
     if (!file_timer.start_time.has_value()) {
         return;
     }
-    auto start_time = file_timer.start_time.value();
+    const auto start_time = file_timer.start_time.value();
 
-    auto now = std::chrono::system_clock::now();
+    const auto now = std::chrono::system_clock::now();
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                   now.time_since_epoch()
     )
                   .count();
 
-    auto elapsed = ms - start_time;
-    auto elapsed_str = "Elapsed: " + time_to_str(elapsed);
+    const auto elapsed = ms - start_time;
+    const auto elapsed_str = "Elapsed: " + time_to_str(elapsed);
     elapsed_label->setText(QString::fromStdString(elapsed_str));
 
     if (file_timer.last_eta_time.has_value()
         && ms - file_timer.last_eta_time.value() >= 1000
         && file_timer.images_since_last_eta > 0) {
-        auto images = file_timer.images_since_last_eta;
-        auto interval = ms - file_timer.last_eta_time.value();
+        const auto images = file_timer.images_since_last_eta;
+        const auto interval = ms - file_timer.last_eta_time.value();
 
         file_timer.eta_samples.push_front({images, interval});
 
@@ -89,11 +89,11 @@ static void update_progress_labels(
         }
 
         if (images > 0) {
-            auto speed
+            const auto speed
                 = static_cast<double>(images) / static_cast<double>(interval);
-            auto remaining
+            const auto remaining
                 = static_cast<double>(pages_total - pages_processed) / speed;
-            auto eta_str
+            const auto eta_str
                 = "ETA: " + time_to_str(static_cast<int64_t>(remaining));
 
             eta_label->setText(QString::fromStdString(eta_str));

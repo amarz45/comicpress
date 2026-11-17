@@ -2,7 +2,9 @@
 #include "include/processing.hpp"
 #include "task.hpp"
 
+#include <exception>
 #include <iostream>
+#include <span>
 #include <string>
 
 #if defined(PDF_ENABLED)

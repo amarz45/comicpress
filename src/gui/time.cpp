@@ -1,6 +1,11 @@
 #include "include/window.hpp"
 #include "include/window_util.hpp"
 
+#include <QString>
+
+#include <chrono>
+#include <cstdint>
+
 static void update_progress_labels(
     ProgressTimer &file_timer,
     int pages_processed,

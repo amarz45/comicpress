@@ -17,6 +17,8 @@
 
 #include <vips/vips8>
 
+#include <algorithm>
+#include <array>
 #include <thread>
 #include <utility>
 

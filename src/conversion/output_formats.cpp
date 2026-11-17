@@ -13,12 +13,12 @@
 #include <QXmlStreamWriter>
 #include <Qt>
 
-#include <archive.h>
-#include <archive_entry.h>
 #include <vips/vips8>
 
 #include <algorithm>
 #include <filesystem>
+#include <string>
+#include <utility>
 #include <vector>
 namespace fs = std::filesystem;
 

@@ -1,5 +1,16 @@
 #include "include/task.hpp"
 
+#include <bit>
+#include <charconv>
+#include <cstddef>
+#include <filesystem>
+#include <format>
+#include <span>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <vector>
+
 // fs::path <-> std::string
 std::string encode_field(const fs::path &path) {
     return path.string();

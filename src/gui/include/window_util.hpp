@@ -3,9 +3,18 @@
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QSizePolicy>
 #include <QSpinBox>
+#include <QString>
+#include <QStyle>
+#include <QVariant>
+#include <QWidget>
+#include <Qt>
 #include <array>
 #include <cstddef>
+#include <cstdint>
+#include <string>
+#include <string_view>
 #include <utility>
 
 inline constexpr auto SETTINGS_KEY_ROLE = Qt::UserRole + 1;

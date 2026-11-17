@@ -1,6 +1,10 @@
 #pragma once
 
+#include <QAnyStringView>
+#include <QCheckBox>
+#include <QDoubleSpinBox>
 #include <QSettings>
+#include <QSpinBox>
 #include <Qt>
 #include <optional>
 #include <string_view>

@@ -8,3 +8,4 @@ CompileFlags:
 Diagnostics:
   Suppress: [module_odr_violation_function]
   UnusedIncludes: Strict
+  MissingIncludes: Strict

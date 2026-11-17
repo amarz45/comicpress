@@ -1,12 +1,16 @@
 #include "conversion.hpp"
 #include "include/display_presets.hpp"
+#include "include/options.hpp"
 #include "include/settings.hpp"
 #include "include/window.hpp"
 #include "include/window_util.hpp"
+#include "output_formats.hpp"
+#include "task.hpp"
 
 #include <QCheckBox>
 #include <QComboBox>
 #include <QCoreApplication>
+#include <QDialog>
 #include <QDoubleSpinBox>
 #include <QFile>
 #include <QFileDialog>
@@ -17,19 +21,29 @@
 #include <QListView>
 #include <QListWidget>
 #include <QListWidgetItem>
+#include <QObject>
+#include <QOverload>
 #include <QProgressBar>
 #include <QPushButton>
 #include <QScopedValueRollback>
 #include <QSettings>
 #include <QSpinBox>
 #include <QStandardPaths>
+#include <QString>
+#include <QStringList>
 #include <QTextEdit>
 #include <QTimer>
+#include <QUrl>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <Qt>
+#include <QtAlgorithms>
+#include <QtContainerFwd>
 
 #include <algorithm>
 #include <chrono>
+#include <cstddef>
+#include <filesystem>
 #include <memory>
 #include <utility>
 #include <vector>

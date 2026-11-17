@@ -1,10 +1,22 @@
 #include "include/conversion.hpp"
+#include "include/output_formats.hpp"
 #include "archive.hpp"
+#include "task.hpp"
 
+#include <QProcess>
+#include <QOverload>
 #include <QCoreApplication>
 #include <QObject>
 #include <QString>
 #include <QStringList>
+#include <Qt>
+#include <cctype>
+#include <filesystem>
+#include <string>
+#include <vector>
+#include <system_error>
+#include <utility>
+#include <exception>
 
 #if defined(PDF_ENABLED)
 #include <fpdfview.h>

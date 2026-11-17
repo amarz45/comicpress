@@ -1,8 +1,17 @@
 #include <archive.h>
 #include <archive_entry.h>
+#include <cstddef>
+#include <array>
 #include <expected>
+#include <filesystem>
 #include <fstream>
+#include <memory>
+#include <ios>
 #include <new>
+#include <utility>
+#include <string>
+#include <optional>
+#include <stdexcept>
 
 #include "include/archive.hpp"
 

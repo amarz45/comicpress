@@ -1,8 +1,13 @@
 #include <algorithm>
 #include <archive.h>
 #include <archive_entry.h>
+#include <cmath>
+#include <cstddef>
+#include <cstdlib>
 #include <filesystem>
+#include <format>
 #include <functional>
+#include <memory>
 #include <ranges>
 #include <stdexcept>
 #include <string>

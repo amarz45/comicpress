@@ -8,6 +8,11 @@
 #include <QPushButton>
 #include <QSpinBox>
 #include <QStyle>
+#include <QWidget>
+#include <QtMinMax>
+#include <QtNumeric>
+#include <qtmetamacros.h>
+#include <cstdint>
 
 enum class PdfQuality : std::uint16_t {
     STANDARD = 300,

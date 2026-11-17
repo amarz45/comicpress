@@ -3,10 +3,13 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QSpinBox>
+#include <QString>
 #include <QWidget>
+#include <cstdint>
 #include <cstring>
 #include <iomanip>
 #include <sstream>
+#include <string>
 #include <utility>
 
 QWidget *create_widget_with_info(

@@ -1,8 +1,12 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <filesystem>
+#include <span>
 #include <string>
+#include <type_traits>
+#include <vector>
 #include <vips/vips8>
 
 namespace fs = std::filesystem;

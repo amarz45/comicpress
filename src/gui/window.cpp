@@ -8,6 +8,7 @@
 
 #include <QAbstractItemView>
 #include <QAction>
+#include <QApplication>
 #include <QBoxLayout>
 #include <QCheckBox>
 #include <QComboBox>
@@ -38,7 +39,11 @@
 
 #include <vips/vips8>
 
+#include <algorithm>
+#include <cctype>
 #include <chrono>
+#include <filesystem>
+#include <optional>
 
 namespace fs = std::filesystem;
 

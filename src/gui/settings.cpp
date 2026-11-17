@@ -1,5 +1,11 @@
+#include <QAnyStringView>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QDoubleSpinBox>
+#include <QMetaType>
+#include <QSpinBox>
+#include <QVariant>
+#include <optional>
 
 #include "include/settings.hpp"
 #include "include/window_util.hpp"

@@ -6,12 +6,16 @@
 #include <QMap>
 #include <QSettings>
 #include <QString>
+#include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <deque>
+#include <filesystem>
 #include <map>
 #include <memory>
 #include <optional>
 #include <qtconfigmacros.h>
+#include <qtmetamacros.h>
 #include <string>
 #include <utility>
 

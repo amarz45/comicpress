@@ -2,8 +2,13 @@
 
 #include <archive.h>
 #include <archive_entry.h>
+#include <cstddef>
 #include <expected>
 #include <filesystem>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <string>
 
 namespace fs = std::filesystem;
 

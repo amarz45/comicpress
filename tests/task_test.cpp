@@ -1,7 +1,10 @@
 #include <gtest/gtest.h>
 
 #include <iomanip>
+#include <ios>
 #include <ostream>
+#include <string>
+#include <vector>
 
 #include "task.hpp"
 

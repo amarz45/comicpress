@@ -609,8 +609,7 @@ bool should_image_stretch_contrast(
     const vips::VImage &img, const PageTask &task
 ) {
     return task.processing_settings.stretch_page_contrast
-        && (!task.processing_settings.convert_pages_to_greyscale
-            || is_greyscale(img, 10.0));
+        && is_greyscale(img, 10.0);
 }
 
 bool is_uniform_column(const vips::VImage &img, int col, double threshold) {

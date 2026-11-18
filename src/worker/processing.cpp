@@ -53,7 +53,8 @@ static bool is_preview_greyscale(FPDF_PAGE page, int page_number);
 #endif
 
 static vips::VImage remove_uniform_middle_columns(const vips::VImage &img);
-static bool is_greyscale(const vips::VImage &img, double threshold);
+static bool
+is_greyscale(const vips::VImage &img, int threshold, int shrink_factor);
 static bool is_two_page_spread(
     double image_width,
     double image_height,
@@ -577,17 +578,44 @@ bool is_preview_greyscale(FPDF_PAGE page, int page_number) {
     const auto preview_img = get_vips_img_from_pdf_page(
         page, page_number, FPDFBitmap_BGR, 3, 10.0, render_flags
     );
-    return is_greyscale(preview_img, 10);
+    return is_greyscale(preview_img, 20, 1);
 }
 #endif
 
-bool is_greyscale(const vips::VImage &img, double threshold) {
+bool is_greyscale(const vips::VImage &img, int threshold, int shrink_factor) {
     if (img.bands() < 3) {
         return true;
     }
-    // Convert to LCh colourspace. The second band is Chroma.
-    const auto chroma = img.colourspace(VIPS_INTERPRETATION_LCH)[1];
-    return chroma.max() <= threshold;
+
+    const auto pixels = [&] {
+        auto pixels = img;
+        if (shrink_factor > 1) {
+            pixels = pixels.shrink(shrink_factor, shrink_factor);
+        }
+        if (pixels.interpretation() != VIPS_INTERPRETATION_sRGB) {
+            pixels = pixels.colourspace(VIPS_INTERPRETATION_sRGB);
+        }
+        return pixels.copy_memory();
+    }();
+
+    const auto *data = static_cast<const unsigned char *>(pixels.data());
+    if (data == nullptr) {
+        throw vips::VError();
+    }
+
+    const auto num_pixels
+        = static_cast<std::size_t>(pixels.width()) * pixels.height();
+    const auto num_bands = static_cast<std::size_t>(pixels.bands());
+
+    for (auto i = 0uz; i < num_pixels; i += 1) {
+        const auto *rgb = data + i * num_bands;
+        const auto [min, max] = std::minmax({rgb[0], rgb[1], rgb[2]});
+        if (max - min > threshold) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 bool is_two_page_spread(
@@ -609,7 +637,7 @@ bool should_image_stretch_contrast(
     const vips::VImage &img, const PageTask &task
 ) {
     return task.processing_settings.stretch_page_contrast
-        && is_greyscale(img, 10.0);
+        && is_greyscale(img, 20, 8);
 }
 
 bool is_uniform_column(const vips::VImage &img, int col, double threshold) {
